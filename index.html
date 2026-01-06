@@ -483,6 +483,8 @@
       feast: ['voices/Voice2.mp3', 'voices/Voice3.mp3', 'voices/Voice4.mp3', 'voices/Voice5.mp3', 'voices/Voice6.mp3', 'voices/Voice7.mp3'],
       wanderer: ['voices/Voice2.mp3', 'voices/Voice3.mp3', 'voices/Voice4.mp3', 'voices/Voice5.mp3', 'voices/Voice6.mp3', 'voices/Voice7.mp3']
     };
+    const AMBIENT_VOICE_MIN_DELAY = 3000;
+    const AMBIENT_VOICE_MAX_DELAY = 10000;
 
     function playVoice(locationId) {
       try {
@@ -510,6 +512,23 @@
         audio.play().catch(err => console.log('Voice playback prevented:', err));
       } catch (err) {
         console.log('Voice error:', err);
+      }
+    }
+
+    function scheduleNextAmbientVoice(npc, now = Date.now()) {
+      npc.userData.nextVoiceTime = now + AMBIENT_VOICE_MIN_DELAY +
+        Math.random() * (AMBIENT_VOICE_MAX_DELAY - AMBIENT_VOICE_MIN_DELAY);
+    }
+
+    function maybePlayAmbientVoice(npc) {
+      const now = Date.now();
+      if (!npc.userData.nextVoiceTime) {
+        scheduleNextAmbientVoice(npc, now);
+        return;
+      }
+      if (now >= npc.userData.nextVoiceTime) {
+        playRandomWandererVoice();
+        scheduleNextAmbientVoice(npc, now);
       }
     }
 
@@ -889,7 +908,9 @@
           timer: Math.random() * 5,
           lastQuote: Date.now() - Math.random() * 3000, // Stagger initial quotes
           chatOffset: Math.random() * 4000, // Random offset for chat cooldown
-          lastVoice: Date.now() - Math.random() * 10000
+          lastVoice: Date.now() - Math.random() * 10000,
+          nextVoiceTime: Date.now() + AMBIENT_VOICE_MIN_DELAY +
+            Math.random() * (AMBIENT_VOICE_MAX_DELAY - AMBIENT_VOICE_MIN_DELAY)
         };
         scene.add(npc);
         wanderers.push(npc);
@@ -1404,7 +1425,9 @@
           state: 'wandering', // wandering, gathering, listening, leaving
           speed: 0.8,
           lastQuote: Date.now() - Math.random() * 3000,
-          chatOffset: Math.random() * 4000
+          chatOffset: Math.random() * 4000,
+          nextVoiceTime: Date.now() + AMBIENT_VOICE_MIN_DELAY +
+            Math.random() * (AMBIENT_VOICE_MAX_DELAY - AMBIENT_VOICE_MIN_DELAY)
         };
         
         scene.add(listener);
@@ -2033,6 +2056,7 @@
           
           // Always try to show message - the function handles the 3s cooldown
           showFloatingMessage(npc);
+          maybePlayAmbientVoice(npc);
 
           const speed = npc.userData.walkSpeed * delta;
           const newX = npc.position.x + Math.sin(npc.userData.walkAngle) * speed;
@@ -2101,6 +2125,7 @@
         } else if (Math.random() < 0.01) { // Less frequent when not listening
           showFloatingMessage(listener);
         }
+        maybePlayAmbientVoice(listener);
         
         if (data.state === 'gathering') {
           // Move towards target position around Bernie
