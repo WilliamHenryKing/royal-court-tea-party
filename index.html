@@ -600,6 +600,14 @@
       }
     };
 
+    const PATH_CONFIG = {
+      count: 5,
+      angleStep: Math.PI * 0.4,
+      length: 13,
+      width: 2.5,
+      centerRadius: 6.5
+    };
+
     const WANDERING_NPCS = [
       // Regular wanderers
       { name: "Lady Giggles", role: "Royal Laugher", quotes: [
@@ -842,12 +850,19 @@
 
       // Paths
       const pathMat = new THREE.MeshStandardMaterial({ color: 0xf5deb3, roughness: 0.9 });
-      for (let i = 0; i < 5; i++) {
-        const angle = Math.PI * i * 0.4;
-        const path = new THREE.Mesh(new THREE.PlaneGeometry(2.5, 13), pathMat);
+      for (let i = 0; i < PATH_CONFIG.count; i++) {
+        const angle = PATH_CONFIG.angleStep * i;
+        const path = new THREE.Mesh(
+          new THREE.PlaneGeometry(PATH_CONFIG.width, PATH_CONFIG.length),
+          pathMat
+        );
         path.rotation.x = -Math.PI / 2;
         path.rotation.z = -angle;
-        path.position.set(Math.sin(angle) * 6.5, 0.02, Math.cos(angle) * 6.5);
+        path.position.set(
+          Math.sin(angle) * PATH_CONFIG.centerRadius,
+          0.02,
+          Math.cos(angle) * PATH_CONFIG.centerRadius
+        );
         path.receiveShadow = true;
         scene.add(path);
       }
@@ -1482,6 +1497,68 @@
         scene.add(cloud);
         clouds.push(cloud);
       }
+
+      // Royal props placed beyond paths
+      createRoyalProps();
+    }
+
+    function createRoyalProps() {
+      const placements = [
+        { create: createHugeRedChair, x: 28, z: -30, scale: 1.2 },
+        { create: createCakeWithCherry, x: -32, z: -24, scale: 1.1 },
+        { create: createMilkTart, x: 34, z: 22, scale: 1 },
+        { create: createIceCreamGlass, x: -26, z: 30, scale: 1.05 },
+        { create: createPinkSodaGlass, x: 22, z: 32, scale: 1 },
+        { create: createGoldenTeapot, x: -36, z: 12, scale: 1 },
+        { create: createMacaronTower, x: 12, z: -36, scale: 1.1 },
+        { create: createCrownCushion, x: -18, z: -34, scale: 1 }
+      ];
+
+      placements.forEach(({ create, x, z, scale }) => {
+        if (!isSafeOffPathPlacement(x, z)) return;
+        const prop = create();
+        prop.position.set(x, 0, z);
+        prop.scale.setScalar(scale);
+        scene.add(prop);
+      });
+    }
+
+    function isSafeOffPathPlacement(x, z) {
+      const radius = Math.hypot(x, z);
+      if (radius < 16 || radius > 46) {
+        return false;
+      }
+      if (isNearPath(x, z, 2.5)) {
+        return false;
+      }
+      if (!isClearOfBuildings(x, z, 3)) {
+        return false;
+      }
+      return true;
+    }
+
+    function isNearPath(x, z, buffer = 1.5) {
+      const halfWidth = PATH_CONFIG.width / 2 + buffer;
+      for (let i = 0; i < PATH_CONFIG.count; i++) {
+        const angle = PATH_CONFIG.angleStep * i;
+        const axisX = Math.sin(angle);
+        const axisZ = Math.cos(angle);
+        const projection = x * axisX + z * axisZ;
+        if (projection < -buffer || projection > PATH_CONFIG.length + buffer) {
+          continue;
+        }
+        const perpendicular = Math.abs(-axisZ * x + axisX * z);
+        if (perpendicular <= halfWidth) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function isClearOfBuildings(x, z, buffer = 2) {
+      return !collisionBoxes.some(b =>
+        x > b.minX - buffer && x < b.maxX + buffer && z > b.minZ - buffer && z < b.maxZ + buffer
+      );
     }
 
     function createFlower(color) {
@@ -1567,6 +1644,204 @@
         puff.position.set(p.x, Math.random() * 0.5, Math.random() * 0.5 - 0.25);
         group.add(puff);
       });
+
+      return group;
+    }
+
+    function createHugeRedChair() {
+      const group = new THREE.Group();
+      const chairMat = new THREE.MeshStandardMaterial({ color: 0xe63946, roughness: 0.6 });
+      const cushionMat = new THREE.MeshStandardMaterial({ color: 0xffa3b1, roughness: 0.7 });
+      const woodMat = new THREE.MeshStandardMaterial({ color: 0x8b3a3a, roughness: 0.8 });
+
+      const seat = new THREE.Mesh(new THREE.BoxGeometry(3, 0.5, 2.5), chairMat);
+      seat.position.y = 0.8;
+      seat.castShadow = true;
+      group.add(seat);
+
+      const back = new THREE.Mesh(new THREE.BoxGeometry(3, 2.5, 0.5), chairMat);
+      back.position.set(0, 2, -1);
+      back.castShadow = true;
+      group.add(back);
+
+      const cushion = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.35, 1.9), cushionMat);
+      cushion.position.y = 1.1;
+      group.add(cushion);
+
+      [-1.2, 1.2].forEach(x => {
+        [-0.9, 0.9].forEach(z => {
+          const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 0.8, 8), woodMat);
+          leg.position.set(x, 0.4, z);
+          leg.castShadow = true;
+          group.add(leg);
+        });
+      });
+
+      return group;
+    }
+
+    function createCakeWithCherry() {
+      const group = new THREE.Group();
+      const cakeMat = new THREE.MeshStandardMaterial({ color: 0xfff0d6, roughness: 0.7 });
+      const frostingMat = new THREE.MeshStandardMaterial({ color: 0xffb6c1, roughness: 0.6 });
+      const cherryMat = new THREE.MeshStandardMaterial({ color: 0xd62828, roughness: 0.4 });
+      const plateMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8 });
+
+      const plate = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.6, 0.15, 16), plateMat);
+      plate.position.y = 0.1;
+      group.add(plate);
+
+      const cake = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.2, 0.8, 20), cakeMat);
+      cake.position.y = 0.6;
+      cake.castShadow = true;
+      group.add(cake);
+
+      const frosting = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.25, 0.25, 20), frostingMat);
+      frosting.position.y = 1.05;
+      group.add(frosting);
+
+      const cherry = new THREE.Mesh(new THREE.SphereGeometry(0.18, 16, 16), cherryMat);
+      cherry.position.set(0.2, 1.3, 0);
+      group.add(cherry);
+
+      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.2, 6), new THREE.MeshStandardMaterial({ color: 0x2e8b57 }));
+      stem.position.set(0.2, 1.45, 0);
+      stem.rotation.z = 0.5;
+      group.add(stem);
+
+      return group;
+    }
+
+    function createMilkTart() {
+      const group = new THREE.Group();
+      const crustMat = new THREE.MeshStandardMaterial({ color: 0xf4c27a, roughness: 0.8 });
+      const fillingMat = new THREE.MeshStandardMaterial({ color: 0xfff3c1, roughness: 0.6 });
+      const dustMat = new THREE.MeshStandardMaterial({ color: 0xcfa670, roughness: 0.9 });
+
+      const crust = new THREE.Mesh(new THREE.CylinderGeometry(1, 1.1, 0.4, 16), crustMat);
+      crust.position.y = 0.25;
+      crust.castShadow = true;
+      group.add(crust);
+
+      const filling = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.95, 0.25, 16), fillingMat);
+      filling.position.y = 0.55;
+      group.add(filling);
+
+      const dust = new THREE.Mesh(new THREE.CircleGeometry(0.75, 16), dustMat);
+      dust.rotation.x = -Math.PI / 2;
+      dust.position.y = 0.7;
+      group.add(dust);
+
+      return group;
+    }
+
+    function createIceCreamGlass() {
+      const group = new THREE.Group();
+      const glassMat = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.55 });
+      const stemMat = new THREE.MeshStandardMaterial({ color: 0xd9f7ff, roughness: 0.3, metalness: 0.2 });
+      const scoopColors = [0xffd1dc, 0xfde2a7, 0xc1e1c1];
+
+      const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.6, 1.1, 16, 1, true), glassMat);
+      bowl.position.y = 1.1;
+      group.add(bowl);
+
+      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.2, 0.7, 8), stemMat);
+      stem.position.y = 0.35;
+      group.add(stem);
+
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.6, 0.15, 12), stemMat);
+      base.position.y = 0.05;
+      group.add(base);
+
+      scoopColors.forEach((color, i) => {
+        const scoop = new THREE.Mesh(new THREE.SphereGeometry(0.45, 14, 14), new THREE.MeshStandardMaterial({ color }));
+        scoop.position.set((i - 1) * 0.35, 1.5 + i * 0.2, 0);
+        scoop.castShadow = true;
+        group.add(scoop);
+      });
+
+      return group;
+    }
+
+    function createPinkSodaGlass() {
+      const group = new THREE.Group();
+      const glassMat = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 });
+      const sodaMat = new THREE.MeshStandardMaterial({ color: 0xff8fb1, transparent: true, opacity: 0.7 });
+      const strawMat = new THREE.MeshStandardMaterial({ color: 0xff5c8a, roughness: 0.4 });
+
+      const glass = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.6, 1.6, 16), glassMat);
+      glass.position.y = 0.9;
+      group.add(glass);
+
+      const soda = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.55, 1.2, 16), sodaMat);
+      soda.position.y = 0.75;
+      group.add(soda);
+
+      const straw = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.8, 8), strawMat);
+      straw.position.set(0.15, 1.4, 0);
+      straw.rotation.z = 0.2;
+      group.add(straw);
+
+      return group;
+    }
+
+    function createGoldenTeapot() {
+      const group = new THREE.Group();
+      const goldMat = new THREE.MeshStandardMaterial({ color: 0xffd36e, metalness: 0.7, roughness: 0.3 });
+
+      const body = new THREE.Mesh(new THREE.SphereGeometry(0.8, 16, 16), goldMat);
+      body.scale.set(1.2, 1, 1);
+      body.position.y = 0.9;
+      body.castShadow = true;
+      group.add(body);
+
+      const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.45, 0.2, 12), goldMat);
+      lid.position.y = 1.5;
+      group.add(lid);
+
+      const spout = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, 0.8, 8), goldMat);
+      spout.position.set(1, 1, 0.3);
+      spout.rotation.z = -0.7;
+      group.add(spout);
+
+      const handle = new THREE.Mesh(new THREE.TorusGeometry(0.4, 0.08, 8, 16), goldMat);
+      handle.position.set(-1, 1, 0);
+      handle.rotation.y = Math.PI / 2;
+      group.add(handle);
+
+      return group;
+    }
+
+    function createMacaronTower() {
+      const group = new THREE.Group();
+      const colors = [0xffc1cc, 0xffe0a3, 0xc7e9f1, 0xd6c1f7];
+      colors.forEach((color, i) => {
+        const macaron = new THREE.Mesh(new THREE.CylinderGeometry(0.6 - i * 0.08, 0.6 - i * 0.08, 0.25, 16), new THREE.MeshStandardMaterial({ color }));
+        macaron.position.y = 0.2 + i * 0.3;
+        macaron.castShadow = true;
+        group.add(macaron);
+      });
+      return group;
+    }
+
+    function createCrownCushion() {
+      const group = new THREE.Group();
+      const cushionMat = new THREE.MeshStandardMaterial({ color: 0xff7ab6, roughness: 0.7 });
+      const trimMat = new THREE.MeshStandardMaterial({ color: 0xfff4d1, roughness: 0.6 });
+
+      const base = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.4, 1.2), cushionMat);
+      base.position.y = 0.25;
+      base.castShadow = true;
+      group.add(base);
+
+      const trim = new THREE.Mesh(new THREE.TorusGeometry(0.65, 0.08, 8, 16), trimMat);
+      trim.position.y = 0.5;
+      trim.rotation.x = Math.PI / 2;
+      group.add(trim);
+
+      const jewel = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 12), new THREE.MeshStandardMaterial({ color: 0x7dd3fc }));
+      jewel.position.set(0, 0.6, 0.35);
+      group.add(jewel);
 
       return group;
     }
