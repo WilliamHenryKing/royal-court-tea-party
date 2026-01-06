@@ -617,6 +617,16 @@
     const clock = new THREE.Clock();
     const joystickInput = { x: 0, y: 0 };
     const cameraTarget = new THREE.Vector3();
+    const cameraZoomState = {
+      currentOffset: 12,
+      targetOffset: 12,
+      baseOffset: 12,
+      zoomedOutOffset: 15,
+      zoomOutDelay: 0.35,
+      zoomInDelay: 0.6,
+      lastMoveChange: 0,
+      moving: false
+    };
 
     // Initialize game
     function init() {
@@ -1736,9 +1746,32 @@
           player.position.y = player.userData.baseY + Math.sin(time * 2) * 0.03;
         }
 
-        // Camera follow
+        // Camera follow with gentle momentum zoom
+        if (isMoving !== cameraZoomState.moving) {
+          cameraZoomState.moving = isMoving;
+          cameraZoomState.lastMoveChange = time;
+        }
+
+        if (cameraZoomState.moving) {
+          if (time - cameraZoomState.lastMoveChange > cameraZoomState.zoomOutDelay) {
+            cameraZoomState.targetOffset = cameraZoomState.zoomedOutOffset;
+          }
+        } else if (time - cameraZoomState.lastMoveChange > cameraZoomState.zoomInDelay) {
+          cameraZoomState.targetOffset = cameraZoomState.baseOffset;
+        }
+
+        cameraZoomState.currentOffset = THREE.MathUtils.lerp(
+          cameraZoomState.currentOffset,
+          cameraZoomState.targetOffset,
+          0.04
+        );
+
         cameraTarget.set(player.position.x, player.position.y + 1, player.position.z);
-        const idealPos = new THREE.Vector3(player.position.x, player.position.y + 12, player.position.z + 12);
+        const idealPos = new THREE.Vector3(
+          player.position.x,
+          player.position.y + cameraZoomState.currentOffset,
+          player.position.z + cameraZoomState.currentOffset
+        );
         camera.position.lerp(idealPos, 0.08);
         camera.lookAt(cameraTarget);
 
