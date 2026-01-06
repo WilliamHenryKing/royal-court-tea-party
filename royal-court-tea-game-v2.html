@@ -1,0 +1,1825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>The Royal Court Tea ✨</title>
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    :root {
+      --pink-light: #ffd1e1; --pink-main: #f5a1c0; --pink-deep: #e87aa0;
+      --lavender: #d4b8ff; --periwinkle: #a9c7ff; --mint: #b8e986; --mint-dark: #9ed36a;
+      --sky: #cfeeff; --peach: #ffd4a8; --cream: #fff8f0; --gold: #ffd700;
+      --text-dark: #4a3f5c; --text-light: #7a6b8a; --white: #ffffff;
+    }
+    html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Inter', sans-serif; background: linear-gradient(180deg, #ffeef5 0%, #e8f4ff 100%); touch-action: none; }
+    #game-container { width: 100%; height: 100%; position: relative; }
+    canvas { display: block; touch-action: none; }
+
+    #splash-screen {
+      position: fixed; inset: 0; background: linear-gradient(135deg, #fff0f5 0%, #ffe4ec 30%, #ffd1e1 60%, #e8d4f0 100%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000;
+      transition: opacity 0.8s ease, visibility 0.8s ease; overflow: hidden;
+    }
+    #splash-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+    .splash-sparkle { position: absolute; font-size: 1.5rem; opacity: 0.6; animation: floatSparkle 4s ease-in-out infinite; }
+    @keyframes floatSparkle { 0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.6; } 50% { transform: translateY(-20px) rotate(180deg); opacity: 1; } }
+    .splash-crown-container { position: relative; margin-bottom: 1.5rem; }
+    .splash-crown { font-size: 6rem; animation: crownBounce 2s ease-in-out infinite; filter: drop-shadow(0 10px 30px rgba(255,215,0,0.4)); }
+    .splash-glow { position: absolute; inset: -30px; background: radial-gradient(circle, rgba(255,215,0,0.3) 0%, transparent 70%); animation: glowPulse 2s ease-in-out infinite; border-radius: 50%; }
+    @keyframes crownBounce { 0%, 100% { transform: translateY(0) rotate(-3deg) scale(1); } 25% { transform: translateY(-15px) rotate(3deg) scale(1.05); } 50% { transform: translateY(-5px) rotate(-2deg) scale(1.02); } 75% { transform: translateY(-20px) rotate(2deg) scale(1.03); } }
+    @keyframes glowPulse { 0%, 100% { opacity: 0.5; transform: scale(1); } 50% { opacity: 1; transform: scale(1.2); } }
+    .splash-title { font-family: 'Dancing Script', cursive; font-size: 2.8rem; color: var(--text-dark); text-shadow: 2px 2px 0 var(--white), 4px 4px 10px rgba(0,0,0,0.1); margin-bottom: 0.5rem; animation: fadeSlideIn 1s ease 0.3s both; }
+    .splash-subtitle { font-family: 'Dancing Script', cursive; font-size: 1.5rem; color: var(--pink-deep); margin-bottom: 0.5rem; animation: fadeSlideIn 1s ease 0.5s both; }
+    .splash-tagline { font-size: 1rem; color: var(--text-light); font-style: italic; margin-bottom: 2rem; animation: fadeSlideIn 1s ease 0.7s both; }
+    @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .splash-instruction { background: rgba(255,255,255,0.8); backdrop-filter: blur(10px); padding: 1rem 1.5rem; border-radius: 1rem; margin-bottom: 2rem; max-width: 300px; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.1); animation: fadeSlideIn 1s ease 0.9s both; }
+    .splash-instruction p { color: var(--text-dark); line-height: 1.6; font-size: 0.95rem; }
+    .splash-instruction strong { color: var(--pink-deep); }
+    .splash-btn { background: linear-gradient(135deg, var(--pink-main) 0%, var(--lavender) 100%); border: none; padding: 1.2rem 3rem; border-radius: 3rem; color: var(--white); font-family: 'Inter', sans-serif; font-weight: 700; font-size: 1.2rem; cursor: pointer; box-shadow: 0 8px 30px rgba(245, 161, 192, 0.5); transition: all 0.3s ease; animation: fadeSlideIn 1s ease 1.1s both, btnPulse 2s ease-in-out infinite 2s; }
+    .splash-btn:active { transform: scale(0.97); }
+    @keyframes btnPulse { 0%, 100% { box-shadow: 0 8px 30px rgba(245, 161, 192, 0.5); } 50% { box-shadow: 0 8px 50px rgba(245, 161, 192, 0.8); } }
+    .splash-footer { margin-top: 1.5rem; font-size: 0.8rem; color: var(--text-light); opacity: 0.7; animation: fadeSlideIn 1s ease 1.3s both; }
+
+    #loading-screen { position: fixed; inset: 0; background: linear-gradient(135deg, var(--pink-light) 0%, var(--lavender) 50%, var(--sky) 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 900; transition: opacity 0.5s ease, visibility 0.5s ease; }
+    #loading-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+    .loading-crown { font-size: 4rem; animation: bounce 1s ease-in-out infinite; }
+    .loading-text { font-family: 'Dancing Script', cursive; font-size: 1.8rem; color: var(--text-dark); margin-top: 1rem; text-shadow: 2px 2px 0 var(--white); }
+    .loading-subtext { font-size: 0.9rem; color: var(--text-light); margin-top: 0.5rem; font-style: italic; }
+    .loading-dots { display: flex; gap: 0.5rem; margin-top: 1.5rem; }
+    .loading-dots span { width: 12px; height: 12px; background: var(--pink-main); border-radius: 50%; animation: dotPulse 1.4s ease-in-out infinite; }
+    .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce { 0%, 100% { transform: translateY(0) rotate(-5deg); } 50% { transform: translateY(-20px) rotate(5deg); } }
+    @keyframes dotPulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(0.5); opacity: 0.5; } }
+
+    #hud { position: fixed; top: 0; left: 0; right: 0; padding: 1rem; display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none; z-index: 100; }
+    .hud-left, .hud-right { pointer-events: auto; }
+    .location-badge { background: rgba(255,255,255,0.9); backdrop-filter: blur(15px); padding: 0.6rem 1rem; border-radius: 2rem; box-shadow: 0 4px 20px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 0.5rem; font-weight: 600; color: var(--text-dark); font-size: 0.9rem; border: 2px solid rgba(255,255,255,0.5); }
+    .location-icon { font-size: 1.2rem; }
+    .progress-container { background: rgba(255,255,255,0.9); backdrop-filter: blur(15px); padding: 0.6rem 1rem; border-radius: 2rem; box-shadow: 0 4px 20px rgba(0,0,0,0.1); border: 2px solid rgba(255,255,255,0.5); }
+    .progress-stars { display: flex; gap: 0.3rem; font-size: 1.2rem; }
+    .star { opacity: 0.3; transition: all 0.3s ease; filter: grayscale(1); }
+    .star.collected { opacity: 1; filter: grayscale(0); animation: starPop 0.5s ease; }
+    @keyframes starPop { 0% { transform: scale(1) rotate(0deg); } 50% { transform: scale(1.5) rotate(180deg); } 100% { transform: scale(1) rotate(360deg); } }
+    .collectibles-badge { background: rgba(255,255,255,0.9); backdrop-filter: blur(15px); padding: 0.5rem 0.8rem; border-radius: 1.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 0.4rem; font-weight: 600; color: var(--text-dark); font-size: 0.85rem; margin-top: 0.5rem; border: 2px solid rgba(255,215,0,0.3); }
+
+    #joystick-container { position: fixed; bottom: 8rem; left: 2rem; width: 110px; height: 110px; z-index: 100; }
+    #joystick-base { position: absolute; width: 100%; height: 100%; background: radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.7) 100%); border: 3px solid var(--pink-main); border-radius: 50%; box-shadow: 0 4px 25px rgba(0,0,0,0.15), inset 0 2px 15px rgba(255,255,255,0.8); }
+    #joystick-thumb { position: absolute; width: 45px; height: 45px; background: linear-gradient(135deg, var(--pink-main) 0%, var(--pink-deep) 100%); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); box-shadow: 0 4px 15px rgba(245, 161, 192, 0.6); transition: transform 0.05s ease-out; }
+
+    #action-btn { position: fixed; bottom: 8rem; right: 2rem; background: linear-gradient(135deg, var(--mint) 0%, var(--mint-dark) 100%); border: none; border-radius: 2rem; padding: 1rem 1.5rem; font-family: 'Inter', sans-serif; font-weight: 700; font-size: 1rem; color: var(--white); box-shadow: 0 6px 25px rgba(184, 233, 134, 0.5); cursor: pointer; z-index: 100; display: none; align-items: center; gap: 0.5rem; transition: all 0.3s ease; animation: actionPulse 2s ease-in-out infinite; }
+    #action-btn.visible { display: flex; }
+    #action-btn:active { transform: scale(0.95); }
+    @keyframes actionPulse { 0%, 100% { box-shadow: 0 6px 25px rgba(184, 233, 134, 0.5); transform: translateY(0); } 50% { box-shadow: 0 8px 35px rgba(184, 233, 134, 0.8); transform: translateY(-3px); } }
+
+    #dialog-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); display: none; align-items: flex-end; justify-content: center; z-index: 200; padding: 1rem; }
+    #dialog-overlay.visible { display: flex; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    #dialog-box { background: var(--white); border-radius: 1.5rem; padding: 1.5rem; max-width: 400px; width: 100%; max-height: 70vh; overflow-y: auto; box-shadow: 0 -10px 50px rgba(0,0,0,0.25); animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); position: relative; }
+    @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .dialog-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 2px dashed var(--pink-light); }
+    .dialog-avatar { width: 60px; height: 60px; background: linear-gradient(135deg, var(--pink-light) 0%, var(--lavender) 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+    .dialog-speaker { flex: 1; }
+    .dialog-name { font-family: 'Dancing Script', cursive; font-size: 1.4rem; color: var(--text-dark); }
+    .dialog-role { font-size: 0.85rem; color: var(--text-light); margin-top: 0.2rem; }
+    .dialog-content { color: var(--text-dark); line-height: 1.7; font-size: 1rem; }
+    .dialog-content h3 { font-family: 'Dancing Script', cursive; color: var(--pink-deep); margin: 1rem 0 0.5rem; font-size: 1.3rem; }
+    .dialog-content ul { list-style: none; padding: 0; }
+    .dialog-content li { padding: 0.5rem 0; padding-left: 1.5rem; position: relative; }
+    .dialog-content li::before { content: '✿'; position: absolute; left: 0; color: var(--pink-main); }
+    .dialog-content .highlight { background: linear-gradient(120deg, var(--pink-light) 0%, var(--lavender) 100%); padding: 0.2rem 0.5rem; border-radius: 0.3rem; font-weight: 600; }
+    .dialog-content .detail-card { background: var(--cream); border-radius: 1rem; padding: 1rem; margin: 0.8rem 0; border-left: 4px solid var(--pink-main); }
+    .dialog-content .detail-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0; }
+    .dialog-content .detail-icon { font-size: 1.2rem; }
+    .dialog-content .funny-quote { background: linear-gradient(135deg, var(--sky) 0%, var(--lavender) 100%); border-radius: 1rem; padding: 1rem; margin: 1rem 0; font-style: italic; text-align: center; }
+    .dialog-close { position: absolute; top: 1rem; right: 1rem; width: 36px; height: 36px; background: var(--pink-light); border: none; border-radius: 50%; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; }
+    .dialog-close:active { background: var(--pink-main); color: var(--white); }
+    .guest-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; margin-top: 0.5rem; }
+    .guest-item { background: var(--cream); padding: 0.5rem 0.8rem; border-radius: 0.5rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.3rem; }
+    .speaker-card { background: linear-gradient(135deg, var(--cream) 0%, var(--pink-light) 100%); border-radius: 1rem; padding: 1rem; margin: 0.8rem 0; }
+    .speaker-name { font-family: 'Dancing Script', cursive; color: var(--pink-deep); font-size: 1.2rem; }
+    .speaker-topic { color: var(--text-light); font-size: 0.9rem; margin-top: 0.3rem; font-style: italic; }
+
+    #minimap { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.95); backdrop-filter: blur(15px); padding: 0.8rem 1.5rem; border-radius: 2rem; box-shadow: 0 4px 20px rgba(0,0,0,0.1); display: flex; gap: 0.8rem; z-index: 90; border: 2px solid rgba(255,255,255,0.5); }
+    .map-icon { width: 38px; height: 38px; background: var(--pink-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; cursor: pointer; transition: all 0.3s ease; opacity: 0.5; }
+    .map-icon.visited { opacity: 1; background: linear-gradient(135deg, var(--pink-main) 0%, var(--lavender) 100%); }
+    .map-icon.current { transform: scale(1.2); box-shadow: 0 0 20px rgba(245, 161, 192, 0.7); }
+
+    #completion-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 400; padding: 1.5rem; }
+    #completion-modal.visible { display: flex; }
+    .completion-content { background: linear-gradient(135deg, var(--white) 0%, var(--cream) 100%); border-radius: 2rem; padding: 2rem; max-width: 350px; text-align: center; animation: bounceIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 20px 60px rgba(0,0,0,0.3); position: relative; }
+    @keyframes bounceIn { 0% { transform: scale(0.3) rotate(-10deg); opacity: 0; } 50% { transform: scale(1.05) rotate(2deg); } 100% { transform: scale(1) rotate(0deg); opacity: 1; } }
+    .completion-crown { font-size: 5rem; animation: crownFloat 3s ease-in-out infinite; }
+    @keyframes crownFloat { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-15px) rotate(3deg); } }
+    .completion-title { font-family: 'Dancing Script', cursive; font-size: 1.8rem; color: var(--pink-deep); margin: 1rem 0; }
+    .completion-text { color: var(--text-dark); line-height: 1.7; margin-bottom: 1.5rem; }
+    .rsvp-section { background: linear-gradient(135deg, var(--pink-light) 0%, var(--lavender) 100%); border-radius: 1rem; padding: 1.2rem; margin-top: 1rem; }
+    .rsvp-title { font-family: 'Dancing Script', cursive; font-weight: 700; color: var(--text-dark); margin-bottom: 0.5rem; font-size: 1.2rem; }
+
+    .floating-message { position: fixed; background: var(--white); padding: 0.6rem 1rem; border-radius: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.15); font-size: 0.85rem; color: var(--text-dark); z-index: 80; animation: floatMsg 3s ease-in-out forwards; pointer-events: none; max-width: 200px; }
+    .floating-message::after { content: ''; position: absolute; bottom: -8px; left: 20px; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 8px solid var(--white); }
+    @keyframes floatMsg { 0% { opacity: 0; transform: translateY(10px); } 10% { opacity: 1; transform: translateY(0); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-20px); } }
+
+    .collect-popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: linear-gradient(135deg, var(--gold) 0%, var(--peach) 100%); padding: 1rem 2rem; border-radius: 2rem; font-weight: 700; color: var(--text-dark); z-index: 150; animation: collectPop 1s ease-out forwards; box-shadow: 0 8px 30px rgba(255,215,0,0.4); }
+    @keyframes collectPop { 0% { transform: translate(-50%, -50%) scale(0); opacity: 0; } 30% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; } 50% { transform: translate(-50%, -50%) scale(1); } 100% { transform: translate(-50%, -100%) scale(0.8); opacity: 0; } }
+
+    .mission-notif { position: fixed; top: 1rem; right: 1rem; background: linear-gradient(135deg, var(--mint) 0%, var(--lavender) 100%); padding: 0.8rem 1.2rem; border-radius: 1rem; font-weight: 600; color: var(--text-dark); z-index: 160; animation: slideInRight 3s ease-out forwards; box-shadow: 0 4px 20px rgba(0,0,0,0.2); max-width: 200px; text-align: center; font-size: 0.9rem; }
+    .mission-notif-icon { font-size: 1.5rem; display: block; margin-bottom: 0.3rem; }
+    @keyframes slideInRight { 0% { transform: translateX(120%); opacity: 0; } 10% { transform: translateX(0); opacity: 1; } 85% { transform: translateX(0); opacity: 1; } 100% { transform: translateX(120%); opacity: 0; } }
+
+    @media (max-width: 380px) {
+      .splash-title { font-size: 2.2rem; }
+      .splash-crown { font-size: 4.5rem; }
+      #minimap { padding: 0.6rem 1rem; gap: 0.5rem; }
+      .map-icon { width: 32px; height: 32px; font-size: 1rem; }
+    }
+  </style>
+</head>
+<body>
+  <div id="splash-screen">
+    <div class="splash-sparkle" style="top: 10%; left: 15%;">✨</div>
+    <div class="splash-sparkle" style="top: 20%; right: 20%; animation-delay: 0.5s;">⭐</div>
+    <div class="splash-sparkle" style="top: 60%; left: 10%; animation-delay: 1s;">💫</div>
+    <div class="splash-sparkle" style="top: 70%; right: 15%; animation-delay: 1.5s;">✨</div>
+    <div class="splash-sparkle" style="top: 40%; left: 25%; animation-delay: 2s;">🌟</div>
+    <div class="splash-crown-container">
+      <div class="splash-glow"></div>
+      <div class="splash-crown">👑</div>
+    </div>
+    <div class="splash-title">The Royal Court Tea</div>
+    <div class="splash-subtitle">✨ Unapologetically Royal ✨</div>
+    <div class="splash-tagline">Embracing Your Crown</div>
+    <div class="splash-instruction">
+      <p>You've been summoned to a <strong>royal adventure!</strong></p>
+      <p style="margin-top: 0.5rem;">Explore the kingdom, meet quirky characters, and discover the tea party secrets! 🍵</p>
+    </div>
+    <button class="splash-btn" id="start-btn">Enter the Kingdom ✨</button>
+    <div class="splash-footer">Made with 🍰❤️ by William</div>
+  </div>
+
+  <div id="loading-screen" class="hidden">
+    <div class="loading-crown">👑</div>
+    <div class="loading-text">Preparing Your Kingdom...</div>
+    <div class="loading-subtext">Polishing crowns & brewing tea</div>
+    <div class="loading-dots"><span></span><span></span><span></span></div>
+  </div>
+
+  <div id="game-container"></div>
+
+  <div id="hud">
+    <div class="hud-left">
+      <div class="location-badge">
+        <span class="location-icon" id="location-icon">🏰</span>
+        <span id="location-name">Royal Village</span>
+      </div>
+      <div class="collectibles-badge">
+        <span>🍬</span><span id="collectible-count">0</span><span style="opacity:0.6">/</span><span id="collectible-total">0</span>
+      </div>
+    </div>
+    <div class="hud-right">
+      <div class="progress-container">
+        <div class="progress-stars">
+          <span class="star" id="star-0">⭐</span><span class="star" id="star-1">⭐</span><span class="star" id="star-2">⭐</span><span class="star" id="star-3">⭐</span><span class="star" id="star-4">⭐</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="joystick-container"><div id="joystick-base"><div id="joystick-thumb"></div></div></div>
+  <button id="action-btn"><span>💬</span><span>Tap to Chat</span></button>
+
+  <div id="minimap">
+    <div class="map-icon current" data-location="palace">🏰</div>
+    <div class="map-icon" data-location="teashop">🍵</div>
+    <div class="map-icon" data-location="speakers">🎤</div>
+    <div class="map-icon" data-location="guests">📜</div>
+    <div class="map-icon" data-location="feast">🍰</div>
+  </div>
+
+  <div id="dialog-overlay">
+    <div id="dialog-box">
+      <button class="dialog-close" id="dialog-close">✕</button>
+      <div class="dialog-header">
+        <div class="dialog-avatar" id="dialog-avatar">👸</div>
+        <div class="dialog-speaker">
+          <div class="dialog-name" id="dialog-name">Princess</div>
+          <div class="dialog-role" id="dialog-role">Royal Guide</div>
+        </div>
+      </div>
+      <div class="dialog-content" id="dialog-content"></div>
+    </div>
+  </div>
+
+  <div id="completion-modal">
+    <div class="completion-content">
+      <button class="dialog-close" id="completion-close">✕</button>
+      <div class="completion-crown">👑</div>
+      <div class="completion-title">You Did It, Royal One!</div>
+      <div class="completion-text">You've explored the entire kingdom!<br><br>We can't wait to see you at <strong>The Royal Court Tea</strong>! 👗✨</div>
+      <div class="rsvp-section">
+        <div class="rsvp-title">📍 Save the Date!</div>
+        <div style="font-weight: 600;">Saturday, 31 January 2026</div>
+        <div>11:00 AM</div>
+        <div style="font-size: 0.85rem; margin-top: 0.5rem; opacity: 0.9;">146 Heather Rd, Austinville, Blackheath</div>
+      </div>
+      <button class="splash-btn" id="continue-btn" style="margin-top: 1.5rem; padding: 0.8rem 2rem; font-size: 1rem;">Keep Exploring 👑</button>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    // Event data
+    const EVENT = {
+      title: "The Royal Court Tea",
+      subtitle: "Unapologetically Royal",
+      tagline: "Embracing your crown",
+      date: "Saturday, 31 January 2026",
+      time: "11:00 AM",
+      location: "146 Heather Rd, Austinville, Blackheath",
+      dressCode: "Royal"
+    };
+    const SPEAKERS = [
+      { name: "Sister Lucille", topic: "Me, Myself and I" },
+      { name: "Sister Lizelle", topic: "The Importance of Friendship/Sisterhood" },
+      { name: "Sister Mariana", topic: "Living for Christ and being the example" }
+    ];
+    const GUESTS = ["Bernily King", "Caron Benjamin", "Phebe Benjamin", "Ruth-Grace Davids", "Victory Strauss", "Aurelia Botha", "Zoe Kabwanga", "Tamlyn Okkers", "Carla Okkers", "Nicole Heuvel", "Sharidyn Rogers", "Chelsea Latola", "Beaulah Davids"];
+
+    // Location data
+    const LOCATIONS = [
+      { id: 'palace', x: 0, z: -14, color: 0xf5a1c0, icon: '🏰', name: 'Royal Palace', sx: 5, sz: 4 },
+      { id: 'teashop', x: 12, z: -4, color: 0xa9c7ff, icon: '🍵', name: 'Tea Garden', sx: 4, sz: 3.5 },
+      { id: 'speakers', x: 8, z: 11, color: 0xd4b8ff, icon: '🎤', name: "Speaker's Grove", sx: 5, sz: 5 },
+      { id: 'guests', x: -8, z: 11, color: 0xffd4a8, icon: '📜', name: 'Guest Registry', sx: 4, sz: 4 },
+      { id: 'feast', x: -12, z: -4, color: 0xb8e986, icon: '🍰', name: 'Feast Hall', sx: 4.5, sz: 3.5 }
+    ];
+
+    // Dialog content
+    const DIALOGS = {
+      palace: {
+        avatar: "👸",
+        name: "Queen Bee",
+        role: "Royal Host & Professional Crown Wearer",
+        content: `<h3>👑 ${EVENT.title}</h3><p style="font-family: 'Dancing Script', cursive; font-size: 1.4rem; color: var(--pink-deep); margin: 1rem 0;">"${EVENT.subtitle}"</p><p style="font-style: italic; color: var(--text-light);">${EVENT.tagline}</p><div class="funny-quote">Why fit in when you were born to stand out... in a tiara? 👑🐝</div><p style="margin-top: 1rem;">Welcome to the Royal Court! You have been specially chosen to attend our magnificent tea party.</p><p style="margin-top: 0.8rem;">Explore the kingdom to discover all the magical details. And try not to step on the royal corgis! 🐕</p>`
+      },
+      teashop: {
+        avatar: "🍵",
+        name: "Lady Phebe",
+        role: "Tea Sommelier & Biscuit Enthusiast",
+        content: `<h3>📋 Event Details</h3><div class="funny-quote">I've never met a problem that couldn't be solved with tea. Except running out of tea. That's a crisis.</div><div class="detail-card"><div class="detail-row"><span class="detail-icon">📅</span><strong>${EVENT.date}</strong></div><div class="detail-row"><span class="detail-icon">⏰</span><strong>${EVENT.time}</strong></div><div class="detail-row"><span class="detail-icon">📍</span><span>${EVENT.location}</span></div><div class="detail-row"><span class="detail-icon">👗</span><span>Dress Code: <span class="highlight">${EVENT.dressCode}</span></span></div></div><p style="margin-top: 1rem;">Come dressed in your finest royal attire! Tiaras encouraged. Pajamas discouraged... unless they're ROYAL pajamas. 👑</p>`
+      },
+      speakers: {
+        avatar: "🎤",
+        name: "Princess Bernie",
+        role: "Royal Announcer & Hype Lady",
+        content: `<h3>🌟 Guest Speakers</h3><div class="funny-quote">*clears throat dramatically*<br>HEAR YE, HEAR YE! Prepare to be INSPIRED! 📣</div><p>Our distinguished speakers will share wisdom:</p>${SPEAKERS.map(s => `<div class="speaker-card"><div class="speaker-name">👑 ${s.name}</div><div class="speaker-topic">"${s.topic}"</div></div>`).join('')}<p style="margin-top: 1rem; font-style: italic; color: var(--text-light);">Tissues provided. Prepare for tears AND laughter! 😂😭</p>`
+      },
+      guests: {
+        avatar: "📜",
+        name: "Lord Scribe",
+        role: "Royal Registry Keeper & Name Speller",
+        content: `<h3>👑 The Royal Court</h3><div class="funny-quote">I've written every name with my finest quill. My hand cramped. Worth it. ✍️</div><p>These distinguished guests have been summoned:</p><div class="guest-grid">${GUESTS.map(g => `<div class="guest-item"><span>✿</span> ${g}</div>`).join('')}</div><p style="margin-top: 1rem; text-align: center;">If your name is here, you're basically royalty now! 💎</p>`
+      },
+      feast: {
+        avatar: "🍰",
+        name: "Chef Caron",
+        role: "Royal Baker & Professional Taste Tester",
+        content: `<h3>🍽️ A Royal Feast</h3><div class="funny-quote">My philosophy? Life is uncertain. Eat dessert first. 🧁</div><p>Our tea party shall be a grand <span class="highlight">Potluck Celebration</span>!</p><div class="detail-card"><p><strong>Each guest is kindly asked to bring:</strong></p><ul><li>A dish fit for royalty to share</li><li>Your favorite tea-time treat</li><li>An appetite (very important!)</li><li>Stretchy pants (optional but recommended)</li></ul></div><p style="margin-top: 1rem;">Just please... no one bring fruit salad. We have STANDARDS. 🍓</p><p style="margin-top: 1rem; font-family: 'Dancing Script', cursive; font-size: 1.2rem; text-align: center; color: var(--pink-deep);">"Together we feast, together we reign!" 👑</p>`
+      }
+    };
+
+    const WANDERING_NPCS = [
+      // Regular wanderers
+      { name: "Lady Giggles", role: "Royal Laugher", quotes: [
+        "Why did the crown go to therapy? Too much pressure! *snort*",
+        "I laugh at my own jokes. Excellent taste.",
+        "Best. Job. Ever.",
+        "Hahahaha! Wait, what were we talking about?",
+        "My doctor says I laugh too much. I laughed at him too."
+      ], speed: 'normal' },
+      { name: "Duke Snackington", role: "Snack Ambassador", quotes: [
+        "I'm not hoarding cookies. I'm... protecting them.",
+        "The secret ingredient is always more butter.",
+        "I've been to the feast hall 7 times today.",
+        "Is it snack time yet? It's always snack time.",
+        "Calories don't count at royal parties. It's the law."
+      ], speed: 'normal' },
+      { name: "Countess Sparkle", role: "Glitter Specialist", quotes: [
+        "I put glitter in my coffee this morning. YOLO.",
+        "Some say I use too much sparkle. They're jealous.",
+        "My tiara has a tiara.",
+        "I sneezed and now the garden is fabulous.",
+        "Glitter is just aggressive confetti. I love it."
+      ], speed: 'normal' },
+      
+      // Fast runners - silly and hyper
+      { name: "Zippy Zoom", role: "Royal Sprinter", quotes: [
+        "GOTTA GO FAST! Wait... why?",
+        "I'm not running FROM something, I'm running TO... actually I forgot.",
+        "WHEEEEE! *crashes into bush*",
+        "Can't stop won't stop! ...okay maybe I'll stop.",
+        "I RAN SO FAST I SAW TOMORROW!"
+      ], speed: 'fast' },
+      { name: "Princess Turbo", role: "Speed Enthusiast", quotes: [
+        "Slow? I don't know her!",
+        "I had 47 cups of tea this morning!",
+        "ZOOM ZOOM ZOOOOOM!",
+        "Racing the clouds! I'm winning!",
+        "My legs are powered by EXCITEMENT!"
+      ], speed: 'fast' },
+      { name: "Lady Rocket", role: "Professional Rusher", quotes: [
+        "Late for EVERYTHING! Even when I'm early!",
+        "My legs said RUN so here we are!",
+        "*whoooosh* Did you see me? I was a BLUR!",
+        "No time to chat! Actually yes time! NO WAIT—",
+        "I'm not hyper, I'm ENTHUSIASTICALLY ENERGETIC!"
+      ], speed: 'fast' },
+      
+      // Slow elderly - complaining adorably
+      { name: "Granny Shuffle", role: "Senior Stroller", quotes: [
+        "Back in MY day, we walked even SLOWER.",
+        "My knees are older than this kingdom.",
+        "These young folk and their 'running'... disgraceful.",
+        "I've been walking to the tea shop since Tuesday.",
+        "Slow and steady wins the... what was I saying?"
+      ], speed: 'slow' },
+      { name: "Old Baron Creaky", role: "Vintage Walker", quotes: [
+        "*creeeak* That was my back, not the floor.",
+        "Ah, to be young and have working ankles...",
+        "I remember when this was all fields... wait, it still is.",
+        "Walking is exercise. I'm basically an athlete.",
+        "My bones predict rain. Also sunshine. They're confused."
+      ], speed: 'slow' },
+      { name: "Duchess Dawdle", role: "Leisurely Lady", quotes: [
+        "Rushing causes wrinkles, dear.",
+        "I'll get there when I get there. Maybe tomorrow.",
+        "My spirit animal is a sleepy tortoise.",
+        "These bones have seen 400 tea parties. They're tired.",
+        "In my day, we took NAP BREAKS during walks."
+      ], speed: 'slow' },
+      { name: "Sir Wobbles", role: "Professional Walker", quotes: [
+        "I've been walking in circles for 3 days. Send help.",
+        "Have you seen my other shoe?",
+        "I'm not lost. I'm on an ADVENTURE.",
+        "Left foot, right foot, left foot... wait, which was first?",
+        "I meant to go this way. Definitely. On purpose."
+      ], speed: 'normal' },
+      { name: "Princess Oops", role: "Professional Accident Haver", quotes: [
+        "I've tripped over 3 invisible things today. New record!",
+        "Who put that wall there?!",
+        "I'm not clumsy. The floor is just really friendly.",
+        "*trips on nothing* I MEANT TO DO THAT.",
+        "Gravity and I have a complicated relationship."
+      ], speed: 'normal' },
+      { name: "Baron Von Naps", role: "Royal Sleep Consultant", quotes: [
+        "I'm not sleeping, I'm resting my eyes... horizontally.",
+        "My spirit animal is a sloth wearing a crown.",
+        "Napping is just practicing for being a statue.",
+        "*yawns royally* Excuse me, that was a REGAL yawn.",
+        "I dream of dreams about dreaming. Very productive."
+      ], speed: 'slow' }
+    ];
+
+    // Game state
+    const gameState = {
+      started: false,
+      dialogOpen: false,
+      visited: new Set(),
+      collected: 0,
+      currentLocation: 'palace',
+      nearNPC: null,
+      nearWanderer: null,
+      completionShown: false,
+      bernieListenersActive: false,
+      bernieListenersLeaving: false
+    };
+
+    // Three.js objects
+    let scene, camera, renderer, player;
+    const buildings = {};
+    const npcs = {};
+    const wanderers = [];
+    const collectibles = [];
+    const clouds = [];
+    const bees = [];
+    const bernieListeners = [];
+    const collisionBoxes = [];
+    const clock = new THREE.Clock();
+    const joystickInput = { x: 0, y: 0 };
+    const cameraTarget = new THREE.Vector3();
+
+    // Initialize game
+    function init() {
+      // Scene
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x87ceeb);
+      scene.fog = new THREE.FogExp2(0xc8e8ff, 0.008);
+
+      // Camera
+      camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.set(0, 14, 18);
+
+      // Renderer
+      renderer = new THREE.WebGLRenderer({ antialias: window.devicePixelRatio < 2 });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      document.getElementById('game-container').appendChild(renderer.domElement);
+
+      // Lighting
+      scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+      
+      const sun = new THREE.DirectionalLight(0xfff8e7, 0.6);
+      sun.position.set(15, 25, 15);
+      sun.castShadow = true;
+      sun.shadow.mapSize.set(2048, 2048);
+      sun.shadow.camera.near = 0.5;
+      sun.shadow.camera.far = 80;
+      sun.shadow.camera.left = -35;
+      sun.shadow.camera.right = 35;
+      sun.shadow.camera.top = 35;
+      sun.shadow.camera.bottom = -35;
+      sun.shadow.radius = 4;
+      scene.add(sun);
+      
+      scene.add(new THREE.HemisphereLight(0x87ceeb, 0x98fb98, 0.3));
+
+      // Build world
+      createWorld();
+      
+      // Update collectible count
+      document.getElementById('collectible-total').textContent = collectibles.length;
+
+      // Event listeners
+      window.addEventListener('resize', onResize);
+      setupControls();
+
+      // Start render loop
+      animate();
+    }
+
+    function createWorld() {
+      // Ground
+      const groundGeo = new THREE.CircleGeometry(55, 64);
+      const groundMat = new THREE.MeshStandardMaterial({ color: 0x90d860, roughness: 0.8 });
+      const ground = new THREE.Mesh(groundGeo, groundMat);
+      ground.rotation.x = -Math.PI / 2;
+      ground.receiveShadow = true;
+      scene.add(ground);
+
+      // Paths
+      const pathMat = new THREE.MeshStandardMaterial({ color: 0xf5deb3, roughness: 0.9 });
+      for (let i = 0; i < 5; i++) {
+        const angle = Math.PI * i * 0.4;
+        const path = new THREE.Mesh(new THREE.PlaneGeometry(2.5, 13), pathMat);
+        path.rotation.x = -Math.PI / 2;
+        path.rotation.z = -angle;
+        path.position.set(Math.sin(angle) * 6.5, 0.02, Math.cos(angle) * 6.5);
+        path.receiveShadow = true;
+        scene.add(path);
+      }
+
+      // Plaza
+      const plaza = new THREE.Mesh(
+        new THREE.CircleGeometry(5, 32),
+        new THREE.MeshStandardMaterial({ color: 0xffd4a8, roughness: 0.7 })
+      );
+      plaza.rotation.x = -Math.PI / 2;
+      plaza.position.y = 0.03;
+      plaza.receiveShadow = true;
+      scene.add(plaza);
+
+      // Fountain
+      createFountain();
+
+      // Player
+      createPlayer();
+
+      // Buildings and NPCs
+      LOCATIONS.forEach((loc, index) => {
+        const building = createBuilding(loc.color, loc.id);
+        building.position.set(loc.x, 0, loc.z);
+        building.userData = { id: loc.id, icon: loc.icon, name: loc.name };
+        scene.add(building);
+        buildings[loc.id] = building;
+
+        // Add collision box
+        collisionBoxes.push({
+          minX: loc.x - loc.sx / 2 - 0.5,
+          maxX: loc.x + loc.sx / 2 + 0.5,
+          minZ: loc.z - loc.sz / 2 - 0.5,
+          maxZ: loc.z + loc.sz / 2 + 0.5
+        });
+
+        // Create NPC in front of building
+        const npc = createNPC();
+        npc.position.set(loc.x, 0, loc.z + 4);
+        npc.userData = { locationId: loc.id };
+        scene.add(npc);
+        npcs[loc.id] = npc;
+      });
+
+      // Wandering NPCs with varied speeds
+      WANDERING_NPCS.forEach((data, i) => {
+        const angle = (i / WANDERING_NPCS.length) * Math.PI * 2 + Math.random() * 0.5;
+        const radius = 10 + Math.random() * 15;
+        const npc = createWanderingNPC(data.speed);
+        npc.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
+        
+        // Set speed based on type
+        let walkSpeed;
+        if (data.speed === 'fast') {
+          walkSpeed = 2.5 + Math.random() * 1.5; // Very fast!
+        } else if (data.speed === 'slow') {
+          walkSpeed = 0.15 + Math.random() * 0.1; // Very slow
+        } else {
+          walkSpeed = 0.5 + Math.random() * 0.5; // Normal
+        }
+        
+        npc.userData = {
+          ...data,
+          walkAngle: Math.random() * Math.PI * 2,
+          walkSpeed: walkSpeed,
+          timer: Math.random() * 5,
+          lastQuote: Date.now() - Math.random() * 3000, // Stagger initial quotes
+          chatOffset: Math.random() * 2000 // Random offset for chat cooldown
+        };
+        scene.add(npc);
+        wanderers.push(npc);
+      });
+
+      // Create listeners for Princess Bernie (around speakers area)
+      createBernieListeners();
+
+      // Create bees and honey around palace
+      createBeesAndHoney();
+
+      // Collectibles
+      for (let i = 0; i < 25; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const radius = 8 + Math.random() * 35;
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius;
+        
+        // Skip if too close to a building
+        const tooClose = collisionBoxes.some(b => 
+          x > b.minX - 2 && x < b.maxX + 2 && z > b.minZ - 2 && z < b.maxZ + 2
+        );
+        if (tooClose) continue;
+
+        const collectible = createCollectible();
+        collectible.position.set(x, 0.5, z);
+        collectible.userData = { collected: false, floatOffset: Math.random() * Math.PI * 2 };
+        scene.add(collectible);
+        collectibles.push(collectible);
+      }
+
+      // Decorations
+      createDecorations();
+    }
+
+    function createFountain() {
+      // Small collision for fountain
+      collisionBoxes.push({ minX: -1.5, maxX: 1.5, minZ: -1.5, maxZ: 1.5 });
+
+      const fountain = new THREE.Group();
+      
+      // Base
+      const baseMat = new THREE.MeshStandardMaterial({ color: 0xf0e6d2 });
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.8, 0.5, 16), baseMat);
+      base.position.y = 0.25;
+      base.castShadow = true;
+      fountain.add(base);
+
+      // Water
+      const water = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.2, 1.4, 0.3, 16),
+        new THREE.MeshStandardMaterial({ color: 0x87ceeb, transparent: true, opacity: 0.8 })
+      );
+      water.position.y = 0.65;
+      fountain.add(water);
+
+      // Pillar
+      const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.25, 1.5, 8), baseMat);
+      pillar.position.y = 1.25;
+      pillar.castShadow = true;
+      fountain.add(pillar);
+
+      // Crown on top
+      const crownMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.7, roughness: 0.2 });
+      const crownBase = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, 0.2, 6), crownMat);
+      crownBase.position.y = 2.2;
+      fountain.add(crownBase);
+
+      for (let i = 0; i < 5; i++) {
+        const a = (i / 5) * Math.PI * 2;
+        const point = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.25, 4), crownMat);
+        point.position.set(Math.cos(a) * 0.25, 2.4, Math.sin(a) * 0.25);
+        fountain.add(point);
+      }
+
+      scene.add(fountain);
+    }
+
+    function createPlayer() {
+      const group = new THREE.Group();
+      
+      const pinkMat = new THREE.MeshStandardMaterial({ color: 0xffd1e1 });
+      const skinMat = new THREE.MeshStandardMaterial({ color: 0xffeedd });
+      const darkMat = new THREE.MeshStandardMaterial({ color: 0x2c2c2c });
+      const goldMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.6, roughness: 0.3 });
+
+      // Body
+      const body = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 16), pinkMat);
+      body.scale.set(1, 1.2, 0.9);
+      body.position.y = 0.6;
+      body.castShadow = true;
+      group.add(body);
+
+      // Head
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.45, 16, 16), skinMat);
+      head.position.y = 1.3;
+      head.castShadow = true;
+      group.add(head);
+
+      // Eyes
+      const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 8), darkMat);
+      eyeL.position.set(-0.15, 1.35, 0.38);
+      group.add(eyeL);
+      
+      const eyeR = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 8), darkMat);
+      eyeR.position.set(0.15, 1.35, 0.38);
+      group.add(eyeR);
+
+      // Blush
+      const blushMat = new THREE.MeshStandardMaterial({ color: 0xffb6c1, transparent: true, opacity: 0.6 });
+      const blushL = new THREE.Mesh(new THREE.CircleGeometry(0.1, 16), blushMat);
+      blushL.position.set(-0.3, 1.22, 0.42);
+      blushL.rotation.y = 0.3;
+      group.add(blushL);
+      
+      const blushR = new THREE.Mesh(new THREE.CircleGeometry(0.1, 16), blushMat);
+      blushR.position.set(0.3, 1.22, 0.42);
+      blushR.rotation.y = -0.3;
+      group.add(blushR);
+
+      // Crown
+      const crownBase = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.3, 0.15, 6), goldMat);
+      crownBase.position.y = 1.72;
+      group.add(crownBase);
+
+      for (let i = 0; i < 5; i++) {
+        const a = (i / 5) * Math.PI * 2;
+        const point = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.22, 4), goldMat);
+        point.position.set(Math.cos(a) * 0.2, 1.89, Math.sin(a) * 0.2);
+        group.add(point);
+      }
+
+      // Legs
+      const legL = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.1, 0.3, 8), pinkMat);
+      legL.position.set(-0.2, 0.15, 0);
+      legL.castShadow = true;
+      group.add(legL);
+      
+      const legR = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.1, 0.3, 8), pinkMat);
+      legR.position.set(0.2, 0.15, 0);
+      legR.castShadow = true;
+      group.add(legR);
+
+      // Shoes
+      const shoeMat = new THREE.MeshStandardMaterial({ color: 0xff69b4 });
+      const shoeL = new THREE.Mesh(new THREE.SphereGeometry(0.13, 8, 8), shoeMat);
+      shoeL.scale.set(1.2, 0.8, 1.5);
+      shoeL.position.set(-0.2, 0.06, 0.05);
+      shoeL.castShadow = true;
+      group.add(shoeL);
+      
+      const shoeR = new THREE.Mesh(new THREE.SphereGeometry(0.13, 8, 8), shoeMat);
+      shoeR.scale.set(1.2, 0.8, 1.5);
+      shoeR.position.set(0.2, 0.06, 0.05);
+      shoeR.castShadow = true;
+      group.add(shoeR);
+
+      player = group;
+      player.position.set(0, 0, 5); // Start outside fountain
+      player.userData.baseY = 0;
+      scene.add(player);
+    }
+
+    function createBuilding(color, type) {
+      const group = new THREE.Group();
+      const mat = new THREE.MeshStandardMaterial({ color });
+      const roofColor = new THREE.Color(color).multiplyScalar(0.8).getHex();
+      const roofMat = new THREE.MeshStandardMaterial({ color: roofColor });
+      const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+
+      if (type === 'palace') {
+        const base = new THREE.Mesh(new THREE.BoxGeometry(4, 3, 3), mat);
+        base.position.y = 1.5;
+        base.castShadow = true;
+        group.add(base);
+
+        const roof = new THREE.Mesh(new THREE.ConeGeometry(3.2, 1.5, 4), roofMat);
+        roof.position.y = 3.75;
+        roof.rotation.y = Math.PI / 4;
+        roof.castShadow = true;
+        group.add(roof);
+
+        [-1.8, 1.8].forEach(x => {
+          const tower = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.7, 4.5, 8), mat);
+          tower.position.set(x, 2.25, -1.3);
+          tower.castShadow = true;
+          group.add(tower);
+
+          const towerRoof = new THREE.Mesh(new THREE.ConeGeometry(0.85, 1.3, 8), roofMat);
+          towerRoof.position.set(x, 5.15, -1.3);
+          towerRoof.castShadow = true;
+          group.add(towerRoof);
+        });
+      } else if (type === 'teashop') {
+        const base = new THREE.Mesh(new THREE.BoxGeometry(3.2, 2.2, 2.8), mat);
+        base.position.y = 1.1;
+        base.castShadow = true;
+        group.add(base);
+
+        const roof = new THREE.Mesh(new THREE.ConeGeometry(2.8, 1.2, 4), roofMat);
+        roof.position.y = 2.8;
+        roof.rotation.y = Math.PI / 4;
+        roof.castShadow = true;
+        group.add(roof);
+
+        const teapot = new THREE.Mesh(new THREE.SphereGeometry(0.35, 12, 12), whiteMat);
+        teapot.position.y = 3.7;
+        group.add(teapot);
+      } else if (type === 'speakers') {
+        const stage = new THREE.Mesh(new THREE.CylinderGeometry(2.3, 2.5, 0.35, 8), whiteMat);
+        stage.position.y = 0.175;
+        stage.castShadow = true;
+        group.add(stage);
+
+        for (let i = 0; i < 6; i++) {
+          const a = (i / 6) * Math.PI * 2;
+          const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.18, 2.8, 8), whiteMat);
+          pillar.position.set(Math.cos(a) * 1.9, 1.75, Math.sin(a) * 1.9);
+          pillar.castShadow = true;
+          group.add(pillar);
+        }
+
+        const dome = new THREE.Mesh(new THREE.SphereGeometry(2.5, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), mat);
+        dome.position.y = 3.15;
+        dome.castShadow = true;
+        group.add(dome);
+      } else if (type === 'guests') {
+        const tower = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.9, 4, 8), mat);
+        tower.position.y = 2;
+        tower.castShadow = true;
+        group.add(tower);
+
+        const roof = new THREE.Mesh(new THREE.ConeGeometry(2, 1.6, 8), roofMat);
+        roof.position.y = 5.4;
+        roof.castShadow = true;
+        group.add(roof);
+      } else if (type === 'feast') {
+        const base = new THREE.Mesh(new THREE.BoxGeometry(3.8, 2.2, 2.8), mat);
+        base.position.y = 1.1;
+        base.castShadow = true;
+        group.add(base);
+
+        const roofShape = new THREE.Shape();
+        roofShape.moveTo(-2.3, 0);
+        roofShape.lineTo(0, 1.4);
+        roofShape.lineTo(2.3, 0);
+        roofShape.closePath();
+        const roofGeo = new THREE.ExtrudeGeometry(roofShape, { depth: 3.2, bevelEnabled: false });
+        const roof = new THREE.Mesh(roofGeo, roofMat);
+        roof.position.set(0, 2.2, -1.6);
+        roof.castShadow = true;
+        group.add(roof);
+      }
+
+      return group;
+    }
+
+    function createNPC() {
+      const group = new THREE.Group();
+      const skinMat = new THREE.MeshStandardMaterial({ color: 0xffeedd });
+      const robeMat = new THREE.MeshStandardMaterial({ color: 0xd4b8ff });
+
+      // Body
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.6, 16), skinMat);
+      body.position.y = 0.9;
+      body.castShadow = true;
+      group.add(body);
+
+      // Torso top
+      const torsoTop = new THREE.Mesh(new THREE.SphereGeometry(0.4, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), skinMat);
+      torsoTop.position.y = 1.2;
+      group.add(torsoTop);
+
+      // Head
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.38, 16, 16), skinMat);
+      head.position.y = 1.75;
+      head.castShadow = true;
+      group.add(head);
+
+      // Indicator
+      const indicator = new THREE.Mesh(
+        new THREE.SphereGeometry(0.22, 12, 12),
+        new THREE.MeshStandardMaterial({ color: 0xffd700, emissive: 0xffd700, emissiveIntensity: 0.4, transparent: true, opacity: 0.9 })
+      );
+      indicator.position.y = 2.5;
+      indicator.userData.isIndicator = true;
+      group.add(indicator);
+
+      // Robe
+      const robe = new THREE.Mesh(new THREE.ConeGeometry(0.55, 1.1, 8, 1, true), robeMat);
+      robe.position.y = 0.55;
+      robe.rotation.x = Math.PI;
+      robe.castShadow = true;
+      group.add(robe);
+
+      return group;
+    }
+
+    function createWanderingNPC(speedType) {
+      const group = new THREE.Group();
+      
+      // Different colors based on speed type
+      let bodyColors;
+      if (speedType === 'fast') {
+        bodyColors = [0xff6b6b, 0xff8c42, 0xffdd59, 0xff6b9d]; // Energetic warm colors
+      } else if (speedType === 'slow') {
+        bodyColors = [0xc9b8a8, 0xa8a8c9, 0xb8c9a8, 0xd4c4b0]; // Muted elderly colors
+      } else {
+        bodyColors = [0xffc0cb, 0xadd8e6, 0x98fb98, 0xdda0dd, 0xf0e68c, 0xffa07a];
+      }
+      
+      const bodyMat = new THREE.MeshStandardMaterial({ color: bodyColors[Math.floor(Math.random() * bodyColors.length)] });
+      const skinMat = new THREE.MeshStandardMaterial({ color: 0xffeedd });
+
+      // Body - slightly hunched for elderly
+      const body = new THREE.Mesh(new THREE.SphereGeometry(0.35, 12, 12), bodyMat);
+      body.scale.set(1, speedType === 'slow' ? 1.1 : 1.3, 1);
+      body.position.y = 0.55;
+      body.castShadow = true;
+      group.add(body);
+
+      // Head
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 12), skinMat);
+      head.position.y = speedType === 'slow' ? 1.0 : 1.1;
+      head.castShadow = true;
+      group.add(head);
+
+      // Legs
+      const legL = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.06, 0.2, 6), bodyMat);
+      legL.position.set(-0.15, 0.1, 0);
+      group.add(legL);
+
+      const legR = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.06, 0.2, 6), bodyMat);
+      legR.position.set(0.15, 0.1, 0);
+      group.add(legR);
+
+      // Add accessories based on type
+      if (speedType === 'fast') {
+        // Sweat drops or motion lines effect (small spheres)
+        const sweatMat = new THREE.MeshStandardMaterial({ color: 0x87ceeb, transparent: true, opacity: 0.7 });
+        const sweat = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 6), sweatMat);
+        sweat.position.set(-0.35, 1.15, 0);
+        group.add(sweat);
+      } else if (speedType === 'slow') {
+        // Walking cane
+        const caneMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
+        const cane = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.8, 6), caneMat);
+        cane.position.set(0.35, 0.4, 0);
+        cane.rotation.z = 0.2;
+        group.add(cane);
+        
+        // Glasses
+        const glassesMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+        const glasses = new THREE.Mesh(new THREE.TorusGeometry(0.08, 0.015, 8, 16), glassesMat);
+        glasses.position.set(0, 1.05, 0.28);
+        glasses.rotation.x = Math.PI / 2;
+        group.add(glasses);
+      }
+
+      return group;
+    }
+
+    function createCollectible() {
+      const group = new THREE.Group();
+      const colors = [0xff6b6b, 0xffd93d, 0x6bcb77, 0x4d96ff, 0xff6bd6, 0xffd700];
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.25 });
+
+      const types = ['candy', 'crown', 'gem'];
+      const type = types[Math.floor(Math.random() * types.length)];
+
+      if (type === 'candy') {
+        const candy = new THREE.Mesh(new THREE.SphereGeometry(0.25, 12, 12), mat);
+        candy.scale.set(1.5, 1, 1);
+        group.add(candy);
+      } else if (type === 'crown') {
+        const base = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.25, 0.15, 6), mat);
+        group.add(base);
+        for (let i = 0; i < 5; i++) {
+          const a = (i / 5) * Math.PI * 2;
+          const point = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.15, 4), mat);
+          point.position.set(Math.cos(a) * 0.15, 0.12, Math.sin(a) * 0.15);
+          group.add(point);
+        }
+      } else {
+        const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.25), mat);
+        group.add(gem);
+      }
+
+      return group;
+    }
+
+    function createBeesAndHoney() {
+      // Get palace position
+      const palacePos = LOCATIONS.find(l => l.id === 'palace');
+      
+      // Create honey puddles around palace
+      const honeyMat = new THREE.MeshStandardMaterial({ 
+        color: 0xffc61a, 
+        roughness: 0.2, 
+        metalness: 0.3,
+        transparent: true,
+        opacity: 0.85
+      });
+      
+      for (let i = 0; i < 8; i++) {
+        const angle = (i / 8) * Math.PI * 2 + Math.random() * 0.5;
+        const radius = 5 + Math.random() * 4;
+        const honey = new THREE.Mesh(
+          new THREE.CircleGeometry(0.4 + Math.random() * 0.4, 12),
+          honeyMat
+        );
+        honey.rotation.x = -Math.PI / 2;
+        honey.position.set(
+          palacePos.x + Math.cos(angle) * radius,
+          0.04,
+          palacePos.z + Math.sin(angle) * radius
+        );
+        scene.add(honey);
+      }
+      
+      // Create bees
+      const beeMat = new THREE.MeshStandardMaterial({ color: 0xffd700 });
+      const stripeMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+      const wingMat = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 });
+      
+      for (let i = 0; i < 6; i++) {
+        const bee = new THREE.Group();
+        
+        // Body
+        const body = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), beeMat);
+        body.scale.set(1.5, 1, 1);
+        bee.add(body);
+        
+        // Stripes
+        for (let s = 0; s < 2; s++) {
+          const stripe = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.025, 6, 12), stripeMat);
+          stripe.position.x = -0.05 + s * 0.1;
+          stripe.rotation.y = Math.PI / 2;
+          bee.add(stripe);
+        }
+        
+        // Wings
+        const wingGeo = new THREE.SphereGeometry(0.08, 6, 6);
+        wingGeo.scale(1, 0.3, 1.5);
+        const wingL = new THREE.Mesh(wingGeo, wingMat);
+        wingL.position.set(0, 0.08, 0.1);
+        bee.add(wingL);
+        const wingR = new THREE.Mesh(wingGeo, wingMat);
+        wingR.position.set(0, 0.08, -0.1);
+        bee.add(wingR);
+        
+        // Position around palace
+        const angle = Math.random() * Math.PI * 2;
+        const radius = 2 + Math.random() * 4;
+        bee.position.set(
+          palacePos.x + Math.cos(angle) * radius,
+          2 + Math.random() * 2,
+          palacePos.z + Math.sin(angle) * radius
+        );
+        bee.userData = {
+          baseY: bee.position.y,
+          angle: angle,
+          radius: radius,
+          speed: 1 + Math.random() * 2,
+          bobSpeed: 3 + Math.random() * 2,
+          palaceX: palacePos.x,
+          palaceZ: palacePos.z
+        };
+        
+        scene.add(bee);
+        bees.push(bee);
+      }
+    }
+
+    function createBernieListeners() {
+      // Get speakers position (Princess Bernie's location)
+      const speakersPos = LOCATIONS.find(l => l.id === 'speakers');
+      
+      const listenerData = [
+        { name: 'Eager Earl', quotes: ["Ooh, tell us more!", "This is SO inspiring!", "I'm taking notes!", "*claps enthusiastically*", "WOOO! Go Princess Bernie!"] },
+        { name: 'Curious Carol', quotes: ["Fascinating!", "Wait, can you repeat that?", "My mind is BLOWN!", "I need to write this down!", "This changes EVERYTHING!"] },
+        { name: 'Listener Larry', quotes: ["Mmhmm, mmhmm...", "*nods wisely*", "Profound!", "I totally get it now!", "This is better than my nap!"] },
+        { name: 'Attentive Annie', quotes: ["*leans in*", "Go on...", "Yes, YES!", "Preach it!", "I'm learning so much!"] },
+        { name: 'Nodding Ned', quotes: ["*nods*", "*nods faster*", "*nods so hard head falls off*", "Absolutely!", "Couldn't agree more!"] }
+      ];
+      
+      // Create 5 listener NPCs that will gather around Bernie
+      for (let i = 0; i < 5; i++) {
+        const listener = createWanderingNPC('normal');
+        
+        // Start them scattered nearby
+        const startAngle = Math.random() * Math.PI * 2;
+        const startRadius = 15 + Math.random() * 10;
+        listener.position.set(
+          speakersPos.x + Math.cos(startAngle) * startRadius,
+          0,
+          speakersPos.z + Math.sin(startAngle) * startRadius
+        );
+        
+        // Target position around Bernie (semi-circle in front)
+        const targetAngle = (Math.PI * 0.3) + (i / 5) * (Math.PI * 0.4); // Arc in front
+        const targetRadius = 5 + (i % 2) * 1.5;
+        
+        listener.userData = {
+          ...listenerData[i],
+          role: 'Audience Member',
+          isListener: true,
+          targetX: speakersPos.x + Math.cos(targetAngle) * targetRadius,
+          targetZ: speakersPos.z + Math.sin(targetAngle) * targetRadius,
+          wanderAngle: Math.random() * Math.PI * 2,
+          state: 'wandering', // wandering, gathering, listening, leaving
+          speed: 0.8,
+          lastQuote: Date.now() - Math.random() * 3000,
+          chatOffset: Math.random() * 2000
+        };
+        
+        scene.add(listener);
+        bernieListeners.push(listener);
+      }
+    }
+
+    function createDecorations() {
+      // Flowers
+      const flowerColors = [0xff69b4, 0xffd700, 0xff6347, 0x9370db, 0x00ced1];
+      for (let i = 0; i < 80; i++) {
+        const flower = createFlower(flowerColors[Math.floor(Math.random() * flowerColors.length)]);
+        flower.position.set((Math.random() - 0.5) * 90, 0, (Math.random() - 0.5) * 90);
+        flower.scale.setScalar(0.4 + Math.random() * 0.5);
+        scene.add(flower);
+      }
+
+      // Trees
+      const treePositions = [
+        { x: 10, z: -10 }, { x: -10, z: -10 }, { x: 18, z: 5 },
+        { x: -18, z: 5 }, { x: 0, z: 22 }, { x: 15, z: 18 }, { x: -15, z: 18 }
+      ];
+      treePositions.forEach(pos => {
+        const tree = createTree();
+        tree.position.set(pos.x, 0, pos.z);
+        tree.scale.setScalar(0.7 + Math.random() * 0.5);
+        scene.add(tree);
+      });
+
+      // Mushrooms
+      for (let i = 0; i < 30; i++) {
+        const mushroom = createMushroom();
+        mushroom.position.set((Math.random() - 0.5) * 80, 0, (Math.random() - 0.5) * 80);
+        mushroom.scale.setScalar(0.25 + Math.random() * 0.35);
+        scene.add(mushroom);
+      }
+
+      // Clouds
+      for (let i = 0; i < 12; i++) {
+        const cloud = createCloud();
+        cloud.position.set((Math.random() - 0.5) * 100, 18 + Math.random() * 12, (Math.random() - 0.5) * 100);
+        cloud.userData.speed = 0.015 + Math.random() * 0.025;
+        cloud.scale.setScalar(0.8 + Math.random() * 0.6);
+        scene.add(cloud);
+        clouds.push(cloud);
+      }
+    }
+
+    function createFlower(color) {
+      const group = new THREE.Group();
+      
+      const stem = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.03, 0.04, 0.5, 6),
+        new THREE.MeshStandardMaterial({ color: 0x228b22 })
+      );
+      stem.position.y = 0.25;
+      group.add(stem);
+
+      const petalGeo = new THREE.SphereGeometry(0.14, 8, 8);
+      petalGeo.scale(1, 0.5, 1);
+      const petalMat = new THREE.MeshStandardMaterial({ color });
+      
+      for (let i = 0; i < 5; i++) {
+        const a = (i / 5) * Math.PI * 2;
+        const petal = new THREE.Mesh(petalGeo, petalMat);
+        petal.position.set(Math.cos(a) * 0.12, 0.55, Math.sin(a) * 0.12);
+        group.add(petal);
+      }
+
+      const center = new THREE.Mesh(
+        new THREE.SphereGeometry(0.1, 8, 8),
+        new THREE.MeshStandardMaterial({ color: 0xffd700 })
+      );
+      center.position.y = 0.55;
+      group.add(center);
+
+      return group;
+    }
+
+    function createTree() {
+      const group = new THREE.Group();
+      
+      const trunk = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.35, 0.45, 2.5, 8),
+        new THREE.MeshStandardMaterial({ color: 0x8b4513 })
+      );
+      trunk.position.y = 1.25;
+      trunk.castShadow = true;
+      group.add(trunk);
+
+      const foliageMat = new THREE.MeshStandardMaterial({ color: 0x90ee90 });
+      [{ y: 3, r: 1.4 }, { y: 4, r: 1.1 }, { y: 4.8, r: 0.7 }].forEach(f => {
+        const foliage = new THREE.Mesh(new THREE.SphereGeometry(f.r, 12, 12), foliageMat);
+        foliage.position.y = f.y;
+        foliage.castShadow = true;
+        group.add(foliage);
+      });
+
+      return group;
+    }
+
+    function createMushroom() {
+      const group = new THREE.Group();
+      
+      const stem = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.18, 0.25, 0.5, 8),
+        new THREE.MeshStandardMaterial({ color: 0xfff8dc })
+      );
+      stem.position.y = 0.25;
+      group.add(stem);
+
+      const capColors = [0xff6b6b, 0xff69b4, 0xffa07a, 0x9370db];
+      const cap = new THREE.Mesh(
+        new THREE.SphereGeometry(0.4, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2),
+        new THREE.MeshStandardMaterial({ color: capColors[Math.floor(Math.random() * capColors.length)] })
+      );
+      cap.position.y = 0.5;
+      group.add(cap);
+
+      return group;
+    }
+
+    function createCloud() {
+      const group = new THREE.Group();
+      const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.92 });
+      
+      [{ x: 0, r: 2 }, { x: 1.6, r: 1.4 }, { x: -1.5, r: 1.5 }, { x: 0.8, r: 1.1 }, { x: -0.8, r: 1.2 }].forEach(p => {
+        const puff = new THREE.Mesh(new THREE.SphereGeometry(p.r, 12, 12), mat);
+        puff.position.set(p.x, Math.random() * 0.5, Math.random() * 0.5 - 0.25);
+        group.add(puff);
+      });
+
+      return group;
+    }
+
+    function checkCollision(x, z) {
+      // Check building collisions
+      for (const box of collisionBoxes) {
+        if (x > box.minX && x < box.maxX && z > box.minZ && z < box.maxZ) {
+          return true;
+        }
+      }
+      // Check world boundary
+      if (Math.sqrt(x * x + z * z) > 48) {
+        return true;
+      }
+      return false;
+    }
+
+    function setupControls() {
+      const container = document.getElementById('joystick-container');
+      const thumb = document.getElementById('joystick-thumb');
+      const baseRadius = 55;
+      const maxDistance = 32;
+      let active = false;
+      let centerX = 0;
+      let centerY = 0;
+
+      function start(e) {
+        if (gameState.dialogOpen || !gameState.started) return;
+        e.preventDefault();
+        active = true;
+        const rect = container.getBoundingClientRect();
+        centerX = rect.left + baseRadius;
+        centerY = rect.top + baseRadius;
+      }
+
+      function move(e) {
+        if (!active) return;
+        e.preventDefault();
+        const touch = e.touches ? e.touches[0] : e;
+        let dx = touch.clientX - centerX;
+        let dy = touch.clientY - centerY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance > maxDistance) {
+          dx = (dx / distance) * maxDistance;
+          dy = (dy / distance) * maxDistance;
+        }
+        
+        thumb.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+        joystickInput.x = dx / maxDistance;
+        joystickInput.y = dy / maxDistance;
+      }
+
+      function end() {
+        active = false;
+        thumb.style.transform = 'translate(-50%, -50%)';
+        joystickInput.x = 0;
+        joystickInput.y = 0;
+      }
+
+      container.addEventListener('touchstart', start, { passive: false });
+      container.addEventListener('touchmove', move, { passive: false });
+      container.addEventListener('touchend', end);
+      container.addEventListener('touchcancel', end);
+      container.addEventListener('mousedown', start);
+      document.addEventListener('mousemove', move);
+      document.addEventListener('mouseup', end);
+
+      // Action button
+      document.getElementById('action-btn').addEventListener('click', handleAction);
+
+      // Dialog close
+      document.getElementById('dialog-close').addEventListener('click', closeDialog);
+      document.getElementById('dialog-overlay').addEventListener('click', (e) => {
+        if (e.target.id === 'dialog-overlay') closeDialog();
+      });
+
+      // Completion modal
+      document.getElementById('completion-close').addEventListener('click', closeCompletion);
+      document.getElementById('continue-btn').addEventListener('click', closeCompletion);
+
+      // Start button
+      document.getElementById('start-btn').addEventListener('click', () => {
+        document.getElementById('splash-screen').classList.add('hidden');
+        document.getElementById('loading-screen').classList.remove('hidden');
+        setTimeout(() => {
+          document.getElementById('loading-screen').classList.add('hidden');
+          gameState.started = true;
+        }, 2000);
+      });
+    }
+
+    function handleAction() {
+      if (gameState.nearNPC) {
+        openDialog(gameState.nearNPC);
+      } else if (gameState.nearWanderer) {
+        openWandererDialog(gameState.nearWanderer);
+      }
+    }
+
+    function openDialog(locationId) {
+      const dialog = DIALOGS[locationId];
+      if (!dialog) return;
+
+      gameState.dialogOpen = true;
+      
+      // Check if first visit
+      const isNewVisit = !gameState.visited.has(locationId);
+      if (isNewVisit) {
+        gameState.visited.add(locationId);
+        updateStars();
+      }
+
+      // Update dialog UI
+      document.getElementById('dialog-avatar').textContent = dialog.avatar;
+      document.getElementById('dialog-name').textContent = dialog.name;
+      document.getElementById('dialog-role').textContent = dialog.role;
+      document.getElementById('dialog-content').innerHTML = dialog.content;
+      document.getElementById('dialog-overlay').classList.add('visible');
+      document.getElementById('action-btn').classList.remove('visible');
+
+      // Store for notification on close
+      if (isNewVisit) {
+        gameState.pendingNotification = locationId;
+      }
+    }
+
+    function openWandererDialog(npc) {
+      const data = npc.userData;
+      const quote = data.quotes[Math.floor(Math.random() * data.quotes.length)];
+
+      gameState.dialogOpen = true;
+
+      document.getElementById('dialog-avatar').textContent = '🤪';
+      document.getElementById('dialog-name').textContent = data.name;
+      document.getElementById('dialog-role').textContent = data.role;
+      document.getElementById('dialog-content').innerHTML = `
+        <div class="funny-quote" style="margin-top: 0;">${quote}</div>
+        <p style="text-align: center; color: var(--text-light); font-size: 0.9rem; margin-top: 1rem;">*${data.name} wanders off humming*</p>
+      `;
+      document.getElementById('dialog-overlay').classList.add('visible');
+      document.getElementById('action-btn').classList.remove('visible');
+    }
+
+    function closeDialog() {
+      gameState.dialogOpen = false;
+      document.getElementById('dialog-overlay').classList.remove('visible');
+
+      // Show mission notification if this was a new visit
+      if (gameState.pendingNotification) {
+        const locationId = gameState.pendingNotification;
+        showMissionNotification(locationId);
+        gameState.pendingNotification = null;
+
+        // Trigger Bernie listeners if we just talked to Princess Bernie (speakers)
+        if (locationId === 'speakers' && !gameState.bernieListenersActive) {
+          gameState.bernieListenersActive = true;
+          // Set listeners to gathering state
+          bernieListeners.forEach(listener => {
+            listener.userData.state = 'gathering';
+          });
+          
+          // After 8 seconds, they get hungry and leave for cake
+          setTimeout(() => {
+            gameState.bernieListenersLeaving = true;
+            bernieListeners.forEach(listener => {
+              listener.userData.state = 'leaving';
+              // Show hungry message
+              showListenerHungryMessage(listener);
+            });
+          }, 8000);
+        }
+
+        // Check if all missions complete - show completion after a delay
+        if (gameState.visited.size === 5 && !gameState.completionShown) {
+          setTimeout(() => {
+            gameState.completionShown = true;
+            document.getElementById('completion-modal').classList.add('visible');
+          }, 1500);
+        }
+      }
+    }
+
+    function showListenerHungryMessage(listener) {
+      const vec = listener.position.clone().project(camera);
+      if (vec.z > 1) return;
+
+      const x = (vec.x * 0.5 + 0.5) * window.innerWidth;
+      const y = (-vec.y * 0.5 + 0.5) * window.innerHeight;
+
+      const messages = [
+        "I smell CAKE! 🍰",
+        "Did someone say dessert?",
+        "My tummy is rumbling!",
+        "Time for snacks!",
+        "Cake break! 🧁"
+      ];
+      
+      const msg = document.createElement('div');
+      msg.className = 'floating-message';
+      msg.textContent = messages[Math.floor(Math.random() * messages.length)];
+      msg.style.left = x + 'px';
+      msg.style.top = (y - 80) + 'px';
+      document.body.appendChild(msg);
+      setTimeout(() => msg.remove(), 3000);
+    }
+
+    function closeCompletion() {
+      document.getElementById('completion-modal').classList.remove('visible');
+    }
+
+    function updateStars() {
+      const locationIds = ['palace', 'teashop', 'speakers', 'guests', 'feast'];
+      locationIds.forEach((id, index) => {
+        if (gameState.visited.has(id)) {
+          document.getElementById(`star-${index}`).classList.add('collected');
+          document.querySelector(`.map-icon[data-location="${id}"]`).classList.add('visited');
+        }
+      });
+    }
+
+    function showMissionNotification(locationId) {
+      const loc = LOCATIONS.find(l => l.id === locationId);
+      const name = loc ? loc.name : locationId;
+
+      const notif = document.createElement('div');
+      notif.className = 'mission-notif';
+      notif.innerHTML = `<span class="mission-notif-icon">⭐</span>${name} completed!`;
+      document.body.appendChild(notif);
+      setTimeout(() => notif.remove(), 3000);
+    }
+
+    function showCollectPopup() {
+      const messages = ['Yummy! 🍬', 'Sweet! 🍭', 'Royal! 👑', 'Shiny! ✨', 'Lovely! 💖', 'Fabulous! 💎'];
+      const popup = document.createElement('div');
+      popup.className = 'collect-popup';
+      popup.textContent = messages[Math.floor(Math.random() * messages.length)];
+      document.body.appendChild(popup);
+      setTimeout(() => popup.remove(), 1000);
+    }
+
+    function showFloatingMessage(npc) {
+      const now = Date.now();
+      // 3 second base cooldown + random 0-2 seconds to prevent all talking at once
+      const cooldown = 3000 + (npc.userData.chatOffset || 0);
+      if (now - npc.userData.lastQuote < cooldown) return;
+      npc.userData.lastQuote = now;
+      npc.userData.chatOffset = Math.random() * 2000; // Randomize next cooldown
+
+      const vec = npc.position.clone().project(camera);
+      if (vec.z > 1) return; // Behind camera
+      
+      // Only show if reasonably on screen
+      if (vec.x < -0.8 || vec.x > 0.8 || vec.y < -0.8 || vec.y > 0.8) return;
+
+      const x = (vec.x * 0.5 + 0.5) * window.innerWidth;
+      const y = (-vec.y * 0.5 + 0.5) * window.innerHeight;
+
+      // Use NPC's own quotes
+      const quotes = npc.userData.quotes || ["La la la~ 🎵", "Nice day!", "*hums*"];
+      
+      const msg = document.createElement('div');
+      msg.className = 'floating-message';
+      msg.textContent = quotes[Math.floor(Math.random() * quotes.length)];
+      msg.style.left = x + 'px';
+      msg.style.top = (y - 80) + 'px';
+      document.body.appendChild(msg);
+      setTimeout(() => msg.remove(), 3000);
+    }
+
+    function onResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      
+      const delta = clock.getDelta();
+      const time = clock.getElapsedTime();
+
+      if (gameState.started && !gameState.dialogOpen) {
+        // Player movement
+        const isMoving = joystickInput.x !== 0 || joystickInput.y !== 0;
+        
+        if (isMoving) {
+          const moveX = joystickInput.x * 6 * delta;
+          const moveZ = joystickInput.y * 6 * delta;
+          const newX = player.position.x + moveX;
+          const newZ = player.position.z + moveZ;
+
+          if (!checkCollision(newX, player.position.z)) {
+            player.position.x = newX;
+          }
+          if (!checkCollision(player.position.x, newZ)) {
+            player.position.z = newZ;
+          }
+
+          // Face movement direction
+          const angle = Math.atan2(joystickInput.x, joystickInput.y);
+          player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, angle, 0.15);
+
+          // Waddle animation
+          player.rotation.z = Math.sin(time * 15) * 0.12;
+          player.position.y = player.userData.baseY + Math.abs(Math.sin(time * 18)) * 0.12;
+        } else {
+          // Idle animation
+          player.rotation.z = THREE.MathUtils.lerp(player.rotation.z, 0, 0.1);
+          player.position.y = player.userData.baseY + Math.sin(time * 2) * 0.03;
+        }
+
+        // Camera follow
+        cameraTarget.set(player.position.x, player.position.y + 1, player.position.z);
+        const idealPos = new THREE.Vector3(player.position.x, player.position.y + 12, player.position.z + 12);
+        camera.position.lerp(idealPos, 0.08);
+        camera.lookAt(cameraTarget);
+
+        // Check NPC proximity
+        let nearestNPC = null;
+        let nearestWanderer = null;
+        let nearestDist = Infinity;
+
+        Object.entries(npcs).forEach(([id, npc]) => {
+          const dist = player.position.distanceTo(npc.position);
+          if (dist < 3.5 && dist < nearestDist) {
+            nearestDist = dist;
+            nearestNPC = id;
+            nearestWanderer = null;
+          }
+        });
+
+        wanderers.forEach(npc => {
+          const dist = player.position.distanceTo(npc.position);
+          if (dist < 3.5 && dist < nearestDist) {
+            nearestDist = dist;
+            nearestNPC = null;
+            nearestWanderer = npc;
+          }
+        });
+
+        gameState.nearNPC = nearestNPC;
+        gameState.nearWanderer = nearestWanderer;
+
+        const actionBtn = document.getElementById('action-btn');
+        if (nearestNPC || nearestWanderer) {
+          actionBtn.classList.add('visible');
+          if (nearestNPC) {
+            const icon = gameState.visited.has(nearestNPC) ? '💬' : '❓';
+            actionBtn.innerHTML = `<span>${icon}</span><span>Tap to Chat</span>`;
+          } else {
+            actionBtn.innerHTML = `<span>🤪</span><span>Say Hi!</span>`;
+          }
+        } else {
+          actionBtn.classList.remove('visible');
+        }
+
+        // Check collectibles
+        collectibles.forEach(col => {
+          if (col.userData.collected) return;
+          if (player.position.distanceTo(col.position) < 1.2) {
+            col.userData.collected = true;
+            col.visible = false;
+            gameState.collected++;
+            document.getElementById('collectible-count').textContent = gameState.collected;
+            showCollectPopup();
+          }
+        });
+
+        // Update current location display
+        let nearestBuilding = null;
+        let nearestBuildingDist = Infinity;
+        Object.entries(buildings).forEach(([id, building]) => {
+          const dist = player.position.distanceTo(building.position);
+          if (dist < nearestBuildingDist) {
+            nearestBuildingDist = dist;
+            nearestBuilding = building;
+          }
+        });
+
+        if (nearestBuilding && nearestBuilding.userData.id !== gameState.currentLocation) {
+          gameState.currentLocation = nearestBuilding.userData.id;
+          document.getElementById('location-icon').textContent = nearestBuilding.userData.icon;
+          document.getElementById('location-name').textContent = nearestBuilding.userData.name;
+          document.querySelectorAll('.map-icon').forEach(icon => {
+            icon.classList.toggle('current', icon.dataset.location === gameState.currentLocation);
+          });
+        }
+
+        // Update wandering NPCs
+        wanderers.forEach(npc => {
+          npc.userData.timer -= delta;
+          if (npc.userData.timer <= 0) {
+            npc.userData.walkAngle += (Math.random() - 0.5) * Math.PI;
+            // Fast runners change direction more often
+            npc.userData.timer = npc.userData.speed === 'fast' 
+              ? 0.5 + Math.random() * 1 
+              : 2 + Math.random() * 4;
+          }
+          
+          // Always try to show message - the function handles the 3s cooldown
+          showFloatingMessage(npc);
+
+          const speed = npc.userData.walkSpeed * delta;
+          const newX = npc.position.x + Math.sin(npc.userData.walkAngle) * speed;
+          const newZ = npc.position.z + Math.cos(npc.userData.walkAngle) * speed;
+
+          if (!checkCollision(newX, newZ)) {
+            npc.position.x = newX;
+            npc.position.z = newZ;
+          } else {
+            npc.userData.walkAngle += Math.PI * 0.5;
+          }
+
+          npc.rotation.y = npc.userData.walkAngle;
+          
+          // Different animation speeds based on NPC type
+          if (npc.userData.speed === 'fast') {
+            // Fast runners - very bouncy and wobbly
+            npc.rotation.z = Math.sin(time * 25) * 0.2;
+            npc.position.y = Math.abs(Math.sin(time * 30)) * 0.2;
+          } else if (npc.userData.speed === 'slow') {
+            // Elderly - slow shuffle
+            npc.rotation.z = Math.sin(time * 4) * 0.03;
+            npc.position.y = Math.abs(Math.sin(time * 5)) * 0.02;
+          } else {
+            // Normal
+            npc.rotation.z = Math.sin(time * 12) * 0.08;
+            npc.position.y = Math.abs(Math.sin(time * 15)) * 0.08;
+          }
+        });
+      }
+
+      // Ambient animations (always run)
+      clouds.forEach(cloud => {
+        cloud.position.x += cloud.userData.speed;
+        if (cloud.position.x > 60) cloud.position.x = -60;
+      });
+
+      // Animate bees
+      bees.forEach(bee => {
+        const data = bee.userData;
+        // Circular flight around palace
+        data.angle += data.speed * delta;
+        bee.position.x = data.palaceX + Math.cos(data.angle) * data.radius;
+        bee.position.z = data.palaceZ + Math.sin(data.angle) * data.radius;
+        // Bobbing up and down
+        bee.position.y = data.baseY + Math.sin(time * data.bobSpeed) * 0.5;
+        // Face direction of movement
+        bee.rotation.y = data.angle + Math.PI / 2;
+        // Wing flutter
+        bee.children.forEach((child, i) => {
+          if (i >= 3) { // Wings are children 3 and 4
+            child.rotation.x = Math.sin(time * 30) * 0.3;
+          }
+        });
+      });
+
+      // Animate Bernie listeners
+      const feastPos = LOCATIONS.find(l => l.id === 'feast');
+      bernieListeners.forEach(listener => {
+        const data = listener.userData;
+        const speed = data.speed * delta;
+        
+        // Show floating messages (especially when listening!)
+        if (data.state === 'listening') {
+          showFloatingMessage(listener);
+        } else if (Math.random() < 0.02) { // Less frequent when not listening
+          showFloatingMessage(listener);
+        }
+        
+        if (data.state === 'gathering') {
+          // Move towards target position around Bernie
+          const dx = data.targetX - listener.position.x;
+          const dz = data.targetZ - listener.position.z;
+          const dist = Math.sqrt(dx * dx + dz * dz);
+          
+          if (dist > 0.5) {
+            listener.position.x += (dx / dist) * speed * 2;
+            listener.position.z += (dz / dist) * speed * 2;
+            listener.rotation.y = Math.atan2(dx, dz);
+            // Walk animation
+            listener.rotation.z = Math.sin(time * 12) * 0.08;
+            listener.position.y = Math.abs(Math.sin(time * 15)) * 0.08;
+          } else {
+            data.state = 'listening';
+          }
+        } else if (data.state === 'listening') {
+          // Face Bernie (speakers NPC) and nod occasionally
+          const speakersPos = LOCATIONS.find(l => l.id === 'speakers');
+          const npcPos = npcs['speakers'].position;
+          listener.rotation.y = Math.atan2(
+            npcPos.x - listener.position.x,
+            npcPos.z - listener.position.z
+          );
+          // Nodding animation
+          listener.rotation.x = Math.sin(time * 2) * 0.1;
+          listener.position.y = 0;
+        } else if (data.state === 'leaving') {
+          // Head towards feast hall for cake!
+          const dx = feastPos.x - listener.position.x;
+          const dz = feastPos.z - listener.position.z;
+          const dist = Math.sqrt(dx * dx + dz * dz);
+          
+          // Show hungry messages
+          if (Math.random() < 0.03) {
+            const hungryQuotes = ["CAKE TIME! 🍰", "My tummy is calling!", "Dessert awaits!", "I smell frosting!", "Can't talk, eating soon!"];
+            const now = Date.now();
+            if (now - data.lastQuote > 2000) {
+              data.lastQuote = now;
+              const vec = listener.position.clone().project(camera);
+              if (vec.z < 1 && vec.x > -0.8 && vec.x < 0.8) {
+                const x = (vec.x * 0.5 + 0.5) * window.innerWidth;
+                const y = (-vec.y * 0.5 + 0.5) * window.innerHeight;
+                const msg = document.createElement('div');
+                msg.className = 'floating-message';
+                msg.textContent = hungryQuotes[Math.floor(Math.random() * hungryQuotes.length)];
+                msg.style.left = x + 'px';
+                msg.style.top = (y - 80) + 'px';
+                document.body.appendChild(msg);
+                setTimeout(() => msg.remove(), 3000);
+              }
+            }
+          }
+          
+          if (dist > 3) {
+            listener.position.x += (dx / dist) * speed * 2.5;
+            listener.position.z += (dz / dist) * speed * 2.5;
+            listener.rotation.y = Math.atan2(dx, dz);
+            // Excited walking animation
+            listener.rotation.z = Math.sin(time * 15) * 0.12;
+            listener.position.y = Math.abs(Math.sin(time * 18)) * 0.12;
+          } else {
+            // Arrived at feast hall, start wandering there
+            data.state = 'arrived';
+          }
+        } else if (data.state === 'arrived') {
+          // Wander around feast hall happily
+          data.wanderAngle += (Math.random() - 0.5) * 0.1;
+          const newX = listener.position.x + Math.sin(data.wanderAngle) * speed;
+          const newZ = listener.position.z + Math.cos(data.wanderAngle) * speed;
+          
+          // Show happy eating messages
+          if (Math.random() < 0.02) {
+            const eatingQuotes = ["*nom nom nom*", "This cake is DIVINE! 🍰", "More frosting please!", "I regret nothing!", "Best. Day. Ever."];
+            const now = Date.now();
+            if (now - data.lastQuote > 3000) {
+              data.lastQuote = now;
+              const vec = listener.position.clone().project(camera);
+              if (vec.z < 1 && vec.x > -0.8 && vec.x < 0.8) {
+                const x = (vec.x * 0.5 + 0.5) * window.innerWidth;
+                const y = (-vec.y * 0.5 + 0.5) * window.innerHeight;
+                const msg = document.createElement('div');
+                msg.className = 'floating-message';
+                msg.textContent = eatingQuotes[Math.floor(Math.random() * eatingQuotes.length)];
+                msg.style.left = x + 'px';
+                msg.style.top = (y - 80) + 'px';
+                document.body.appendChild(msg);
+                setTimeout(() => msg.remove(), 3000);
+              }
+            }
+          }
+          
+          // Stay near feast hall
+          const distToFeast = Math.sqrt(
+            Math.pow(newX - feastPos.x, 2) + Math.pow(newZ - feastPos.z, 2)
+          );
+          if (distToFeast < 8 && !checkCollision(newX, newZ)) {
+            listener.position.x = newX;
+            listener.position.z = newZ;
+          } else {
+            data.wanderAngle += Math.PI;
+          }
+          listener.rotation.y = data.wanderAngle;
+          listener.rotation.z = Math.sin(time * 10) * 0.06;
+          listener.position.y = Math.abs(Math.sin(time * 12)) * 0.06;
+        } else {
+          // Default wandering state
+          data.wanderAngle += (Math.random() - 0.5) * 0.05;
+          const newX = listener.position.x + Math.sin(data.wanderAngle) * speed * 0.5;
+          const newZ = listener.position.z + Math.cos(data.wanderAngle) * speed * 0.5;
+          
+          if (!checkCollision(newX, newZ)) {
+            listener.position.x = newX;
+            listener.position.z = newZ;
+          } else {
+            data.wanderAngle += Math.PI * 0.5;
+          }
+          listener.rotation.y = data.wanderAngle;
+          listener.rotation.z = Math.sin(time * 8) * 0.05;
+          listener.position.y = Math.abs(Math.sin(time * 10)) * 0.05;
+        }
+      });
+
+      // NPC indicator float
+      Object.values(npcs).forEach(npc => {
+        npc.children.forEach(child => {
+          if (child.userData.isIndicator) {
+            child.position.y = 2.5 + Math.sin(time * 3) * 0.15;
+            child.rotation.y = time * 2;
+          }
+        });
+      });
+
+      // Collectible float and spin
+      collectibles.forEach(col => {
+        if (!col.userData.collected) {
+          col.position.y = 0.5 + Math.sin(time * 3 + col.userData.floatOffset) * 0.15;
+          col.rotation.y = time * 1.5;
+        }
+      });
+
+      // Building pulse when near
+      Object.values(buildings).forEach(building => {
+        const dist = player.position.distanceTo(building.position);
+        if (dist < 6) {
+          building.scale.setScalar(1 + Math.sin(time * 5) * 0.02);
+        } else {
+          building.scale.setScalar(THREE.MathUtils.lerp(building.scale.x, 1, 0.1));
+        }
+      });
+
+      renderer.render(scene, camera);
+    }
+
+    // Start the game
+    init();
+  </script>
+</body>
+</html>
