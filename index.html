@@ -485,6 +485,8 @@
     };
     const AMBIENT_VOICE_MIN_DELAY = 10000;
     const AMBIENT_VOICE_MAX_DELAY = 10000;
+    const WANDERER_VOICE_COOLDOWN = 10000;
+    let lastWandererVoiceAt = 0;
 
     function playVoice(locationId) {
       try {
@@ -505,6 +507,12 @@
 
     function playRandomWandererVoice() {
       try {
+        const now = Date.now();
+        if (now - lastWandererVoiceAt < WANDERER_VOICE_COOLDOWN) {
+          return;
+        }
+        lastWandererVoiceAt = now;
+
         const voices = VOICE_FILES.wanderer;
         const randomVoice = voices[Math.floor(Math.random() * voices.length)];
         const audio = new Audio(randomVoice);
@@ -1831,8 +1839,9 @@
 
       // 🎵 Occasionally play voice (15% chance)
       if (Math.random() < 0.15) {
-        if (now - (npc.userData.lastVoice || 0) > 10000) {
-          npc.userData.lastVoice = now;
+        const now = Date.now();
+        if (now - (listener.userData.lastVoice || 0) > WANDERER_VOICE_COOLDOWN) {
+          listener.userData.lastVoice = now;
           playRandomWandererVoice();
         }
       }
