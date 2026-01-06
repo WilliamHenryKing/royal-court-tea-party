@@ -472,6 +472,47 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script>
+    // ============================================
+    // 🎵 VOICE SYSTEM - Cute NPC voices!
+    // ============================================
+    const VOICE_FILES = {
+      palace: 'voices/Voice1.mp3',  // Queen Bee ALWAYS gets Voice1
+      teashop: ['voices/Voice2.mp3', 'voices/Voice3.mp3', 'voices/Voice4.mp3', 'voices/Voice5.mp3', 'voices/Voice6.mp3', 'voices/Voice7.mp3'],
+      speakers: ['voices/Voice2.mp3', 'voices/Voice3.mp3', 'voices/Voice4.mp3', 'voices/Voice5.mp3', 'voices/Voice6.mp3', 'voices/Voice7.mp3'],
+      guests: ['voices/Voice2.mp3', 'voices/Voice3.mp3', 'voices/Voice4.mp3', 'voices/Voice5.mp3', 'voices/Voice6.mp3', 'voices/Voice7.mp3'],
+      feast: ['voices/Voice2.mp3', 'voices/Voice3.mp3', 'voices/Voice4.mp3', 'voices/Voice5.mp3', 'voices/Voice6.mp3', 'voices/Voice7.mp3'],
+      wanderer: ['voices/Voice2.mp3', 'voices/Voice3.mp3', 'voices/Voice4.mp3', 'voices/Voice5.mp3', 'voices/Voice6.mp3', 'voices/Voice7.mp3']
+    };
+
+    function playVoice(locationId) {
+      try {
+        const voiceFile = VOICE_FILES[locationId];
+        if (!voiceFile) return;
+
+        const voicePath = Array.isArray(voiceFile)
+          ? voiceFile[Math.floor(Math.random() * voiceFile.length)]
+          : voiceFile;
+
+        const audio = new Audio(voicePath);
+        audio.volume = 0.6;
+        audio.play().catch(err => console.log('Voice playback prevented:', err));
+      } catch (err) {
+        console.log('Voice error:', err);
+      }
+    }
+
+    function playRandomWandererVoice() {
+      try {
+        const voices = VOICE_FILES.wanderer;
+        const randomVoice = voices[Math.floor(Math.random() * voices.length)];
+        const audio = new Audio(randomVoice);
+        audio.volume = 0.5;
+        audio.play().catch(err => console.log('Voice playback prevented:', err));
+      } catch (err) {
+        console.log('Voice error:', err);
+      }
+    }
+
     // Event data
     const EVENT = {
       title: "The Royal Court Tea",
@@ -847,7 +888,8 @@
           walkSpeed: walkSpeed,
           timer: Math.random() * 5,
           lastQuote: Date.now() - Math.random() * 3000, // Stagger initial quotes
-          chatOffset: Math.random() * 4000 // Random offset for chat cooldown
+          chatOffset: Math.random() * 4000, // Random offset for chat cooldown
+          lastVoice: Date.now() - Math.random() * 10000
         };
         scene.add(npc);
         wanderers.push(npc);
@@ -1656,6 +1698,9 @@
       const dialog = DIALOGS[locationId];
       if (!dialog) return;
 
+      // 🎵 PLAY VOICE!
+      playVoice(locationId);
+
       gameState.dialogOpen = true;
       
       // Check if first visit
@@ -1682,6 +1727,9 @@
     function openWandererDialog(npc) {
       const data = npc.userData;
       const quote = data.quotes[Math.floor(Math.random() * data.quotes.length)];
+
+      // 🎵 PLAY RANDOM VOICE!
+      playRandomWandererVoice();
 
       gameState.dialogOpen = true;
 
@@ -1757,6 +1805,14 @@
       msg.style.top = (y - 80) + 'px';
       document.body.appendChild(msg);
       setTimeout(() => msg.remove(), 3000);
+
+      // 🎵 Occasionally play voice (15% chance)
+      if (Math.random() < 0.15) {
+        if (now - (npc.userData.lastVoice || 0) > 10000) {
+          npc.userData.lastVoice = now;
+          playRandomWandererVoice();
+        }
+      }
     }
 
     function closeCompletion() {
