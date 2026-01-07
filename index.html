@@ -9,13 +9,19 @@
   <script type="importmap">
     {
       "imports": {
-        "three": "https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js"
+        "three": "https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js",
+        "three/examples/jsm/postprocessing/EffectComposer.js": "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/postprocessing/EffectComposer.js",
+        "three/examples/jsm/postprocessing/RenderPass.js": "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/postprocessing/RenderPass.js",
+        "three/examples/jsm/postprocessing/UnrealBloomPass.js": "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/postprocessing/UnrealBloomPass.js"
       }
     }
   </script>
 </head>
 <body>
   <div id="splash-screen">
+    <!-- Dynamic sparkles background -->
+    <div class="sparkles-container" id="sparkles"></div>
+
     <div class="splash-sparkle" style="top: 10%; left: 15%;">✨</div>
     <div class="splash-sparkle" style="top: 20%; right: 20%; animation-delay: 0.5s;">⭐</div>
     <div class="splash-sparkle" style="top: 60%; left: 10%; animation-delay: 1s;">💫</div>
@@ -25,7 +31,7 @@
       <div class="splash-glow"></div>
       <div class="splash-crown">👑</div>
     </div>
-    <div class="splash-title">The Royal Court Tea</div>
+    <div class="splash-title"><span class="shimmer-text">The Royal Court Tea</span></div>
     <div class="splash-subtitle">✨ Unapologetically Royal ✨</div>
     <div class="splash-tagline">Embracing Your Crown</div>
     <div class="splash-instruction">
@@ -171,6 +177,8 @@
 
   <div id="intro-modal">
     <div class="intro-card">
+      <!-- Wax seal decoration -->
+      <div class="intro-seal">👑</div>
       <div class="intro-title">Welcome, Royal One ✨</div>
       <div class="intro-text">
         Glide with the joystick, tap characters to chat, and follow the paths.<br>
@@ -228,7 +236,18 @@
     </div>
   </div>
 
-  <div id="joystick-container"><div id="joystick-base"><div id="joystick-thumb"></div></div></div>
+  <div id="joystick-container">
+    <div id="joystick-base">
+      <div class="joystick-directions">
+        <span class="joystick-dir up">▲</span>
+        <span class="joystick-dir down">▼</span>
+        <span class="joystick-dir left">◀</span>
+        <span class="joystick-dir right">▶</span>
+      </div>
+      <div class="joystick-ripple"></div>
+      <div id="joystick-thumb"></div>
+    </div>
+  </div>
   <button id="action-btn"><span>💬</span><span>Tap to Chat</span></button>
   <div id="keyboard-hints">WASD for movement. P for interaction.</div>
 

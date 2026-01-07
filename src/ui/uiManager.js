@@ -111,12 +111,36 @@ export function setDesktopMode(enabled) {
 
 export function setupControls() {
   const container = document.getElementById('joystick-container');
+  const base = document.getElementById('joystick-base');
   const thumb = document.getElementById('joystick-thumb');
+  const ripple = document.querySelector('.joystick-ripple');
+  const dirUp = document.querySelector('.joystick-dir.up');
+  const dirDown = document.querySelector('.joystick-dir.down');
+  const dirLeft = document.querySelector('.joystick-dir.left');
+  const dirRight = document.querySelector('.joystick-dir.right');
   const baseRadius = 55;
   const maxDistance = 32;
   let active = false;
   let centerX = 0;
   let centerY = 0;
+
+  // Update direction indicators based on joystick position
+  function updateDirectionIndicators(x, y) {
+    const threshold = 0.3;
+    dirUp.classList.toggle('active', y < -threshold);
+    dirDown.classList.toggle('active', y > threshold);
+    dirLeft.classList.toggle('active', x < -threshold);
+    dirRight.classList.toggle('active', x > threshold);
+  }
+
+  // Trigger ripple effect
+  function triggerRipple() {
+    if (ripple) {
+      ripple.classList.remove('animate');
+      void ripple.offsetWidth; // Force reflow
+      ripple.classList.add('animate');
+    }
+  }
   const desktopSection = document.getElementById('desktop-mode-section');
   const desktopToggle = document.getElementById('desktop-mode-toggle');
   const isLikelyDesktop = window.matchMedia('(hover: hover) and (pointer: fine)').matches
@@ -140,6 +164,11 @@ export function setupControls() {
     const rect = container.getBoundingClientRect();
     centerX = rect.left + baseRadius;
     centerY = rect.top + baseRadius;
+
+    // Add active visual states
+    base.classList.add('active');
+    thumb.classList.add('active');
+    triggerRipple();
   }
 
   function move(e) {
@@ -158,6 +187,9 @@ export function setupControls() {
     thumb.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
     joystickInput.x = dx / maxDistance;
     joystickInput.y = dy / maxDistance;
+
+    // Update direction indicators
+    updateDirectionIndicators(joystickInput.x, joystickInput.y);
   }
 
   function end() {
@@ -165,6 +197,11 @@ export function setupControls() {
     thumb.style.transform = 'translate(-50%, -50%)';
     joystickInput.x = 0;
     joystickInput.y = 0;
+
+    // Remove active visual states
+    base.classList.remove('active');
+    thumb.classList.remove('active');
+    updateDirectionIndicators(0, 0);
   }
 
   container.addEventListener('touchstart', start, { passive: false });
@@ -276,6 +313,61 @@ export function setupControls() {
   document.getElementById('sweet-dismiss').addEventListener('click', dismissSweetIntro);
 }
 
+// Create dynamic sparkles for splash screen
+function createSplashSparkles() {
+  const container = document.getElementById('sparkles');
+  if (!container) return;
+
+  const sparkleChars = ['✨', '⭐', '💫', '🌟', '✦'];
+
+  for (let i = 0; i < 20; i++) {
+    const sparkle = document.createElement('span');
+    sparkle.className = 'sparkle';
+    sparkle.textContent = sparkleChars[Math.floor(Math.random() * sparkleChars.length)];
+    sparkle.style.left = Math.random() * 100 + '%';
+    sparkle.style.top = Math.random() * 100 + '%';
+    sparkle.style.animationDelay = Math.random() * 4 + 's';
+    sparkle.style.animationDuration = (3 + Math.random() * 2) + 's';
+    container.appendChild(sparkle);
+  }
+}
+
+// Cycle whimsical loading messages
+function cycleLoadingMessages() {
+  const messages = [
+    "Polishing the royal crowns... 👑",
+    "Brewing the perfect tea... 🍵",
+    "Fluffing the corgis... 🐕",
+    "Arranging the flowers... 🌸",
+    "Setting the royal table... 🍰",
+    "Tuning the harpsichord... 🎵"
+  ];
+
+  const messageEl = document.querySelector('.loading-text');
+  if (!messageEl) return;
+
+  let index = 0;
+  const intervalId = setInterval(() => {
+    messageEl.textContent = messages[index];
+    index = (index + 1) % messages.length;
+  }, 2000);
+
+  // Stop cycling when loading screen is hidden
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.target.classList.contains('hidden')) {
+        clearInterval(intervalId);
+        observer.disconnect();
+      }
+    });
+  });
+
+  const loadingScreen = document.getElementById('loading-screen');
+  if (loadingScreen) {
+    observer.observe(loadingScreen, { attributes: true, attributeFilter: ['class'] });
+  }
+}
+
 export function setupSplashInteractions() {
   const splashScreen = document.getElementById('splash-screen');
   const splashMap = document.getElementById('splash-map');
@@ -283,6 +375,9 @@ export function setupSplashInteractions() {
   const startBtn = document.getElementById('start-btn');
 
   if (!splashScreen || !splashMap || !mapOverlay || !startBtn) return;
+
+  // Create sparkles when splash screen loads
+  createSplashSparkles();
 
   let startTriggered = false;
   let lastPointerStart = 0;
@@ -293,6 +388,10 @@ export function setupSplashInteractions() {
     mapOverlay.classList.remove('visible');
     splashMap.classList.remove('zoomed');
     document.getElementById('loading-screen').classList.remove('hidden');
+
+    // Start cycling loading messages
+    cycleLoadingMessages();
+
     setTimeout(() => {
       document.getElementById('loading-screen').classList.add('hidden');
       document.getElementById('intro-modal').classList.add('visible');

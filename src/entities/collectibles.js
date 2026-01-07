@@ -9,6 +9,7 @@ export const collectibles = [];
 export const clouds = [];
 export const celebrationParticles = [];
 export const insects = [];
+export const ambientParticles = [];
 
 // Particle system state
 export let particleTexture = null;
@@ -349,6 +350,118 @@ export function updateInsects(time) {
     const data = insect.userData;
     insect.position.y = data.baseY + Math.sin(time * data.wobbleSpeed + data.wobbleOffset) * data.wobbleAmount;
     insect.rotation.z = Math.sin(time * data.wobbleSpeed + data.wobbleOffset) * 0.4;
+  });
+}
+
+// ============================================
+// AMBIENT FLOATING PARTICLES
+// ============================================
+
+// Petal sprite material
+let petalMaterials = null;
+
+function createPetalMaterials() {
+  if (petalMaterials) return petalMaterials;
+
+  const colors = [
+    0xffb6c1, // Light pink
+    0xffc0cb, // Pink
+    0xffd1dc, // Light rose
+    0xffe4e1, // Misty rose
+    0xfff0f5, // Lavender blush
+    0xffd700  // Gold sparkle
+  ];
+
+  petalMaterials = colors.map(color => new THREE.SpriteMaterial({
+    map: particleTexture,
+    color,
+    transparent: true,
+    opacity: 0.7,
+    depthWrite: false
+  }));
+
+  return petalMaterials;
+}
+
+function createAmbientParticle(type = 'petal') {
+  const mats = createPetalMaterials();
+  const mat = mats[Math.floor(Math.random() * mats.length)].clone();
+
+  const sprite = new THREE.Sprite(mat);
+
+  // Random starting position in a large area
+  const x = (Math.random() - 0.5) * 100;
+  const y = 8 + Math.random() * 15;
+  const z = (Math.random() - 0.5) * 100;
+
+  sprite.position.set(x, y, z);
+
+  const baseSize = type === 'sparkle' ? 0.15 : 0.3;
+  const size = baseSize + Math.random() * 0.2;
+  sprite.scale.set(size, size, size);
+
+  sprite.userData = {
+    type,
+    // Movement
+    driftSpeed: 0.3 + Math.random() * 0.4,
+    driftAngle: Math.random() * Math.PI * 2,
+    fallSpeed: 0.2 + Math.random() * 0.3,
+    // Oscillation
+    wobbleSpeed: 1.5 + Math.random() * 1.5,
+    wobbleAmountX: 0.5 + Math.random() * 0.5,
+    wobbleAmountZ: 0.5 + Math.random() * 0.5,
+    // Rotation
+    rotSpeed: (Math.random() - 0.5) * 2,
+    // Phase offset
+    phaseOffset: Math.random() * Math.PI * 2,
+    // Respawn height
+    spawnY: y
+  };
+
+  scene.add(sprite);
+  return sprite;
+}
+
+export function createAmbientParticles(count = 60) {
+  // Mix of petals and sparkles
+  for (let i = 0; i < count; i++) {
+    const type = Math.random() < 0.8 ? 'petal' : 'sparkle';
+    const particle = createAmbientParticle(type);
+    ambientParticles.push(particle);
+  }
+}
+
+export function updateAmbientParticles(time, delta) {
+  ambientParticles.forEach(particle => {
+    const data = particle.userData;
+
+    // Gentle falling
+    particle.position.y -= data.fallSpeed * delta;
+
+    // Horizontal drift with sine wave wobble
+    const wobbleX = Math.sin(time * data.wobbleSpeed + data.phaseOffset) * data.wobbleAmountX;
+    const wobbleZ = Math.cos(time * data.wobbleSpeed * 0.7 + data.phaseOffset) * data.wobbleAmountZ;
+
+    particle.position.x += (Math.sin(data.driftAngle) * data.driftSpeed + wobbleX) * delta;
+    particle.position.z += (Math.cos(data.driftAngle) * data.driftSpeed + wobbleZ) * delta;
+
+    // Rotation
+    particle.material.rotation += data.rotSpeed * delta;
+
+    // Opacity pulsing for sparkles
+    if (data.type === 'sparkle') {
+      particle.material.opacity = 0.5 + Math.sin(time * 4 + data.phaseOffset) * 0.3;
+    }
+
+    // Respawn when too low or too far from center
+    const distFromCenter = Math.sqrt(particle.position.x ** 2 + particle.position.z ** 2);
+    if (particle.position.y < -2 || distFromCenter > 60) {
+      // Respawn at top
+      particle.position.y = data.spawnY + Math.random() * 5;
+      particle.position.x = (Math.random() - 0.5) * 80;
+      particle.position.z = (Math.random() - 0.5) * 80;
+      data.driftAngle = Math.random() * Math.PI * 2;
+    }
   });
 }
 
