@@ -791,6 +791,7 @@
     const keyboardState = { up: false, down: false, left: false, right: false };
     let desktopModeEnabled = false;
     const cameraTarget = new THREE.Vector3();
+    const moveDirection = new THREE.Vector3();
     const cameraZoomState = {
       currentOffset: 12,
       targetOffset: 12,
@@ -812,8 +813,25 @@
       amplitude: 0.06,
       speed: 2.1
     };
+    const CAPE_CONFIG = {
+      width: 0.9,
+      height: 1.15,
+      widthSegments: 5,
+      heightSegments: 8,
+      stiffness: 18,
+      dampingMoving: 0.86,
+      dampingIdle: 0.76,
+      maxStretch: 1.4
+    };
     let corgiFurMaterial;
     let corgiAccentMaterial;
+    const capeTempVec = new THREE.Vector3();
+    const capeTempVec2 = new THREE.Vector3();
+    const capeTempVec3 = new THREE.Vector3();
+    const capeTempVec4 = new THREE.Vector3();
+    const capeTempVec5 = new THREE.Vector3();
+    const capeTempVec6 = new THREE.Vector3();
+    const capeTempQuat = new THREE.Quaternion();
 
     function updateMusicUI() {
       const trackLabel = document.getElementById('music-track');
@@ -966,7 +984,7 @@
         });
 
         // Create NPC in front of building
-        const npc = createNPC();
+        const npc = createNPC(loc.id);
         npc.position.set(loc.x, 0, loc.z + 4);
         npc.userData = { locationId: loc.id };
         scene.add(npc);
@@ -1098,6 +1116,104 @@
       scene.add(fountain);
     }
 
+    function createCape() {
+      const { width, height, widthSegments, heightSegments } = CAPE_CONFIG;
+      const geometry = new THREE.PlaneGeometry(width, height, widthSegments, heightSegments);
+      geometry.translate(0, -height / 2, 0);
+      const material = new THREE.MeshStandardMaterial({
+        color: 0xff8fbf,
+        roughness: 0.55,
+        metalness: 0.1,
+        side: THREE.DoubleSide
+      });
+      const cape = new THREE.Mesh(geometry, material);
+      cape.position.set(0, 1.38, -0.35);
+      cape.rotation.x = 0.08;
+      cape.castShadow = true;
+      cape.receiveShadow = true;
+
+      const rows = heightSegments + 1;
+      const points = [];
+      const velocities = [];
+      const restLength = height / heightSegments;
+      for (let i = 0; i < rows; i++) {
+        points.push(new THREE.Vector3(0, -i * restLength, 0));
+        velocities.push(new THREE.Vector3());
+      }
+
+      cape.userData.cape = {
+        geometry,
+        points,
+        velocities,
+        restLength,
+        rows,
+        cols: widthSegments + 1
+      };
+      return cape;
+    }
+
+    function updateCape(delta, time, isMoving, moveDir) {
+      if (!player || !player.userData.cape) return;
+      const capeData = player.userData.cape;
+      const { geometry, points, velocities, restLength, rows, cols } = capeData;
+      const heightSegments = CAPE_CONFIG.heightSegments;
+      const width = CAPE_CONFIG.width;
+      const windStrength = isMoving ? 1 : 0;
+      const flutterStrength = isMoving ? 0.25 : 0.08;
+      const damping = isMoving ? CAPE_CONFIG.dampingMoving : CAPE_CONFIG.dampingIdle;
+
+      points[0].set(0, 0, 0);
+
+      capeTempVec.copy(moveDir).multiplyScalar(-1.6 * windStrength);
+      capeTempVec.y += 0.35 * windStrength;
+      capeTempQuat.copy(player.quaternion).invert();
+      capeTempVec2.copy(capeTempVec).applyQuaternion(capeTempQuat);
+
+      for (let i = 1; i < rows; i++) {
+        const point = points[i];
+        const velocity = velocities[i];
+        const prev = points[i - 1];
+
+        capeTempVec3.copy(point).sub(prev);
+        const distance = Math.max(capeTempVec3.length(), 0.0001);
+        capeTempVec3.normalize();
+
+        const springForce = capeTempVec3.multiplyScalar((distance - restLength) * -CAPE_CONFIG.stiffness);
+        const gravity = capeTempVec4.set(0, -0.8, 0);
+        const flutter = capeTempVec5.set(
+          Math.sin(time * 3 + i) * 0.15,
+          0,
+          Math.cos(time * 2 + i * 0.7) * 0.12
+        ).multiplyScalar(flutterStrength);
+
+        velocity.add(springForce.add(gravity).add(capeTempVec2).add(flutter).multiplyScalar(delta));
+        velocity.multiplyScalar(damping);
+        point.addScaledVector(velocity, delta);
+
+        capeTempVec6.copy(point).sub(prev);
+        const maxStretch = restLength * CAPE_CONFIG.maxStretch;
+        if (capeTempVec6.length() > maxStretch) {
+          capeTempVec6.normalize().multiplyScalar(maxStretch);
+          point.copy(prev).add(capeTempVec6);
+        }
+      }
+
+      const positions = geometry.attributes.position;
+      for (let row = 0; row <= heightSegments; row++) {
+        const rowPoint = points[row];
+        const drape = row / heightSegments;
+        for (let col = 0; col < cols; col++) {
+          const index = (row * cols + col) * 3;
+          const x = (col / (cols - 1) - 0.5) * width;
+          positions.array[index] = x;
+          positions.array[index + 1] = rowPoint.y;
+          positions.array[index + 2] = rowPoint.z - drape * 0.12 + Math.abs(x) * 0.08 * drape;
+        }
+      }
+      positions.needsUpdate = true;
+      geometry.computeVertexNormals();
+    }
+
     function createPlayer() {
       const group = new THREE.Group();
       
@@ -1177,10 +1293,14 @@
       shoeR.castShadow = true;
       group.add(shoeR);
 
+      const cape = createCape();
+      group.add(cape);
+
       player = group;
       player.position.set(0, 0, 5); // Start outside fountain
       player.userData.baseY = 0;
       player.userData.boostEndTime = 0;
+      player.userData.cape = cape.userData.cape;
       scene.add(player);
     }
 
@@ -1457,30 +1577,47 @@
       return group;
     }
 
-    function createNPC() {
+    function createNPC(locationId) {
       const group = new THREE.Group();
       const skinMat = new THREE.MeshStandardMaterial({ color: 0xffeedd });
-      const palacePalette = [0xd4b8ff, 0xf0d6a3, 0xbad9ff];
-      const robeMat = new THREE.MeshStandardMaterial({ color: palacePalette[Math.floor(Math.random() * palacePalette.length)] });
-      const trimMat = new THREE.MeshStandardMaterial({ color: 0xffd700, emissive: 0xffc857, emissiveIntensity: 0.25 });
-      const accessoryMat = new THREE.MeshStandardMaterial({ color: 0xffe6a3 });
+      const palettes = {
+        palace: { gown: 0xf7c2d9, accent: 0xffd700, trim: 0xfff2c9, hair: 0x7a4b2a },
+        teashop: { gown: 0xbad9ff, accent: 0xfff2c9, trim: 0xffc1d9, hair: 0x5c3a21 },
+        speakers: { gown: 0xd4b8ff, accent: 0xf7e8ff, trim: 0xffd1e1, hair: 0x4d2f2f },
+        guests: { gown: 0xffd4a8, accent: 0xffc1d9, trim: 0xfff8f0, hair: 0x7a522b },
+        feast: { gown: 0xb8e986, accent: 0xffd1e1, trim: 0xfff2c9, hair: 0x6a3b2a }
+      };
+      const palette = palettes[locationId] || palettes.palace;
+      const gownMat = new THREE.MeshStandardMaterial({ color: palette.gown, roughness: 0.65 });
+      const accentMat = new THREE.MeshStandardMaterial({ color: palette.accent, roughness: 0.4, metalness: 0.2 });
+      const trimMat = new THREE.MeshStandardMaterial({ color: palette.trim, emissive: palette.trim, emissiveIntensity: 0.2 });
+      const hairMat = new THREE.MeshStandardMaterial({ color: palette.hair, roughness: 0.8 });
 
-      // Body
-      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.6, 16), skinMat);
+      // Body core
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, 0.6, 16), gownMat);
       body.position.y = 0.9;
       body.castShadow = true;
       group.add(body);
 
-      // Torso top
-      const torsoTop = new THREE.Mesh(new THREE.SphereGeometry(0.4, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), skinMat);
-      torsoTop.position.y = 1.2;
-      group.add(torsoTop);
+      const bodice = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.4, 0.45, 16), accentMat);
+      bodice.position.y = 1.1;
+      bodice.castShadow = true;
+      group.add(bodice);
 
       // Head
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.38, 16, 16), skinMat);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.38, 18, 16), skinMat);
       head.position.y = 1.75;
       head.castShadow = true;
       group.add(head);
+
+      const hair = new THREE.Mesh(new THREE.SphereGeometry(0.4, 16, 12), hairMat);
+      hair.position.set(0, 1.78, -0.05);
+      hair.scale.set(1, 0.9, 1);
+      group.add(hair);
+
+      const hairBun = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 10), hairMat);
+      hairBun.position.set(0, 1.98, -0.2);
+      group.add(hairBun);
 
       // Indicator
       const indicator = new THREE.Mesh(
@@ -1491,32 +1628,84 @@
       indicator.userData.isIndicator = true;
       group.add(indicator);
 
-      // Robe
-      const robe = new THREE.Mesh(new THREE.ConeGeometry(0.55, 1.1, 8, 1, true), robeMat);
-      robe.position.y = 0.55;
-      robe.rotation.x = Math.PI;
-      robe.castShadow = true;
-      group.add(robe);
+      // Main gown
+      const skirt = new THREE.Mesh(new THREE.ConeGeometry(0.75, 1.4, 12, 1, true), gownMat);
+      skirt.position.y = 0.6;
+      skirt.rotation.x = Math.PI;
+      skirt.castShadow = true;
+      group.add(skirt);
 
-      // Second skirt layer with trim
-      const skirtLayer = new THREE.Mesh(new THREE.ConeGeometry(0.65, 0.4, 8, 1, true), trimMat);
-      skirtLayer.position.y = 0.3;
+      const skirtLayer = new THREE.Mesh(new THREE.ConeGeometry(0.7, 0.5, 12, 1, true), trimMat);
+      skirtLayer.position.y = 0.28;
       skirtLayer.rotation.x = Math.PI;
       group.add(skirtLayer);
 
+      const waistRuffle = new THREE.Mesh(new THREE.TorusGeometry(0.35, 0.06, 8, 18), trimMat);
+      waistRuffle.position.y = 0.9;
+      waistRuffle.rotation.x = Math.PI / 2;
+      group.add(waistRuffle);
+
+      // Puff sleeves
+      const sleeveL = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 10), accentMat);
+      sleeveL.position.set(-0.42, 1.25, 0.05);
+      group.add(sleeveL);
+
+      const sleeveR = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 10), accentMat);
+      sleeveR.position.set(0.42, 1.25, 0.05);
+      group.add(sleeveR);
+
+      const cuffL = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.03, 6, 12), trimMat);
+      cuffL.position.set(-0.42, 1.05, 0.15);
+      cuffL.rotation.x = Math.PI / 2;
+      group.add(cuffL);
+
+      const cuffR = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.03, 6, 12), trimMat);
+      cuffR.position.set(0.42, 1.05, 0.15);
+      cuffR.rotation.x = Math.PI / 2;
+      group.add(cuffR);
+
       // Accessories: brooches and collar
-      const broochLeft = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 6), accessoryMat);
-      broochLeft.position.set(-0.12, 1.1, 0.32);
+      const broochLeft = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), accentMat);
+      broochLeft.position.set(-0.14, 1.22, 0.34);
       group.add(broochLeft);
 
-      const broochRight = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 6), accessoryMat);
-      broochRight.position.set(0.12, 1.1, 0.32);
+      const broochRight = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), accentMat);
+      broochRight.position.set(0.14, 1.22, 0.34);
       group.add(broochRight);
 
-      const collar = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.035, 6, 8), accessoryMat);
-      collar.position.y = 1.35;
+      const collar = new THREE.Mesh(new THREE.TorusGeometry(0.19, 0.035, 6, 10), trimMat);
+      collar.position.y = 1.38;
       collar.rotation.x = Math.PI / 2;
       group.add(collar);
+
+      const necklace = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.02, 6, 12), accentMat);
+      necklace.position.y = 1.47;
+      necklace.rotation.x = Math.PI / 2;
+      group.add(necklace);
+
+      if (locationId === 'palace') {
+        const tiara = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 0.08, 6), accentMat);
+        tiara.position.y = 2.05;
+        group.add(tiara);
+        for (let i = 0; i < 5; i++) {
+          const a = (i / 5) * Math.PI * 2;
+          const jewel = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8), trimMat);
+          jewel.position.set(Math.cos(a) * 0.16, 2.12, Math.sin(a) * 0.16);
+          group.add(jewel);
+        }
+      }
+
+      if (locationId === 'feast') {
+        const apron = new THREE.Mesh(new THREE.ConeGeometry(0.42, 0.85, 8, 1, true), trimMat);
+        apron.position.y = 0.65;
+        apron.rotation.x = Math.PI;
+        group.add(apron);
+
+        const bow = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.03, 6, 12), accentMat);
+        bow.position.set(0, 0.95, 0.35);
+        bow.rotation.x = Math.PI / 2;
+        group.add(bow);
+      }
 
       return group;
     }
@@ -3001,6 +3190,11 @@
         const combinedInputX = Math.max(-1, Math.min(1, joystickInput.x + (desktopModeEnabled ? keyboardInput.x : 0)));
         const combinedInputY = Math.max(-1, Math.min(1, joystickInput.y + (desktopModeEnabled ? keyboardInput.y : 0)));
         const isMoving = combinedInputX !== 0 || combinedInputY !== 0;
+
+        moveDirection.set(combinedInputX, 0, combinedInputY);
+        if (moveDirection.lengthSq() > 0) {
+          moveDirection.normalize();
+        }
         
         if (isMoving) {
           const playerSpeed = getPlayerSpeed(now);
@@ -3028,6 +3222,8 @@
           player.rotation.z = THREE.MathUtils.lerp(player.rotation.z, 0, 0.1);
           player.position.y = player.userData.baseY + Math.sin(time * 2) * 0.03;
         }
+
+        updateCape(delta, time, isMoving, moveDirection);
 
         // Camera follow with gentle momentum zoom
         if (isMoving !== cameraZoomState.moving) {
