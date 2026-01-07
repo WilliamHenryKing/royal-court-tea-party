@@ -222,6 +222,14 @@
     #keyboard-hints { position: fixed; bottom: 8rem; left: 2rem; padding: 0.6rem 0.9rem; background: rgba(255,255,255,0.95); border-radius: 1rem; box-shadow: 0 6px 20px rgba(0,0,0,0.15); font-size: 0.85rem; color: var(--text-dark); z-index: 100; display: none; max-width: 200px; text-align: left; }
     #keyboard-hints.visible { display: block; }
 
+    #sweet-intro { position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; z-index: 360; padding: 1.5rem; }
+    #sweet-intro.visible { display: flex; animation: fadeIn 0.3s ease; }
+    .sweet-card { background: linear-gradient(135deg, var(--white) 0%, var(--cream) 100%); border-radius: 1.4rem; padding: 1.4rem; max-width: 300px; text-align: center; box-shadow: 0 16px 40px rgba(0,0,0,0.25); }
+    .sweet-title { font-family: 'Dancing Script', cursive; font-size: 1.5rem; color: var(--pink-deep); margin-bottom: 0.5rem; }
+    .sweet-text { color: var(--text-dark); font-size: 0.9rem; line-height: 1.5; }
+    .sweet-text span { color: var(--pink-deep); font-weight: 600; }
+    .sweet-btn { margin-top: 0.9rem; background: linear-gradient(135deg, var(--mint) 0%, var(--mint-dark) 100%); border: none; color: var(--white); font-weight: 700; padding: 0.6rem 1.4rem; border-radius: 2rem; cursor: pointer; box-shadow: 0 6px 18px rgba(158, 211, 106, 0.5); }
+
     .floating-message { position: fixed; background: var(--white); padding: 0.6rem 1rem; border-radius: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.15); font-size: 0.85rem; color: var(--text-dark); z-index: 80; animation: floatMsg 3s ease-in-out forwards; pointer-events: none; max-width: 200px; }
     .floating-message::after { content: ''; position: absolute; bottom: -8px; left: 20px; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 8px solid var(--white); }
     @keyframes floatMsg { 0% { opacity: 0; transform: translateY(10px); } 10% { opacity: 1; transform: translateY(0); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-20px); } }
@@ -412,6 +420,17 @@
         </label>
       </div>
       <button class="intro-btn" id="intro-start">Let's stroll 👑</button>
+    </div>
+  </div>
+
+  <div id="sweet-intro">
+    <div class="sweet-card">
+      <div class="sweet-title">Sweets Power-Up 🍬</div>
+      <div class="sweet-text">
+        You found your first treat! Sweets give you a <span>speed boost</span> for a short time.
+        Grab more for extra sparkle and speed.
+      </div>
+      <button class="sweet-btn" id="sweet-dismiss">Got it ✨</button>
     </div>
   </div>
 
@@ -726,6 +745,8 @@
     const gameState = {
       started: false,
       dialogOpen: false,
+      timeScale: 1,
+      firstSweetShown: false,
       visited: new Set(),
       collected: 0,
       currentLocation: 'palace',
@@ -2280,6 +2301,8 @@
         }
       });
 
+      document.getElementById('sweet-dismiss').addEventListener('click', dismissSweetIntro);
+
       // Map zoom functionality
       const splashMap = document.getElementById('splash-map');
       const mapOverlay = document.getElementById('map-overlay');
@@ -2465,6 +2488,20 @@
       setTimeout(() => popup.remove(), 1000);
     }
 
+    function showSweetIntro() {
+      const sweetIntro = document.getElementById('sweet-intro');
+      if (!sweetIntro) return;
+      sweetIntro.classList.add('visible');
+    }
+
+    function dismissSweetIntro() {
+      const sweetIntro = document.getElementById('sweet-intro');
+      if (!sweetIntro) return;
+      sweetIntro.classList.remove('visible');
+      gameState.timeScale = 1;
+      gameState.dialogOpen = false;
+    }
+
     function showFloatingMessage(npc) {
       const now = Date.now();
       // 7 second base cooldown + random 0-4 seconds to prevent all talking at once
@@ -2503,7 +2540,7 @@
     function animate() {
       requestAnimationFrame(animate);
       
-      const delta = clock.getDelta();
+      const delta = clock.getDelta() * gameState.timeScale;
       const time = clock.getElapsedTime();
       const now = performance.now();
 
@@ -2619,6 +2656,12 @@
             showCollectPopup();
             spawnCelebrationBurst();
             player.userData.boostEndTime = now + BOOST_DURATION;
+            if (!gameState.firstSweetShown) {
+              gameState.firstSweetShown = true;
+              gameState.timeScale = 0.2;
+              gameState.dialogOpen = true;
+              showSweetIntro();
+            }
           }
         });
 
