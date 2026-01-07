@@ -1,0 +1,266 @@
+// Game Update - main game loop update logic
+import * as THREE from 'three';
+import { player, updateCape } from '../entities/player.js';
+import { buildings } from '../entities/buildings.js';
+import { npcs, wanderers, bernieListeners, corgis, bees, insects } from '../entities/npcs.js';
+import { collectibles, clouds, celebrationParticles, waterMaterial, updateCelebrationParticles } from '../entities/collectibles.js';
+import { checkCollision } from './interactions.js';
+import { getInputVector } from '../systems/inputSystem.js';
+import { camera } from '../engine/renderer.js';
+import { PLAYER_CONFIG } from '../config.js';
+import {
+  updateActionButton,
+  updateLocationDisplay,
+  updateCollectibleCount,
+  showCollectPopup,
+  showSweetIntro,
+  showFloatingMessage
+} from '../ui/uiManager.js';
+
+// Camera state
+const cameraTarget = new THREE.Vector3();
+const cameraZoomState = {
+  moving: false,
+  lastMoveChange: 0,
+  baseOffset: 14,
+  zoomedOutOffset: 18,
+  currentOffset: 14,
+  targetOffset: 14,
+  zoomInDelay: 0.5,
+  zoomOutDelay: 0.3
+};
+
+// Movement state
+const moveDirection = new THREE.Vector3();
+
+// Water animation state
+const waterPulse = {
+  baseOpacity: 0.78,
+  amplitude: 0.05,
+  speed: 1.5
+};
+
+// Get player speed based on boost state
+function getPlayerSpeed(now) {
+  if (player.userData.boostEndTime > now) {
+    return PLAYER_CONFIG.BOOST_SPEED;
+  }
+  return PLAYER_CONFIG.BASE_SPEED;
+}
+
+// Main game update function
+export function update(ctx, delta, time) {
+  const now = performance.now();
+
+  // Apply time scale
+  delta *= ctx.gameState.timeScale;
+
+  // Water material animation
+  waterMaterial.opacity = waterPulse.baseOpacity + Math.sin(time * waterPulse.speed) * waterPulse.amplitude;
+
+  // Only update gameplay when started and dialog not open
+  if (ctx.gameState.started && !ctx.gameState.dialogOpen) {
+    updatePlayer(ctx, delta, time, now);
+    updateNPCs(ctx, delta, time);
+    updateCollectibles(ctx, delta, time, now);
+    updateBuildingProximity(ctx, time);
+  }
+
+  // Always update ambient animations
+  updateAmbientAnimations(ctx, delta, time);
+}
+
+// Update player movement and animation
+function updatePlayer(ctx, delta, time, now) {
+  const input = getInputVector();
+  const combinedInputX = Math.max(-1, Math.min(1, input.x));
+  const combinedInputY = Math.max(-1, Math.min(1, input.y));
+  const isMoving = combinedInputX !== 0 || combinedInputY !== 0;
+
+  moveDirection.set(combinedInputX, 0, combinedInputY);
+  if (moveDirection.lengthSq() > 0) {
+    moveDirection.normalize();
+  }
+
+  if (isMoving) {
+    const playerSpeed = getPlayerSpeed(now);
+    const moveX = combinedInputX * playerSpeed * delta;
+    const moveZ = combinedInputY * playerSpeed * delta;
+    const newX = player.position.x + moveX;
+    const newZ = player.position.z + moveZ;
+
+    if (!checkCollision(newX, player.position.z)) {
+      player.position.x = newX;
+    }
+    if (!checkCollision(player.position.x, newZ)) {
+      player.position.z = newZ;
+    }
+
+    // Face movement direction
+    const angle = Math.atan2(combinedInputX, combinedInputY);
+    player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, angle, 0.15);
+
+    // Waddle animation
+    player.rotation.z = Math.sin(time * 15) * 0.12;
+    player.position.y = player.userData.baseY + Math.abs(Math.sin(time * 18)) * 0.12;
+  } else {
+    // Idle animation
+    player.rotation.z = THREE.MathUtils.lerp(player.rotation.z, 0, 0.1);
+    player.position.y = player.userData.baseY + Math.sin(time * 2) * 0.03;
+  }
+
+  // Update cape if player has one
+  updateCape(delta, time, isMoving, moveDirection);
+
+  // Camera follow with zoom
+  updateCamera(ctx, time, isMoving);
+}
+
+// Update camera position and zoom
+function updateCamera(ctx, time, isMoving) {
+  if (isMoving !== cameraZoomState.moving) {
+    cameraZoomState.moving = isMoving;
+    cameraZoomState.lastMoveChange = time;
+  }
+
+  if (cameraZoomState.moving) {
+    if (time - cameraZoomState.lastMoveChange > cameraZoomState.zoomOutDelay) {
+      cameraZoomState.targetOffset = cameraZoomState.zoomedOutOffset;
+    }
+  } else if (time - cameraZoomState.lastMoveChange > cameraZoomState.zoomInDelay) {
+    cameraZoomState.targetOffset = cameraZoomState.baseOffset;
+  }
+
+  cameraZoomState.currentOffset = THREE.MathUtils.lerp(
+    cameraZoomState.currentOffset,
+    cameraZoomState.targetOffset,
+    0.04
+  );
+
+  cameraTarget.set(player.position.x, player.position.y + 1, player.position.z);
+  const idealPos = new THREE.Vector3(
+    player.position.x,
+    player.position.y + cameraZoomState.currentOffset,
+    player.position.z + cameraZoomState.currentOffset
+  );
+  camera.position.lerp(idealPos, 0.08);
+  camera.lookAt(cameraTarget);
+}
+
+// Update NPCs
+function updateNPCs(ctx, delta, time) {
+  // Check NPC proximity
+  let nearestNPC = null;
+  let nearestWanderer = null;
+  let nearestDist = Infinity;
+
+  Object.entries(npcs).forEach(([id, npc]) => {
+    const dist = player.position.distanceTo(npc.position);
+    if (dist < 3.5 && dist < nearestDist) {
+      nearestDist = dist;
+      nearestNPC = id;
+      nearestWanderer = null;
+    }
+  });
+
+  wanderers.forEach(npc => {
+    const dist = player.position.distanceTo(npc.position);
+    if (dist < 3.5 && dist < nearestDist) {
+      nearestDist = dist;
+      nearestNPC = null;
+      nearestWanderer = npc;
+    }
+  });
+
+  ctx.gameState.nearNPC = nearestNPC;
+  ctx.gameState.nearWanderer = nearestWanderer;
+
+  updateActionButton(nearestNPC, nearestWanderer);
+
+  // TODO: Add wanderer, bernie listener, corgi, bee, and insect update logic
+}
+
+// Update collectibles
+function updateCollectibles(ctx, delta, time, now) {
+  collectibles.forEach(col => {
+    if (col.userData.collected) return;
+    if (player.position.distanceTo(col.position) < 1.2) {
+      col.userData.collected = true;
+      col.visible = false;
+      ctx.gameState.collected++;
+      updateCollectibleCount(ctx.gameState.collected);
+      showCollectPopup();
+      // spawnCelebrationBurst();
+      player.userData.boostEndTime = now + PLAYER_CONFIG.BOOST_DURATION;
+      if (!ctx.gameState.firstSweetShown) {
+        ctx.gameState.firstSweetShown = true;
+        ctx.gameState.timeScale = 0.2;
+        ctx.gameState.dialogOpen = true;
+        showSweetIntro();
+      }
+    }
+  });
+}
+
+// Update building proximity and location display
+function updateBuildingProximity(ctx, time) {
+  let nearestBuilding = null;
+  let nearestBuildingDist = Infinity;
+  Object.entries(buildings).forEach(([id, building]) => {
+    const dist = player.position.distanceTo(building.position);
+    if (dist < nearestBuildingDist) {
+      nearestBuildingDist = dist;
+      nearestBuilding = building;
+    }
+  });
+
+  if (nearestBuilding && nearestBuilding.userData.id !== ctx.gameState.currentLocation) {
+    ctx.gameState.currentLocation = nearestBuilding.userData.id;
+    updateLocationDisplay(
+      ctx.gameState.currentLocation,
+      nearestBuilding.userData.icon,
+      nearestBuilding.userData.name
+    );
+  }
+
+  // Building pulse animation
+  Object.values(buildings).forEach(building => {
+    const dist = player.position.distanceTo(building.position);
+    if (dist < 6) {
+      building.scale.setScalar(1 + Math.sin(time * 5) * 0.02);
+    } else {
+      building.scale.setScalar(THREE.MathUtils.lerp(building.scale.x, 1, 0.1));
+    }
+  });
+}
+
+// Update ambient animations (always run)
+function updateAmbientAnimations(ctx, delta, time) {
+  updateCelebrationParticles(delta);
+
+  // Cloud movement
+  clouds.forEach(cloud => {
+    cloud.position.x += cloud.userData.speed;
+    if (cloud.position.x > 60) cloud.position.x = -60;
+  });
+
+  // NPC indicators
+  Object.values(npcs).forEach(npc => {
+    npc.children.forEach(child => {
+      if (child.userData.isIndicator) {
+        child.position.y = 2.5 + Math.sin(time * 3) * 0.15;
+        child.rotation.y = time * 2;
+      }
+    });
+  });
+
+  // Collectible float and spin
+  collectibles.forEach(col => {
+    if (!col.userData.collected) {
+      col.position.y = 0.5 + Math.sin(time * 3 + col.userData.floatOffset) * 0.15;
+      col.rotation.y = time * 1.5;
+    }
+  });
+
+  // TODO: Add bee, insect, corgi, bernie listener animations
+}
