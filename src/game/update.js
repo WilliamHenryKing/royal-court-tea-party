@@ -4,7 +4,7 @@ import { player, updateCape } from '../entities/player.js';
 import { buildings } from '../entities/buildings.js';
 import { npcs, wanderers, bernieListeners, corgis, bees, updateCorgis, updateBees, updateWanderers, updateBernieListeners, updateNPCIndicators } from '../entities/npcs.js';
 import { collectibles, clouds, celebrationParticles, updateCelebrationParticles, updateAmbientParticles } from '../entities/collectibles.js';
-import { updateStringLights, waterMaterial } from '../entities/world.js';
+import { waterMaterial } from '../entities/world.js';
 import { checkCollision } from './interactions.js';
 import { getInputVector } from '../systems/inputSystem.js';
 import { camera } from '../engine/renderer.js';
@@ -262,7 +262,4 @@ function updateAmbientAnimations(ctx, delta, time) {
 
   // Floating petals and sparkles
   updateAmbientParticles(time, delta);
-
-  // String light bulb flicker
-  updateStringLights(time);
 }

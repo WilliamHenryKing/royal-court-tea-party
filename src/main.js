@@ -26,7 +26,7 @@ import {
   createInsects,
   createAmbientParticles
 } from './entities/collectibles.js';
-import { createWorld, createStringLights } from './entities/world.js';
+import { createWorld } from './entities/world.js';
 import { handleAction } from './game/interactions.js';
 import { update } from './game/update.js';
 import {
@@ -143,9 +143,6 @@ function initGameWorld() {
   createClouds();
   createInsects();
   createAmbientParticles(60); // Floating petals and sparkles
-
-  // Create decorative string lights
-  createStringLights();
 }
 
 // Start the game when DOM is ready
