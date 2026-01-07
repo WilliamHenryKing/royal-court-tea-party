@@ -5,12 +5,12 @@ import { MUSIC_TRACKS } from '../assets/data.js';
 
 // Voice configuration
 const VOICE_FILES = {
-  palace: 'voices/Voice1.mp3',  // Queen Bee ALWAYS gets Voice1
-  teashop: ['voices/Voice2.mp3', 'voices/Voice3.mp3', 'voices/Voice4.mp3', 'voices/Voice5.mp3', 'voices/Voice6.mp3', 'voices/Voice7.mp3'],
-  speakers: ['voices/Voice2.mp3', 'voices/Voice3.mp3', 'voices/Voice4.mp3', 'voices/Voice5.mp3', 'voices/Voice6.mp3', 'voices/Voice7.mp3'],
-  guests: ['voices/Voice2.mp3', 'voices/Voice3.mp3', 'voices/Voice4.mp3', 'voices/Voice5.mp3', 'voices/Voice6.mp3', 'voices/Voice7.mp3'],
-  feast: ['voices/Voice2.mp3', 'voices/Voice3.mp3', 'voices/Voice4.mp3', 'voices/Voice5.mp3', 'voices/Voice6.mp3', 'voices/Voice7.mp3'],
-  wanderer: ['voices/Voice2.mp3', 'voices/Voice3.mp3', 'voices/Voice4.mp3', 'voices/Voice5.mp3', 'voices/Voice6.mp3', 'voices/Voice7.mp3']
+  palace: 'music/voices/Voice1.mp3',  // Queen Bee ALWAYS gets Voice1
+  teashop: ['music/voices/Voice2.mp3', 'music/voices/Voice3.mp3', 'music/voices/Voice4.mp3', 'music/voices/Voice5.mp3', 'music/voices/Voice6.mp3', 'music/voices/Voice7.mp3'],
+  speakers: ['music/voices/Voice2.mp3', 'music/voices/Voice3.mp3', 'music/voices/Voice4.mp3', 'music/voices/Voice5.mp3', 'music/voices/Voice6.mp3', 'music/voices/Voice7.mp3'],
+  guests: ['music/voices/Voice2.mp3', 'music/voices/Voice3.mp3', 'music/voices/Voice4.mp3', 'music/voices/Voice5.mp3', 'music/voices/Voice6.mp3', 'music/voices/Voice7.mp3'],
+  feast: ['music/voices/Voice2.mp3', 'music/voices/Voice3.mp3', 'music/voices/Voice4.mp3', 'music/voices/Voice5.mp3', 'music/voices/Voice6.mp3', 'music/voices/Voice7.mp3'],
+  wanderer: ['music/voices/Voice2.mp3', 'music/voices/Voice3.mp3', 'music/voices/Voice4.mp3', 'music/voices/Voice5.mp3', 'music/voices/Voice6.mp3', 'music/voices/Voice7.mp3']
 };
 
 // Voice state

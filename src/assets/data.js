@@ -150,7 +150,7 @@ export const WANDERING_NPCS = [
 ];
 
 export const MUSIC_TRACKS = [
-  { title: "Cloud Kingdom Café Part I", file: "Cloud Kingdom Café Part I.mp3" },
-  { title: "Cloud Kingdom Café Part II", file: "Cloud Kingdom Café Part II.mp3" },
-  { title: "Castle in the Clouds", file: "Castle in the Clouds.mp3" }
+  { title: "Cloud Kingdom Café Part I", file: "music/Cloud Kingdom Café Part I.mp3" },
+  { title: "Cloud Kingdom Café Part II", file: "music/Cloud Kingdom Café Part II.mp3" },
+  { title: "Castle in the Clouds", file: "music/Castle in the Clouds.mp3" }
 ];
