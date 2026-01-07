@@ -3,11 +3,11 @@ import * as THREE from 'three';
 import { scene } from '../engine/renderer.js';
 import { checkCollision } from '../entities/world.js';
 
-// Doom Sayer configuration
+// AUSTINVILLE GRID LAYOUT - Doom Sayer in north-west area near river, between Fishing Dock and Donut Shop
 export const DOOM_SAYER_CONFIG = {
   name: "Prophet Pessimist",
   role: "Professional Worrier",
-  position: { x: -30, z: -18 },
+  position: { x: -18, z: -24 },
 
   quotes: [
     "THE TEA-TIME END IS NEAR!",

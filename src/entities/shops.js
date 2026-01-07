@@ -9,12 +9,17 @@ export let coffeeCafe = null;
 export let donutShop = null;
 export let pinkieSchool = null;
 
-// Building configurations
+// Building configurations - AUSTINVILLE GRID LAYOUT
+// Shops placed in proper blocks between streets:
+// - Tea Café: East block between Royal Road (z=0) and Crumpet Court (z=10)
+// - Coffee Café: East block between Milk Lane (z=-10) and Peppermint Ave (z=-20)
+// - Donut Shop: Near river (z≈-24), east side
+// - Pinkie School: West block between Royal Road (z=0) and Crumpet Court (z=10)
 export const SHOP_POSITIONS = {
-  teaCafe: { x: 18, z: 8, name: "The Gilded Teacup" },
-  coffeeCafe: { x: 18, z: -12, name: "The Bitter Bean" },
-  donutShop: { x: 8, z: -25, name: "Glazed & Confused" },
-  pinkieSchool: { x: -18, z: 12, name: "Madame Pinkie's Academy" }
+  teaCafe: { x: 25, z: 5, name: "The Gilded Teacup" },
+  coffeeCafe: { x: 25, z: -15, name: "The Bitter Bean" },
+  donutShop: { x: 10, z: -24, name: "Glazed & Confused" },
+  pinkieSchool: { x: -25, z: 5, name: "Madame Pinkie's Academy" }
 };
 
 // ============================================

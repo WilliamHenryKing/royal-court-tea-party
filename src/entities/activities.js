@@ -10,8 +10,9 @@ import { FISHING_DOCK_POS } from './river.js';
 // BOXING RING - "The Royal Rumble"
 // ============================================
 
+// AUSTINVILLE GRID LAYOUT - Boxing Ring in west block between Milk Lane (z=-10) and Peppermint Ave (z=-20)
 export const BOXING_RING_DATA = {
-  position: { x: -22, z: -12 },
+  position: { x: -25, z: -15 },
   fighters: [
     {
       name: "Sir Clumsy",
@@ -471,10 +472,11 @@ function showFighterQuote(npc, camera) {
 
 // ============================================
 // TRAMPOLINE - "Royal Bounce Zone"
+// AUSTINVILLE GRID LAYOUT - Trampoline in west block between Royal Road (z=0) and Milk Lane (z=-10)
 // ============================================
 
 export const TRAMPOLINE_DATA = {
-  position: { x: -22, z: 5 },
+  position: { x: -25, z: -5 },
   radius: 3,
   bouncePower: 15,
   quotes: [
