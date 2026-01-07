@@ -21,6 +21,8 @@ export function initRenderer() {
   renderer = new THREE.WebGLRenderer({ antialias: window.devicePixelRatio < 2 });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 0.9;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   document.getElementById('game-container').appendChild(renderer.domElement);
@@ -48,9 +50,9 @@ function setupPostProcessing() {
   // Add bloom effect - subtle dreamy glow
   const bloomPass = new UnrealBloomPass(
     new THREE.Vector2(window.innerWidth, window.innerHeight),
-    0.3,    // strength - subtle bloom
-    0.5,    // radius - how far bloom spreads
-    0.7     // threshold - brightness needed for bloom
+    0.12,   // strength - gentler bloom
+    0.25,   // radius - tighter glow spread
+    0.85    // threshold - bloom only on brightest highlights
   );
   composer.addPass(bloomPass);
 }
@@ -58,11 +60,11 @@ function setupPostProcessing() {
 // Setup scene lighting - Warm, golden-hour feel
 function setupLighting() {
   // Warm ambient light - gives everything a soft glow
-  const ambient = new THREE.AmbientLight(0xfff0e6, 0.5);
+  const ambient = new THREE.AmbientLight(0xfff0e6, 0.35);
   scene.add(ambient);
 
   // Main directional light (golden sun)
-  const sun = new THREE.DirectionalLight(0xffecd2, 0.7);
+  const sun = new THREE.DirectionalLight(0xffecd2, 0.55);
   sun.position.set(15, 25, 15);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
@@ -77,7 +79,7 @@ function setupLighting() {
 
   // Hemisphere light - sky/ground gradient for softer shadows
   // Warm sky color, soft green ground bounce
-  const hemi = new THREE.HemisphereLight(0xffecd2, 0x98fb98, 0.35);
+  const hemi = new THREE.HemisphereLight(0xffecd2, 0x98fb98, 0.25);
   scene.add(hemi);
 
   // Rim light for magical back-lighting (subtle pink/purple)
@@ -86,7 +88,7 @@ function setupLighting() {
   scene.add(rimLight);
 
   // Point lights for building warmth (golden glows)
-  const buildingGlow = new THREE.PointLight(0xffd700, 0.3, 15);
+  const buildingGlow = new THREE.PointLight(0xffd700, 0.2, 15);
   buildingGlow.position.set(0, 3, 0); // Near fountain
   scene.add(buildingGlow);
 }
