@@ -1005,9 +1005,6 @@
       // Create bees and honey around palace
       createBeesAndHoney();
 
-      const waterfallAnchor = createWaterfallFeature();
-      createIrrigationSystem(waterfallAnchor.x, waterfallAnchor.z);
-
       // Collectibles
       for (let i = 0; i < 25; i++) {
         const angle = Math.random() * Math.PI * 2;
@@ -1832,6 +1829,9 @@
 
       // Royal props placed beyond paths
       createRoyalProps();
+
+      const waterfallAnchor = createWaterfallFeature();
+      createIrrigationSystem(waterfallAnchor.x, waterfallAnchor.z);
     }
 
     function createRoyalProps() {
