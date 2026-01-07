@@ -2,7 +2,6 @@
 import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 
 export let scene, camera, renderer, composer;
 
@@ -28,7 +27,7 @@ export function initRenderer() {
   // Setup lighting
   setupLighting();
 
-  // Setup post-processing (bloom effect)
+  // Setup post-processing (basic render pass only)
   setupPostProcessing();
 
   // Handle window resize
@@ -37,7 +36,7 @@ export function initRenderer() {
   return { scene, camera, renderer, composer };
 }
 
-// Setup bloom post-processing for dreamy glow effect
+// Setup post-processing for basic render pass
 function setupPostProcessing() {
   composer = new EffectComposer(renderer);
 
@@ -45,24 +44,17 @@ function setupPostProcessing() {
   const renderPass = new RenderPass(scene, camera);
   composer.addPass(renderPass);
 
-  // Add bloom effect - subtle dreamy glow
-  const bloomPass = new UnrealBloomPass(
-    new THREE.Vector2(window.innerWidth, window.innerHeight),
-    0.3,    // strength - subtle bloom
-    0.5,    // radius - how far bloom spreads
-    0.7     // threshold - brightness needed for bloom
-  );
-  composer.addPass(bloomPass);
+  // No bloom for now; render with the scene's base lighting.
 }
 
 // Setup scene lighting - Warm, golden-hour feel
 function setupLighting() {
   // Warm ambient light - gives everything a soft glow
-  const ambient = new THREE.AmbientLight(0xfff0e6, 0.5);
+  const ambient = new THREE.AmbientLight(0xffffff, 0.55);
   scene.add(ambient);
 
   // Main directional light (golden sun)
-  const sun = new THREE.DirectionalLight(0xffecd2, 0.7);
+  const sun = new THREE.DirectionalLight(0xffffff, 0.75);
   sun.position.set(15, 25, 15);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
@@ -75,20 +67,6 @@ function setupLighting() {
   sun.shadow.radius = 4;
   scene.add(sun);
 
-  // Hemisphere light - sky/ground gradient for softer shadows
-  // Warm sky color, soft green ground bounce
-  const hemi = new THREE.HemisphereLight(0xffecd2, 0x98fb98, 0.35);
-  scene.add(hemi);
-
-  // Rim light for magical back-lighting (subtle pink/purple)
-  const rimLight = new THREE.DirectionalLight(0xffc0cb, 0.2);
-  rimLight.position.set(-10, 15, -10);
-  scene.add(rimLight);
-
-  // Point lights for building warmth (golden glows)
-  const buildingGlow = new THREE.PointLight(0xffd700, 0.3, 15);
-  buildingGlow.position.set(0, 3, 0); // Near fountain
-  scene.add(buildingGlow);
 }
 
 // Handle window resize
