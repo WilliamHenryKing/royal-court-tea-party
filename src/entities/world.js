@@ -16,7 +16,7 @@ export const waterfallSheets = [];
 
 // Shared materials
 const stoneMaterial = new THREE.MeshStandardMaterial({ color: 0xf0e6d2, roughness: 0.75 });
-const waterMaterial = new THREE.MeshStandardMaterial({
+export const waterMaterial = new THREE.MeshStandardMaterial({
   color: 0x87ceeb,
   transparent: true,
   opacity: 0.78,
