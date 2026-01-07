@@ -51,21 +51,20 @@
     .splash-instruction { background: rgba(255,255,255,0.8); backdrop-filter: blur(10px); padding: 0.8rem 1.2rem; border-radius: 1rem; margin-bottom: 1rem; max-width: 300px; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.1); animation: fadeSlideIn 1s ease 0.9s both; }
     .splash-instruction p { color: var(--text-dark); line-height: 1.5; font-size: 0.9rem; }
     .splash-instruction strong { color: var(--pink-deep); }
-    .splash-btn { background: linear-gradient(135deg, var(--pink-main) 0%, var(--lavender) 100%); border: none; padding: 1rem 2.5rem; border-radius: 3rem; color: var(--white); font-family: 'Inter', sans-serif; font-weight: 700; font-size: 1.1rem; cursor: pointer; box-shadow: 0 8px 30px rgba(245, 161, 192, 0.5); transition: all 0.3s ease; animation: fadeSlideIn 1s ease 1.2s both, btnPulse 2s ease-in-out infinite 2.2s; touch-action: manipulation; }
+    .splash-btn { background: linear-gradient(135deg, var(--pink-main) 0%, var(--lavender) 100%); border: none; padding: 1rem 2.5rem; border-radius: 3rem; color: var(--white); font-family: 'Inter', sans-serif; font-weight: 700; font-size: 1.1rem; cursor: pointer; box-shadow: 0 8px 30px rgba(245, 161, 192, 0.5); transition: all 0.3s ease; animation: btnPulse 2s ease-in-out infinite; touch-action: manipulation; }
     .splash-btn:active { transform: scale(0.97); }
     @keyframes btnPulse { 0%, 100% { box-shadow: 0 8px 30px rgba(245, 161, 192, 0.5); } 50% { box-shadow: 0 8px 50px rgba(245, 161, 192, 0.8); } }
     .splash-footer { margin-top: 1rem; margin-bottom: 1rem; font-size: 0.75rem; color: var(--text-light); opacity: 0.7; animation: fadeSlideIn 1s ease 1.4s both; }
     
-    .splash-map { 
-      background: rgba(255,255,255,0.9); 
-      backdrop-filter: blur(10px); 
-      border-radius: 1.2rem; 
-      padding: 0.6rem; 
-      margin-bottom: 1rem; 
-      max-width: 280px; 
-      width: 90%; 
-      box-shadow: 0 8px 32px rgba(0,0,0,0.1); 
-      animation: fadeSlideIn 1s ease 0.95s both;
+    .splash-map {
+      background: rgba(255,255,255,0.9);
+      backdrop-filter: blur(10px);
+      border-radius: 1.2rem;
+      padding: 0.6rem;
+      margin-bottom: 1rem;
+      max-width: 280px;
+      width: 90%;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
       border: 2px solid rgba(255,215,0,0.3);
       cursor: pointer;
       transition: all 0.3s ease;
