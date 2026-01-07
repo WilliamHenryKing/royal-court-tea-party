@@ -63,6 +63,7 @@ const ROAD_MATERIALS = {
 // Store all street meshes for updates
 export const streetMeshes = [];
 export const streetSignGroups = [];
+export const intersectionTiles = [];
 
 /**
  * Create beautiful Roman cobblestone texture
@@ -297,7 +298,7 @@ function createRoadMaterials() {
 /**
  * Create curb/border stones along the road edges
  */
-function createRoadCurbs(streetData, roadGroup) {
+function createRoadCurbs(streetData, roadGroup, yPosition = 0.12) {
   const length = Math.sqrt(
     Math.pow(streetData.end.x - streetData.start.x, 2) +
     Math.pow(streetData.end.z - streetData.start.z, 2)
@@ -332,7 +333,7 @@ function createRoadCurbs(streetData, roadGroup) {
 
     curb.position.set(
       centerX + perpX,
-      0.12 + curbHeight / 2,
+      yPosition + curbHeight / 2,
       centerZ + perpZ
     );
     curb.rotation.y = angle;
@@ -346,7 +347,7 @@ function createRoadCurbs(streetData, roadGroup) {
 /**
  * Create a single street segment
  */
-function createStreet(streetData) {
+function createStreet(streetData, yPosition = 0.12) {
   const group = new THREE.Group();
 
   const length = Math.sqrt(
@@ -373,7 +374,7 @@ function createStreet(streetData) {
   road.rotation.x = -Math.PI / 2;
   road.position.set(
     (streetData.start.x + streetData.end.x) / 2,
-    0.12, // Raised higher to prevent z-fighting
+    yPosition, // Use passed Y position
     (streetData.start.z + streetData.end.z) / 2
   );
 
@@ -386,12 +387,41 @@ function createStreet(streetData) {
   road.receiveShadow = true;
   group.add(road);
 
-  // Add curbs for cobblestone roads
+  // Add curbs for cobblestone roads (skip near intersections)
   if (streetData.type === 'cobblestone') {
-    createRoadCurbs(streetData, group);
+    createRoadCurbs(streetData, group, yPosition);
   }
 
   return group;
+}
+
+/**
+ * Create an intersection tile where roads cross
+ */
+function createIntersectionTile(x, z, size, type = 'cobblestone') {
+  // Clone material for this intersection
+  const material = ROAD_MATERIALS[type].clone();
+
+  if (material.map) {
+    material.map = material.map.clone();
+    material.map.repeat.set(size / 3, size / 3);
+    material.map.needsUpdate = true;
+  }
+
+  // Use stronger polygon offset for intersections
+  material.polygonOffset = true;
+  material.polygonOffsetFactor = -2;
+  material.polygonOffsetUnits = -2;
+
+  const tile = new THREE.Mesh(
+    new THREE.PlaneGeometry(size, size),
+    material
+  );
+  tile.rotation.x = -Math.PI / 2;
+  tile.position.set(x, 0.14, z); // Intersection tiles sit highest
+  tile.receiveShadow = true;
+
+  return tile;
 }
 
 /**
@@ -502,9 +532,12 @@ function createStreetSign(name, position, rotation = 0) {
 export function createAllStreets() {
   createRoadMaterials();
 
-  // Create main streets
+  const MAIN_STREET_Y = 0.12;
+  const CROSS_STREET_Y = 0.10;
+
+  // Create main streets (east-west, higher Y)
   STREETS.main.forEach(street => {
-    const streetMesh = createStreet(street);
+    const streetMesh = createStreet(street, MAIN_STREET_Y);
     scene.add(streetMesh);
     streetMeshes.push(streetMesh);
 
@@ -518,14 +551,45 @@ export function createAllStreets() {
     }
   });
 
-  // Create cross streets
+  // Create cross streets (north-south, lower Y)
   STREETS.cross.forEach(street => {
-    const streetMesh = createStreet(street);
+    const streetMesh = createStreet(street, CROSS_STREET_Y);
     scene.add(streetMesh);
     streetMeshes.push(streetMesh);
   });
 
-  return { streetMeshes, streetSignGroups };
+  // Create intersection tiles where main and cross streets meet
+  STREETS.main.forEach(mainStreet => {
+    STREETS.cross.forEach(crossStreet => {
+      // Find intersection point
+      const mainZ = mainStreet.start.z; // Main streets are horizontal, constant Z
+      const crossX = crossStreet.start.x; // Cross streets are vertical, constant X
+
+      // Check if cross street spans the main street's Z position
+      const crossMinZ = Math.min(crossStreet.start.z, crossStreet.end.z);
+      const crossMaxZ = Math.max(crossStreet.start.z, crossStreet.end.z);
+
+      // Check if main street spans the cross street's X position
+      const mainMinX = Math.min(mainStreet.start.x, mainStreet.end.x);
+      const mainMaxX = Math.max(mainStreet.start.x, mainStreet.end.x);
+
+      if (mainZ >= crossMinZ && mainZ <= crossMaxZ &&
+          crossX >= mainMinX && crossX <= mainMaxX) {
+        // There is an intersection! Create a tile
+        const tileSize = Math.max(mainStreet.width, crossStreet.width) + 1;
+
+        // Use cobblestone if either road is cobblestone
+        const type = (mainStreet.type === 'cobblestone' || crossStreet.type === 'cobblestone')
+          ? 'cobblestone' : 'sandy';
+
+        const tile = createIntersectionTile(crossX, mainZ, tileSize, type);
+        scene.add(tile);
+        intersectionTiles.push(tile);
+      }
+    });
+  });
+
+  return { streetMeshes, streetSignGroups, intersectionTiles };
 }
 
 /**
