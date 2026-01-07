@@ -15,8 +15,8 @@ export function setDesktopModeEnabled(enabled) {
 export function updateKeyboardVector() {
   keyboardVector.x = 0;
   keyboardVector.y = 0;
-  if (keyboardState.up) keyboardVector.y += 1;
-  if (keyboardState.down) keyboardVector.y -= 1;
+  if (keyboardState.up) keyboardVector.y -= 1;
+  if (keyboardState.down) keyboardVector.y += 1;
   if (keyboardState.left) keyboardVector.x -= 1;
   if (keyboardState.right) keyboardVector.x += 1;
 
