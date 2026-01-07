@@ -263,6 +263,7 @@
     const collisionBoxes = [];
     const waterfallSheets = [];
     const celebrationParticles = [];
+    const grassTuftData = [];
     const stoneMaterial = new THREE.MeshStandardMaterial({ color: 0xf0e6d2, roughness: 0.75 });
     const waterMaterial = new THREE.MeshStandardMaterial({
       color: 0x87ceeb,
@@ -323,6 +324,8 @@
     const capeTempVec5 = new THREE.Vector3();
     const capeTempVec6 = new THREE.Vector3();
     const capeTempQuat = new THREE.Quaternion();
+    const grassTuftDummy = new THREE.Object3D();
+    let grassTufts;
 
     function loadTrack(index) {
       const track = MUSIC_TRACKS[index];
@@ -1622,6 +1625,51 @@
       }
     }
 
+    function createGrassTufts() {
+      const tuftCount = 480;
+      const tuftGeo = new THREE.ConeGeometry(0.08, 0.6, 5);
+      const tuftMat = new THREE.MeshStandardMaterial({ color: 0x4fae5d, roughness: 0.9 });
+      grassTufts = new THREE.InstancedMesh(tuftGeo, tuftMat, tuftCount);
+      grassTufts.castShadow = false;
+      grassTufts.receiveShadow = false;
+      grassTufts.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+
+      let placed = 0;
+      let attempts = 0;
+      while (placed < tuftCount && attempts < tuftCount * 8) {
+        attempts++;
+        const angle = Math.random() * Math.PI * 2;
+        const radius = 16 + Math.random() * 30;
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius;
+        const nearPathBand = isNearPath(x, z, 4.2) && !isNearPath(x, z, 1.2);
+        const isSafeOpenArea = isSafeOffPathPlacement(x, z);
+        if (!(isSafeOpenArea || (nearPathBand && isClearOfBuildings(x, z, 2.5)))) {
+          continue;
+        }
+
+        const scaleBase = 0.35 + Math.random() * 0.6;
+        const scale = new THREE.Vector3(
+          scaleBase * (0.8 + Math.random() * 0.4),
+          scaleBase * (0.9 + Math.random() * 0.6),
+          scaleBase * (0.8 + Math.random() * 0.4)
+        );
+        const rotationY = Math.random() * Math.PI * 2;
+        const position = new THREE.Vector3(x, 0.02, z);
+        grassTuftData.push({ position, rotationY, scale });
+
+        grassTuftDummy.position.copy(position);
+        grassTuftDummy.rotation.set(0, rotationY, 0);
+        grassTuftDummy.scale.copy(scale);
+        grassTuftDummy.updateMatrix();
+        grassTufts.setMatrixAt(placed, grassTuftDummy.matrix);
+        placed++;
+      }
+
+      grassTufts.count = placed;
+      scene.add(grassTufts);
+    }
+
     function createDecorations() {
       // Flowers
       const flowerColors = [0xff69b4, 0xffd700, 0xff6347, 0x9370db, 0x00ced1];
@@ -1695,6 +1743,8 @@
         mushroom.scale.setScalar(0.25 + Math.random() * 0.35);
         scene.add(mushroom);
       }
+
+      createGrassTufts();
 
       // Clouds
       for (let i = 0; i < 12; i++) {
@@ -1826,6 +1876,28 @@
       return !collisionBoxes.some(b =>
         x > b.minX - buffer && x < b.maxX + buffer && z > b.minZ - buffer && z < b.maxZ + buffer
       );
+    }
+
+    function updateGrassTuftsCulling() {
+      if (!grassTufts || !player) return;
+      const radius = 28;
+      const radiusSq = radius * radius;
+      let visibleCount = 0;
+
+      for (let i = 0; i < grassTuftData.length; i++) {
+        const data = grassTuftData[i];
+        if (player.position.distanceToSquared(data.position) > radiusSq) continue;
+
+        grassTuftDummy.position.copy(data.position);
+        grassTuftDummy.rotation.set(0, data.rotationY, 0);
+        grassTuftDummy.scale.copy(data.scale);
+        grassTuftDummy.updateMatrix();
+        grassTufts.setMatrixAt(visibleCount, grassTuftDummy.matrix);
+        visibleCount++;
+      }
+
+      grassTufts.count = visibleCount;
+      grassTufts.instanceMatrix.needsUpdate = true;
     }
 
     function createFlower(color) {
@@ -2404,6 +2476,7 @@
 
       // Ambient animations (always run)
       updateCelebrationParticles(delta);
+      updateGrassTuftsCulling();
       clouds.forEach(cloud => {
         cloud.position.x += cloud.userData.speed;
         if (cloud.position.x > 60) cloud.position.x = -60;
