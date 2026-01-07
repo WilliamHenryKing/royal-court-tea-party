@@ -93,6 +93,15 @@ export function playCurrentTrack() {
   musicAudio.play().catch(err => console.log('Music playback prevented:', err));
 }
 
+export function loadTrack(index) {
+  const track = MUSIC_TRACKS[index];
+  if (!track) return;
+
+  musicAudio.src = encodeURI(track.file);
+  musicAudio.loop = false;
+  musicAudio.volume = 0.3;
+}
+
 export function playNextTrack() {
   musicState.currentIndex = (musicState.currentIndex + 1) % MUSIC_TRACKS.length;
   playCurrentTrack();
