@@ -23,6 +23,7 @@ import {
   addToggleHandler,
   addCloseHandler
 } from './interactionHandler.js';
+import { zoomToNPC, zoomOut } from '../systems/cameraZoom.js';
 
 // Module-level context reference
 let ctx = null;
@@ -423,6 +424,9 @@ export function openDialog(locationId) {
   const dialog = ctx.DIALOGS[locationId];
   if (!dialog) return;
 
+  // Zoom camera to NPC
+  zoomToNPC(locationId);
+
   // Play voice
   playVoice(locationId);
 
@@ -470,6 +474,9 @@ export function openWandererDialog(npc) {
 }
 
 export function closeDialog() {
+  // Zoom camera back out
+  zoomOut();
+
   ctx.gameState.dialogOpen = false;
   document.getElementById('dialog-overlay').classList.remove('visible');
 

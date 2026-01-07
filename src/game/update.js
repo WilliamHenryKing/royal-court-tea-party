@@ -9,6 +9,7 @@ import { updateRiverWater, updateJumpingFish } from '../entities/river.js';
 import { updateKingAndGuards } from '../entities/king.js';
 import { updateDoomSayer } from '../entities/doomSayer.js';
 import { updateAllActivities } from '../entities/activities.js';
+import { updateCameraZoom, isZoomedIn } from '../systems/cameraZoom.js';
 import { checkCollision } from './interactions.js';
 import { getInputVector } from '../systems/inputSystem.js';
 import { camera } from '../engine/renderer.js';
@@ -118,11 +119,16 @@ function updatePlayer(ctx, delta, time, now) {
   updateCape(delta, time, isMoving, moveDirection);
 
   // Camera follow with zoom
-  updateCamera(ctx, time, isMoving);
+  updateCamera(ctx, delta, time, isMoving);
 }
 
 // Update camera position and zoom
-function updateCamera(ctx, time, isMoving) {
+function updateCamera(ctx, delta, time, isMoving) {
+  // Check if NPC interaction zoom is active - let it handle camera
+  if (updateCameraZoom(delta)) {
+    return;
+  }
+
   if (isMoving !== cameraZoomState.moving) {
     cameraZoomState.moving = isMoving;
     cameraZoomState.lastMoveChange = time;
