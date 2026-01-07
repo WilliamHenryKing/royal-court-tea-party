@@ -20,6 +20,8 @@ export function initRenderer() {
   renderer = new THREE.WebGLRenderer({ antialias: window.devicePixelRatio < 2 });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 0.9;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   document.getElementById('game-container').appendChild(renderer.domElement);
@@ -67,6 +69,20 @@ function setupLighting() {
   sun.shadow.radius = 4;
   scene.add(sun);
 
+  // Hemisphere light - sky/ground gradient for softer shadows
+  // Warm sky color, soft green ground bounce
+  const hemi = new THREE.HemisphereLight(0xffecd2, 0x98fb98, 0.25);
+  scene.add(hemi);
+
+  // Rim light for magical back-lighting (subtle pink/purple)
+  const rimLight = new THREE.DirectionalLight(0xffc0cb, 0.2);
+  rimLight.position.set(-10, 15, -10);
+  scene.add(rimLight);
+
+  // Point lights for building warmth (golden glows)
+  const buildingGlow = new THREE.PointLight(0xffd700, 0.2, 15);
+  buildingGlow.position.set(0, 3, 0); // Near fountain
+  scene.add(buildingGlow);
 }
 
 // Handle window resize
