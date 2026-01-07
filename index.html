@@ -38,7 +38,7 @@
     .splash-instruction { background: rgba(255,255,255,0.8); backdrop-filter: blur(10px); padding: 0.8rem 1.2rem; border-radius: 1rem; margin-bottom: 1rem; max-width: 300px; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.1); animation: fadeSlideIn 1s ease 0.9s both; }
     .splash-instruction p { color: var(--text-dark); line-height: 1.5; font-size: 0.9rem; }
     .splash-instruction strong { color: var(--pink-deep); }
-    .splash-btn { background: linear-gradient(135deg, var(--pink-main) 0%, var(--lavender) 100%); border: none; padding: 1rem 2.5rem; border-radius: 3rem; color: var(--white); font-family: 'Inter', sans-serif; font-weight: 700; font-size: 1.1rem; cursor: pointer; box-shadow: 0 8px 30px rgba(245, 161, 192, 0.5); transition: all 0.3s ease; animation: fadeSlideIn 1s ease 1.2s both, btnPulse 2s ease-in-out infinite 2.2s; }
+    .splash-btn { background: linear-gradient(135deg, var(--pink-main) 0%, var(--lavender) 100%); border: none; padding: 1rem 2.5rem; border-radius: 3rem; color: var(--white); font-family: 'Inter', sans-serif; font-weight: 700; font-size: 1.1rem; cursor: pointer; box-shadow: 0 8px 30px rgba(245, 161, 192, 0.5); transition: all 0.3s ease; animation: fadeSlideIn 1s ease 1.2s both, btnPulse 2s ease-in-out infinite 2.2s; touch-action: manipulation; }
     .splash-btn:active { transform: scale(0.97); }
     @keyframes btnPulse { 0%, 100% { box-shadow: 0 8px 30px rgba(245, 161, 192, 0.5); } 50% { box-shadow: 0 8px 50px rgba(245, 161, 192, 0.8); } }
     .splash-footer { margin-top: 1rem; margin-bottom: 1rem; font-size: 0.75rem; color: var(--text-light); opacity: 0.7; animation: fadeSlideIn 1s ease 1.4s both; }
@@ -56,6 +56,7 @@
       border: 2px solid rgba(255,215,0,0.3);
       cursor: pointer;
       transition: all 0.3s ease;
+      touch-action: manipulation;
     }
     .splash-map:hover { border-color: rgba(255,215,0,0.6); }
     .splash-map.zoomed {
@@ -2555,20 +2556,6 @@
         playNextTrack();
       });
 
-      // Start button
-      document.getElementById('start-btn').addEventListener('click', () => {
-        document.getElementById('splash-screen').classList.add('hidden');
-        // Also hide map overlay and reset map zoom state
-        document.getElementById('map-overlay').classList.remove('visible');
-        document.getElementById('splash-map').classList.remove('zoomed');
-        document.getElementById('loading-screen').classList.remove('hidden');
-        setTimeout(() => {
-          document.getElementById('loading-screen').classList.add('hidden');
-          document.getElementById('intro-modal').classList.add('visible');
-          gameState.dialogOpen = true;
-        }, 2000);
-      });
-
       document.getElementById('intro-start').addEventListener('click', () => {
         startAdventure();
       });
@@ -2581,11 +2568,50 @@
 
       document.getElementById('sweet-dismiss').addEventListener('click', dismissSweetIntro);
 
-      // Map zoom functionality
+    }
+
+    function setupSplashInteractions() {
+      const splashScreen = document.getElementById('splash-screen');
       const splashMap = document.getElementById('splash-map');
       const mapOverlay = document.getElementById('map-overlay');
-      
-      splashMap.addEventListener('click', (e) => {
+      const startBtn = document.getElementById('start-btn');
+
+      if (!splashScreen || !splashMap || !mapOverlay || !startBtn) return;
+
+      let startTriggered = false;
+      let lastPointerStart = 0;
+      const triggerStart = () => {
+        if (startTriggered) return;
+        startTriggered = true;
+        splashScreen.classList.add('hidden');
+        mapOverlay.classList.remove('visible');
+        splashMap.classList.remove('zoomed');
+        document.getElementById('loading-screen').classList.remove('hidden');
+        setTimeout(() => {
+          document.getElementById('loading-screen').classList.add('hidden');
+          document.getElementById('intro-modal').classList.add('visible');
+          gameState.dialogOpen = true;
+        }, 2000);
+      };
+
+      startBtn.addEventListener('pointerup', (e) => {
+        e.preventDefault();
+        lastPointerStart = performance.now();
+        triggerStart();
+      });
+      startBtn.addEventListener('click', () => {
+        if (performance.now() - lastPointerStart < 500) return;
+        triggerStart();
+      });
+      startBtn.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+          e.preventDefault();
+          triggerStart();
+        }
+      });
+
+      let lastPointerMap = 0;
+      const toggleMapZoom = (e) => {
         e.stopPropagation();
         if (splashMap.classList.contains('zoomed')) {
           splashMap.classList.remove('zoomed');
@@ -2594,9 +2620,23 @@
           splashMap.classList.add('zoomed');
           mapOverlay.classList.add('visible');
         }
+      };
+
+      splashMap.addEventListener('pointerup', (e) => {
+        lastPointerMap = performance.now();
+        toggleMapZoom(e);
       });
-      
+      splashMap.addEventListener('click', (e) => {
+        if (performance.now() - lastPointerMap < 500) return;
+        toggleMapZoom(e);
+      });
+      mapOverlay.addEventListener('pointerup', () => {
+        lastPointerMap = performance.now();
+        splashMap.classList.remove('zoomed');
+        mapOverlay.classList.remove('visible');
+      });
       mapOverlay.addEventListener('click', () => {
+        if (performance.now() - lastPointerMap < 500) return;
         splashMap.classList.remove('zoomed');
         mapOverlay.classList.remove('visible');
       });
@@ -3224,6 +3264,7 @@
     }
 
     // Start the game
+    setupSplashInteractions();
     init();
   </script>
   <script>
