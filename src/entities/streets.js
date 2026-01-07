@@ -1,4 +1,4 @@
-// Streets - Austinville street system with cobblestone, sandy roads, and signs
+// Streets - Austinville street system with Roman cobblestone and sandy roads
 import * as THREE from 'three';
 import { scene } from '../engine/renderer.js';
 
@@ -65,87 +65,201 @@ export const streetMeshes = [];
 export const streetSignGroups = [];
 
 /**
- * Create procedural road textures
+ * Create beautiful Roman cobblestone texture
+ * Rounded, irregular white/cream stones with dark mortar gaps
  */
-function createRoadMaterials() {
-  // Cobblestone - create procedural texture
-  const cobbleCanvas = document.createElement('canvas');
-  cobbleCanvas.width = 128;
-  cobbleCanvas.height = 128;
-  const cobbleCtx = cobbleCanvas.getContext('2d');
+function createRomanCobblestoneTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
 
-  // Base color
-  cobbleCtx.fillStyle = '#a0a0a0';
-  cobbleCtx.fillRect(0, 0, 128, 128);
+  // Dark mortar/gap color as base
+  ctx.fillStyle = '#4a4a4a';
+  ctx.fillRect(0, 0, 256, 256);
 
-  // Draw stones
-  const stoneColors = ['#888888', '#909090', '#989898', '#a8a8a8', '#b0b0b0'];
-  for (let y = 0; y < 8; y++) {
-    for (let x = 0; x < 8; x++) {
-      const offsetX = (y % 2) * 8;
-      cobbleCtx.fillStyle = stoneColors[Math.floor(Math.random() * stoneColors.length)];
-      cobbleCtx.beginPath();
-      // Round rectangle
-      const rx = x * 16 + offsetX + 1;
-      const ry = y * 16 + 1;
-      const rw = 14;
-      const rh = 14;
-      const radius = 3;
-      cobbleCtx.moveTo(rx + radius, ry);
-      cobbleCtx.lineTo(rx + rw - radius, ry);
-      cobbleCtx.quadraticCurveTo(rx + rw, ry, rx + rw, ry + radius);
-      cobbleCtx.lineTo(rx + rw, ry + rh - radius);
-      cobbleCtx.quadraticCurveTo(rx + rw, ry + rh, rx + rw - radius, ry + rh);
-      cobbleCtx.lineTo(rx + radius, ry + rh);
-      cobbleCtx.quadraticCurveTo(rx, ry + rh, rx, ry + rh - radius);
-      cobbleCtx.lineTo(rx, ry + radius);
-      cobbleCtx.quadraticCurveTo(rx, ry, rx + radius, ry);
-      cobbleCtx.closePath();
-      cobbleCtx.fill();
+  // Stone colors - cream/white Roman style
+  const stoneColors = [
+    '#f5f0e6', '#ebe5d8', '#e8e2d4', '#f0ebe0', '#e5dfd0',
+    '#ded8c8', '#d8d2c4', '#eae4d6', '#f2ece0', '#e0dace'
+  ];
 
-      // Add slight shadow
-      cobbleCtx.fillStyle = 'rgba(0,0,0,0.1)';
-      cobbleCtx.fillRect(x * 16 + offsetX + 1, y * 16 + 12, 14, 4);
+  // Create irregular cobblestones in an offset pattern
+  const stoneSize = 28;
+  const gap = 4;
+  const rows = Math.ceil(256 / (stoneSize + gap)) + 1;
+  const cols = Math.ceil(256 / (stoneSize + gap)) + 1;
+
+  for (let row = 0; row < rows; row++) {
+    const rowOffset = (row % 2) * (stoneSize / 2 + gap / 2);
+
+    for (let col = 0; col < cols; col++) {
+      const baseX = col * (stoneSize + gap) + rowOffset - stoneSize / 2;
+      const baseY = row * (stoneSize + gap) - stoneSize / 2;
+
+      // Slight random offset for natural look
+      const x = baseX + (Math.random() - 0.5) * 4;
+      const y = baseY + (Math.random() - 0.5) * 4;
+
+      // Vary stone size slightly
+      const w = stoneSize + (Math.random() - 0.5) * 8;
+      const h = stoneSize + (Math.random() - 0.5) * 8;
+
+      // Pick a stone color
+      const color = stoneColors[Math.floor(Math.random() * stoneColors.length)];
+
+      // Draw rounded stone
+      ctx.fillStyle = color;
+      ctx.beginPath();
+
+      // Irregular rounded rectangle
+      const radius = 6 + Math.random() * 4;
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + w - radius, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+      ctx.lineTo(x + w, y + h - radius);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+      ctx.lineTo(x + radius, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+      ctx.fill();
+
+      // Add subtle 3D effect - highlight on top-left
+      const gradient = ctx.createLinearGradient(x, y, x + w, y + h);
+      gradient.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
+      gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0)');
+      gradient.addColorStop(1, 'rgba(0, 0, 0, 0.15)');
+      ctx.fillStyle = gradient;
+      ctx.fill();
+
+      // Add some texture/wear marks
+      if (Math.random() < 0.3) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+        ctx.beginPath();
+        ctx.arc(
+          x + Math.random() * w,
+          y + Math.random() * h,
+          2 + Math.random() * 4,
+          0, Math.PI * 2
+        );
+        ctx.fill();
+      }
     }
   }
 
+  // Add some cracks/variations for realism
+  ctx.strokeStyle = 'rgba(100, 90, 80, 0.15)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 15; i++) {
+    ctx.beginPath();
+    ctx.moveTo(Math.random() * 256, Math.random() * 256);
+    ctx.lineTo(Math.random() * 256, Math.random() * 256);
+    ctx.stroke();
+  }
+
+  return canvas;
+}
+
+/**
+ * Create sandy road texture
+ */
+function createSandyTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+
+  // Base sandy color
+  ctx.fillStyle = '#e8d4a8';
+  ctx.fillRect(0, 0, 128, 128);
+
+  // Add varied sand grains
+  const sandColors = ['#d4c098', '#c9b588', '#dcc8a0', '#e0d4b0', '#cfc298'];
+
+  for (let i = 0; i < 400; i++) {
+    ctx.fillStyle = sandColors[Math.floor(Math.random() * sandColors.length)];
+    ctx.globalAlpha = 0.3 + Math.random() * 0.4;
+    ctx.beginPath();
+    ctx.arc(
+      Math.random() * 128,
+      Math.random() * 128,
+      0.5 + Math.random() * 2,
+      0, Math.PI * 2
+    );
+    ctx.fill();
+  }
+
+  ctx.globalAlpha = 1;
+
+  // Add some small pebbles
+  for (let i = 0; i < 20; i++) {
+    ctx.fillStyle = `rgba(${130 + Math.random() * 40}, ${120 + Math.random() * 30}, ${100 + Math.random() * 20}, 0.5)`;
+    ctx.beginPath();
+    ctx.ellipse(
+      Math.random() * 128,
+      Math.random() * 128,
+      1 + Math.random() * 3,
+      1 + Math.random() * 2,
+      Math.random() * Math.PI,
+      0, Math.PI * 2
+    );
+    ctx.fill();
+  }
+
+  // Add subtle cart tracks/paths
+  ctx.strokeStyle = 'rgba(180, 160, 120, 0.2)';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(0, 40);
+  ctx.lineTo(128, 42);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(0, 88);
+  ctx.lineTo(128, 86);
+  ctx.stroke();
+
+  return canvas;
+}
+
+/**
+ * Create procedural road textures
+ */
+function createRoadMaterials() {
+  // Roman Cobblestone
+  const cobbleCanvas = createRomanCobblestoneTexture();
   const cobbleTexture = new THREE.CanvasTexture(cobbleCanvas);
   cobbleTexture.wrapS = THREE.RepeatWrapping;
   cobbleTexture.wrapT = THREE.RepeatWrapping;
-  cobbleTexture.repeat.set(4, 4);
+  cobbleTexture.repeat.set(3, 3);
+  cobbleTexture.anisotropy = 4;
 
   ROAD_MATERIALS.cobblestone = new THREE.MeshStandardMaterial({
     map: cobbleTexture,
-    roughness: 0.9
+    roughness: 0.85,
+    metalness: 0.05,
+    // Prevent z-fighting with polygon offset
+    polygonOffset: true,
+    polygonOffsetFactor: -1,
+    polygonOffsetUnits: -1
   });
 
   // Sandy road
-  const sandyCanvas = document.createElement('canvas');
-  sandyCanvas.width = 64;
-  sandyCanvas.height = 64;
-  const sandyCtx = sandyCanvas.getContext('2d');
-  sandyCtx.fillStyle = '#e8d4a8';
-  sandyCtx.fillRect(0, 0, 64, 64);
-
-  // Add grain
-  for (let i = 0; i < 200; i++) {
-    sandyCtx.fillStyle = `rgba(139, 119, 80, ${Math.random() * 0.3})`;
-    sandyCtx.fillRect(
-      Math.random() * 64,
-      Math.random() * 64,
-      1 + Math.random() * 2,
-      1 + Math.random() * 2
-    );
-  }
-
+  const sandyCanvas = createSandyTexture();
   const sandyTexture = new THREE.CanvasTexture(sandyCanvas);
   sandyTexture.wrapS = THREE.RepeatWrapping;
   sandyTexture.wrapT = THREE.RepeatWrapping;
-  sandyTexture.repeat.set(6, 6);
+  sandyTexture.repeat.set(4, 4);
+  sandyTexture.anisotropy = 4;
 
   ROAD_MATERIALS.sandy = new THREE.MeshStandardMaterial({
     map: sandyTexture,
-    roughness: 0.95
+    roughness: 0.95,
+    // Prevent z-fighting
+    polygonOffset: true,
+    polygonOffsetFactor: -1,
+    polygonOffsetUnits: -1
   });
 
   // Wooden planks (for bridges)
@@ -181,6 +295,55 @@ function createRoadMaterials() {
 }
 
 /**
+ * Create curb/border stones along the road edges
+ */
+function createRoadCurbs(streetData, roadGroup) {
+  const length = Math.sqrt(
+    Math.pow(streetData.end.x - streetData.start.x, 2) +
+    Math.pow(streetData.end.z - streetData.start.z, 2)
+  );
+
+  const angle = Math.atan2(
+    streetData.end.z - streetData.start.z,
+    streetData.end.x - streetData.start.x
+  );
+
+  const curbMat = new THREE.MeshStandardMaterial({
+    color: 0xd0c8b8,
+    roughness: 0.9
+  });
+
+  const curbHeight = 0.08;
+  const curbWidth = 0.15;
+
+  // Create curbs on both sides
+  [-1, 1].forEach(side => {
+    const curb = new THREE.Mesh(
+      new THREE.BoxGeometry(length, curbHeight, curbWidth),
+      curbMat
+    );
+
+    const centerX = (streetData.start.x + streetData.end.x) / 2;
+    const centerZ = (streetData.start.z + streetData.end.z) / 2;
+
+    // Offset perpendicular to road direction
+    const perpX = -Math.sin(angle) * (streetData.width / 2 + curbWidth / 2) * side;
+    const perpZ = Math.cos(angle) * (streetData.width / 2 + curbWidth / 2) * side;
+
+    curb.position.set(
+      centerX + perpX,
+      0.12 + curbHeight / 2,
+      centerZ + perpZ
+    );
+    curb.rotation.y = angle;
+    curb.castShadow = true;
+    curb.receiveShadow = true;
+
+    roadGroup.add(curb);
+  });
+}
+
+/**
  * Create a single street segment
  */
 function createStreet(streetData) {
@@ -191,14 +354,26 @@ function createStreet(streetData) {
     Math.pow(streetData.end.z - streetData.start.z, 2)
   );
 
+  // Clone material so texture repeat can be adjusted per road
+  const material = ROAD_MATERIALS[streetData.type].clone();
+
+  // Adjust texture repeat based on road dimensions
+  if (material.map) {
+    material.map = material.map.clone();
+    const repeatX = length / 8;
+    const repeatY = streetData.width / 3;
+    material.map.repeat.set(repeatX, repeatY);
+    material.map.needsUpdate = true;
+  }
+
   const road = new THREE.Mesh(
     new THREE.PlaneGeometry(length, streetData.width),
-    ROAD_MATERIALS[streetData.type]
+    material
   );
   road.rotation.x = -Math.PI / 2;
   road.position.set(
     (streetData.start.x + streetData.end.x) / 2,
-    0.02,
+    0.12, // Raised higher to prevent z-fighting
     (streetData.start.z + streetData.end.z) / 2
   );
 
@@ -211,6 +386,11 @@ function createStreet(streetData) {
   road.receiveShadow = true;
   group.add(road);
 
+  // Add curbs for cobblestone roads
+  if (streetData.type === 'cobblestone') {
+    createRoadCurbs(streetData, group);
+  }
+
   return group;
 }
 
@@ -220,33 +400,62 @@ function createStreet(streetData) {
 function createStreetSign(name, position, rotation = 0) {
   const group = new THREE.Group();
 
-  // Post
-  const postMat = new THREE.MeshStandardMaterial({ color: 0x4a4a4a });
+  // Post - ornate iron style
+  const postMat = new THREE.MeshStandardMaterial({
+    color: 0x2a2a2a,
+    metalness: 0.6,
+    roughness: 0.4
+  });
   const post = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.08, 0.1, 2.5, 8),
+    new THREE.CylinderGeometry(0.06, 0.08, 2.5, 8),
     postMat
   );
   post.position.y = 1.25;
   post.castShadow = true;
   group.add(post);
 
-  // Sign board
-  const signMat = new THREE.MeshStandardMaterial({ color: 0x2d5a27 });
+  // Decorative rings on post
+  [0.5, 1.0, 1.5].forEach(y => {
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(0.09, 0.02, 6, 12),
+      postMat
+    );
+    ring.position.y = y;
+    ring.rotation.x = Math.PI / 2;
+    group.add(ring);
+  });
+
+  // Sign board - elegant dark green
+  const signMat = new THREE.MeshStandardMaterial({ color: 0x1a4a1a });
   const sign = new THREE.Mesh(
-    new THREE.BoxGeometry(2, 0.5, 0.1),
+    new THREE.BoxGeometry(2.2, 0.55, 0.08),
     signMat
   );
   sign.position.y = 2.3;
   sign.castShadow = true;
   group.add(sign);
 
-  // Text (using sprite)
+  // Gold trim around sign
+  const trimMat = new THREE.MeshStandardMaterial({
+    color: 0xd4af37,
+    metalness: 0.7,
+    roughness: 0.3
+  });
+  const trim = new THREE.Mesh(
+    new THREE.BoxGeometry(2.3, 0.65, 0.06),
+    trimMat
+  );
+  trim.position.y = 2.3;
+  trim.position.z = -0.02;
+  group.add(trim);
+
+  // Text
   const canvas = document.createElement('canvas');
   canvas.width = 256;
   canvas.height = 64;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#f5f5dc';
-  ctx.font = 'bold 28px Georgia';
+  ctx.fillStyle = '#f5eedd';
+  ctx.font = 'bold 26px Georgia';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(name, 128, 32);
@@ -254,18 +463,32 @@ function createStreetSign(name, position, rotation = 0) {
   const textTexture = new THREE.CanvasTexture(canvas);
   const textMat = new THREE.SpriteMaterial({ map: textTexture });
   const text = new THREE.Sprite(textMat);
-  text.scale.set(2, 0.5, 1);
+  text.scale.set(2.1, 0.52, 1);
   text.position.y = 2.3;
-  text.position.z = 0.06;
+  text.position.z = 0.05;
   group.add(text);
 
-  // Decorative top (gold ball)
-  const top = new THREE.Mesh(
-    new THREE.SphereGeometry(0.12, 8, 8),
-    new THREE.MeshStandardMaterial({ color: 0xffd700 })
+  // Decorative top - gold finial
+  const finialBase = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.08, 0.1, 0.1, 8),
+    trimMat
   );
-  top.position.y = 2.6;
-  group.add(top);
+  finialBase.position.y = 2.55;
+  group.add(finialBase);
+
+  const finial = new THREE.Mesh(
+    new THREE.SphereGeometry(0.1, 12, 12),
+    trimMat
+  );
+  finial.position.y = 2.7;
+  group.add(finial);
+
+  const spike = new THREE.Mesh(
+    new THREE.ConeGeometry(0.04, 0.15, 6),
+    trimMat
+  );
+  spike.position.y = 2.85;
+  group.add(spike);
 
   group.position.set(position.x, 0, position.z);
   group.rotation.y = rotation;
