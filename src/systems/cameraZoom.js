@@ -24,7 +24,9 @@ export const cameraZoomConfig = {
   isTransitioning: false,
   targetNPC: null,
   // Store original player position for smooth return
-  playerPosAtZoom: null
+  playerPosAtZoom: null,
+  // Callback when zoom-in completes
+  onZoomInComplete: null
 };
 
 // Target vectors for smooth camera movement
@@ -33,15 +35,22 @@ const targetLookAt = new THREE.Vector3();
 
 /**
  * Zoom camera to an NPC for dialog interaction
+ * @param {string} npcId - The ID of the NPC to zoom to
+ * @param {Function} onComplete - Optional callback when zoom-in completes
  */
-export function zoomToNPC(npcId) {
+export function zoomToNPC(npcId, onComplete = null) {
   const npc = npcs[npcId];
-  if (!npc) return;
+  if (!npc) {
+    // NPC not found, still call callback so dialog shows
+    if (onComplete) onComplete();
+    return;
+  }
 
   cameraZoomConfig.current = 'interaction';
   cameraZoomConfig.isTransitioning = true;
   cameraZoomConfig.targetNPC = npc;
   cameraZoomConfig.playerPosAtZoom = player.position.clone();
+  cameraZoomConfig.onZoomInComplete = onComplete;
 
   // Start NPC talking animation
   npc.userData.isTalking = true;
@@ -156,7 +165,15 @@ export function updateCameraZoom(delta) {
 
   // Check if transition complete
   if (camera.position.distanceTo(targetPos) < 0.1) {
+    const wasTransitioning = cameraZoomConfig.isTransitioning;
     cameraZoomConfig.isTransitioning = false;
+
+    // Call zoom-in complete callback if transitioning TO interaction mode
+    if (wasTransitioning && cameraZoomConfig.current === 'interaction' && cameraZoomConfig.onZoomInComplete) {
+      const callback = cameraZoomConfig.onZoomInComplete;
+      cameraZoomConfig.onZoomInComplete = null; // Clear to prevent multiple calls
+      callback();
+    }
   }
 
   return true; // Camera was handled by zoom system

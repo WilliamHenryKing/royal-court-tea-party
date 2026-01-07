@@ -424,33 +424,38 @@ export function openDialog(locationId) {
   const dialog = ctx.DIALOGS[locationId];
   if (!dialog) return;
 
-  // Zoom camera to NPC
-  zoomToNPC(locationId);
+  // Hide action button immediately
+  document.getElementById('action-btn').classList.remove('visible');
 
-  // Play voice
-  playVoice(locationId);
-
-  ctx.gameState.dialogOpen = true;
-
-  // Check if first visit
+  // Check if first visit (before showing dialog)
   const isNewVisit = !ctx.gameState.visited.has(locationId);
   if (isNewVisit) {
     ctx.gameState.visited.add(locationId);
     updateStars();
   }
 
-  // Update dialog UI
-  document.getElementById('dialog-avatar').textContent = dialog.avatar;
-  document.getElementById('dialog-name').textContent = dialog.name;
-  document.getElementById('dialog-role').textContent = dialog.role;
-  document.getElementById('dialog-content').innerHTML = dialog.content;
-  document.getElementById('dialog-overlay').classList.add('visible');
-  document.getElementById('action-btn').classList.remove('visible');
-
   // Store for notification on close
   if (isNewVisit) {
     ctx.gameState.pendingNotification = locationId;
   }
+
+  // Function to show the dialog UI
+  const showDialogUI = () => {
+    ctx.gameState.dialogOpen = true;
+
+    // Play voice when dialog appears
+    playVoice(locationId);
+
+    // Update dialog UI
+    document.getElementById('dialog-avatar').textContent = dialog.avatar;
+    document.getElementById('dialog-name').textContent = dialog.name;
+    document.getElementById('dialog-role').textContent = dialog.role;
+    document.getElementById('dialog-content').innerHTML = dialog.content;
+    document.getElementById('dialog-overlay').classList.add('visible');
+  };
+
+  // Zoom camera to NPC, then show dialog when zoom completes
+  zoomToNPC(locationId, showDialogUI);
 }
 
 export function openWandererDialog(npc) {

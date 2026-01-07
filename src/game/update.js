@@ -9,7 +9,7 @@ import { updateRiverWater, updateJumpingFish } from '../entities/river.js';
 import { updateKingAndGuards } from '../entities/king.js';
 import { updateDoomSayer } from '../entities/doomSayer.js';
 import { updateAllActivities } from '../entities/activities.js';
-import { updateCameraZoom, isZoomedIn } from '../systems/cameraZoom.js';
+import { updateCameraZoom, isZoomedIn, getZoomState } from '../systems/cameraZoom.js';
 import { checkCollision } from './interactions.js';
 import { getInputVector } from '../systems/inputSystem.js';
 import { camera } from '../engine/renderer.js';
@@ -64,8 +64,16 @@ export function update(ctx, delta, time) {
   // Water material animation
   waterMaterial.opacity = waterPulse.baseOpacity + Math.sin(time * waterPulse.speed) * waterPulse.amplitude;
 
-  // Only update gameplay when started and dialog not open
-  if (ctx.gameState.started && !ctx.gameState.dialogOpen) {
+  // Always update camera zoom (even during dialog transitions)
+  // This allows the zoom-in animation to complete before showing dialog
+  updateCameraZoom(delta);
+
+  // Check if camera is zooming to NPC (freeze player during zoom)
+  const zoomState = getZoomState();
+  const isZoomingOrZoomed = zoomState.current === 'interaction' || zoomState.isTransitioning;
+
+  // Only update gameplay when started, dialog not open, and not zooming to NPC
+  if (ctx.gameState.started && !ctx.gameState.dialogOpen && !isZoomingOrZoomed) {
     updatePlayer(ctx, delta, time, now);
     updateNPCs(ctx, delta, time);
     updateCollectibles(ctx, delta, time, now);
@@ -124,8 +132,9 @@ function updatePlayer(ctx, delta, time, now) {
 
 // Update camera position and zoom
 function updateCamera(ctx, delta, time, isMoving) {
-  // Check if NPC interaction zoom is active - let it handle camera
-  if (updateCameraZoom(delta)) {
+  // If NPC interaction zoom is active, skip normal camera follow
+  // (camera zoom is updated in main update loop)
+  if (isZoomedIn()) {
     return;
   }
 
