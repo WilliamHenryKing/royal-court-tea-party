@@ -213,6 +213,14 @@
     .intro-text { color: var(--text-dark); font-size: 0.92rem; line-height: 1.5; }
     .intro-text span { color: var(--pink-deep); font-weight: 600; }
     .intro-btn { margin-top: 1rem; background: linear-gradient(135deg, var(--mint) 0%, var(--mint-dark) 100%); border: none; color: var(--white); font-weight: 700; padding: 0.7rem 1.6rem; border-radius: 2rem; cursor: pointer; box-shadow: 0 6px 18px rgba(158, 211, 106, 0.5); }
+    .intro-toggle { margin-top: 1rem; padding: 0.8rem; background: rgba(255,255,255,0.8); border-radius: 1rem; box-shadow: inset 0 0 0 1px rgba(245, 161, 192, 0.4); display: none; }
+    .intro-toggle.visible { display: block; }
+    .intro-toggle-title { font-weight: 700; color: var(--text-dark); margin-bottom: 0.4rem; }
+    .intro-toggle-label { display: flex; align-items: center; gap: 0.6rem; font-size: 0.85rem; color: var(--text-light); justify-content: center; }
+    .intro-toggle-label input { accent-color: var(--pink-main); width: 18px; height: 18px; }
+    .is-hidden { display: none !important; }
+    #keyboard-hints { position: fixed; bottom: 8rem; left: 2rem; padding: 0.6rem 0.9rem; background: rgba(255,255,255,0.95); border-radius: 1rem; box-shadow: 0 6px 20px rgba(0,0,0,0.15); font-size: 0.85rem; color: var(--text-dark); z-index: 100; display: none; max-width: 200px; text-align: left; }
+    #keyboard-hints.visible { display: block; }
 
     .floating-message { position: fixed; background: var(--white); padding: 0.6rem 1rem; border-radius: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.15); font-size: 0.85rem; color: var(--text-dark); z-index: 80; animation: floatMsg 3s ease-in-out forwards; pointer-events: none; max-width: 200px; }
     .floating-message::after { content: ''; position: absolute; bottom: -8px; left: 20px; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 8px solid var(--white); }
@@ -396,6 +404,13 @@
         Start with <span>Queen Bee</span> if you want, then explore all five spots, collect sweets, and soak up the vibes.<br>
         Most importantly: chill and have fun. 🌸
       </div>
+      <div class="intro-toggle" id="desktop-mode-section">
+        <div class="intro-toggle-title">Desktop Mode</div>
+        <label class="intro-toggle-label">
+          <input type="checkbox" id="desktop-mode-toggle">
+          <span>Enable keyboard controls</span>
+        </label>
+      </div>
       <button class="intro-btn" id="intro-start">Let's stroll 👑</button>
     </div>
   </div>
@@ -431,6 +446,7 @@
 
   <div id="joystick-container"><div id="joystick-base"><div id="joystick-thumb"></div></div></div>
   <button id="action-btn"><span>💬</span><span>Tap to Chat</span></button>
+  <div id="keyboard-hints">WASD for movement. P for interaction.</div>
 
   <div id="minimap">
     <div class="map-icon current" data-location="palace">🏰</div>
@@ -739,6 +755,9 @@
     const BOOST_PLAYER_SPEED = 12;
     const clock = new THREE.Clock();
     const joystickInput = { x: 0, y: 0 };
+    const keyboardInput = { x: 0, y: 0 };
+    const keyboardState = { up: false, down: false, left: false, right: false };
+    let desktopModeEnabled = false;
     const cameraTarget = new THREE.Vector3();
     const cameraZoomState = {
       currentOffset: 12,
@@ -2058,6 +2077,31 @@
       }
     }
 
+    function updateKeyboardVector() {
+      keyboardInput.x = (keyboardState.right ? 1 : 0) + (keyboardState.left ? -1 : 0);
+      keyboardInput.y = (keyboardState.down ? 1 : 0) + (keyboardState.up ? -1 : 0);
+      const length = Math.hypot(keyboardInput.x, keyboardInput.y);
+      if (length > 1) {
+        keyboardInput.x /= length;
+        keyboardInput.y /= length;
+      }
+    }
+
+    function setDesktopMode(enabled) {
+      desktopModeEnabled = enabled;
+      const joystickContainer = document.getElementById('joystick-container');
+      const keyboardHints = document.getElementById('keyboard-hints');
+      joystickContainer.classList.toggle('is-hidden', enabled);
+      keyboardHints.classList.toggle('visible', enabled);
+      if (!enabled) {
+        keyboardState.up = false;
+        keyboardState.down = false;
+        keyboardState.left = false;
+        keyboardState.right = false;
+        updateKeyboardVector();
+      }
+    }
+
     function setupControls() {
       const container = document.getElementById('joystick-container');
       const thumb = document.getElementById('joystick-thumb');
@@ -2066,6 +2110,21 @@
       let active = false;
       let centerX = 0;
       let centerY = 0;
+      const desktopSection = document.getElementById('desktop-mode-section');
+      const desktopToggle = document.getElementById('desktop-mode-toggle');
+      const isLikelyDesktop = window.matchMedia('(hover: hover) and (pointer: fine)').matches
+        || /Windows|Macintosh|Linux/.test(navigator.userAgent);
+
+      if (isLikelyDesktop) {
+        desktopSection.classList.add('visible');
+      } else {
+        desktopSection.classList.remove('visible');
+      }
+      setDesktopMode(false);
+      desktopToggle.checked = false;
+      desktopToggle.addEventListener('change', (e) => {
+        setDesktopMode(e.target.checked);
+      });
 
       function start(e) {
         if (gameState.dialogOpen || !gameState.started) return;
@@ -2108,6 +2167,58 @@
       container.addEventListener('mousedown', start);
       document.addEventListener('mousemove', move);
       document.addEventListener('mouseup', end);
+
+      document.addEventListener('keydown', (e) => {
+        if (!desktopModeEnabled) return;
+        const key = e.key.toLowerCase();
+        if (['w', 'a', 's', 'd'].includes(key)) {
+          e.preventDefault();
+        }
+        switch (key) {
+          case 'w':
+            keyboardState.up = true;
+            break;
+          case 's':
+            keyboardState.down = true;
+            break;
+          case 'a':
+            keyboardState.left = true;
+            break;
+          case 'd':
+            keyboardState.right = true;
+            break;
+          case 'p':
+            if (!e.repeat && !gameState.dialogOpen && gameState.started && (gameState.nearNPC || gameState.nearWanderer)) {
+              handleAction();
+            }
+            break;
+          default:
+            break;
+        }
+        updateKeyboardVector();
+      });
+
+      document.addEventListener('keyup', (e) => {
+        if (!desktopModeEnabled) return;
+        const key = e.key.toLowerCase();
+        switch (key) {
+          case 'w':
+            keyboardState.up = false;
+            break;
+          case 's':
+            keyboardState.down = false;
+            break;
+          case 'a':
+            keyboardState.left = false;
+            break;
+          case 'd':
+            keyboardState.right = false;
+            break;
+          default:
+            break;
+        }
+        updateKeyboardVector();
+      });
 
       // Action button
       document.getElementById('action-btn').addEventListener('click', handleAction);
@@ -2388,12 +2499,14 @@
 
       if (gameState.started && !gameState.dialogOpen) {
         // Player movement
-        const isMoving = joystickInput.x !== 0 || joystickInput.y !== 0;
+        const combinedInputX = Math.max(-1, Math.min(1, joystickInput.x + (desktopModeEnabled ? keyboardInput.x : 0)));
+        const combinedInputY = Math.max(-1, Math.min(1, joystickInput.y + (desktopModeEnabled ? keyboardInput.y : 0)));
+        const isMoving = combinedInputX !== 0 || combinedInputY !== 0;
         
         if (isMoving) {
           const playerSpeed = getPlayerSpeed(now);
-          const moveX = joystickInput.x * playerSpeed * delta;
-          const moveZ = joystickInput.y * playerSpeed * delta;
+          const moveX = combinedInputX * playerSpeed * delta;
+          const moveZ = combinedInputY * playerSpeed * delta;
           const newX = player.position.x + moveX;
           const newZ = player.position.z + moveZ;
 
@@ -2405,7 +2518,7 @@
           }
 
           // Face movement direction
-          const angle = Math.atan2(joystickInput.x, joystickInput.y);
+          const angle = Math.atan2(combinedInputX, combinedInputY);
           player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, angle, 0.15);
 
           // Waddle animation
