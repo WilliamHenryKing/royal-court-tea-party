@@ -7,9 +7,9 @@ export let scene, camera, renderer, composer;
 
 // Initialize the Three.js renderer, scene, and camera
 export function initRenderer() {
-  // Scene - Neutral background to preserve model colors
+  // Scene - Natural sky background
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xffffff);
+  scene.background = new THREE.Color(0xb3d9ff);
   scene.fog = null;
 
   // Camera
@@ -49,14 +49,18 @@ function setupPostProcessing() {
   // No bloom for now; render with the scene's base lighting.
 }
 
-// Setup scene lighting - simple and bright
+// Setup scene lighting - natural outdoor look
 function setupLighting() {
-  // Bright ambient light
-  const ambient = new THREE.AmbientLight(0xffffff, 0.85);
+  // Subtle ambient light for base illumination
+  const ambient = new THREE.AmbientLight(0xffffff, 0.3);
   scene.add(ambient);
 
-  // Main directional light
-  const sun = new THREE.DirectionalLight(0xffffff, 1.0);
+  // Hemisphere light for natural sky/ground color variation
+  const hemi = new THREE.HemisphereLight(0xb3d9ff, 0xc7e8ac, 0.3);
+  scene.add(hemi);
+
+  // Main directional sunlight
+  const sun = new THREE.DirectionalLight(0xfffef0, 0.7);
   sun.position.set(12, 20, 10);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
