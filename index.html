@@ -771,6 +771,13 @@
     const collisionBoxes = [];
     const waterfallSheets = [];
     const celebrationParticles = [];
+    const stoneMaterial = new THREE.MeshStandardMaterial({ color: 0xf0e6d2, roughness: 0.75 });
+    const waterMaterial = new THREE.MeshStandardMaterial({
+      color: 0x87ceeb,
+      transparent: true,
+      opacity: 0.78,
+      side: THREE.DoubleSide
+    });
     let particleTexture;
     let lastCelebrationTime = 0;
     const CELEBRATION_COOLDOWN = 250;
@@ -798,6 +805,11 @@
       currentIndex: 0,
       muted: false,
       initialized: false
+    };
+    const waterPulse = {
+      baseOpacity: waterMaterial.opacity,
+      amplitude: 0.06,
+      speed: 2.1
     };
     let corgiFurMaterial;
     let corgiAccentMaterial;
@@ -1049,8 +1061,7 @@
       const fountain = new THREE.Group();
       
       // Base
-      const baseMat = new THREE.MeshStandardMaterial({ color: 0xf0e6d2 });
-      const base = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.8, 0.5, 16), baseMat);
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.8, 0.5, 16), stoneMaterial);
       base.position.y = 0.25;
       base.castShadow = true;
       fountain.add(base);
@@ -1058,13 +1069,13 @@
       // Water
       const water = new THREE.Mesh(
         new THREE.CylinderGeometry(1.2, 1.4, 0.3, 16),
-        new THREE.MeshStandardMaterial({ color: 0x87ceeb, transparent: true, opacity: 0.8 })
+        waterMaterial
       );
       water.position.y = 0.65;
       fountain.add(water);
 
       // Pillar
-      const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.25, 1.5, 8), baseMat);
+      const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.25, 1.5, 8), stoneMaterial);
       pillar.position.y = 1.25;
       pillar.castShadow = true;
       fountain.add(pillar);
@@ -1765,6 +1776,96 @@
       }
     }
 
+    function createWaterfallFeature() {
+      const waterfall = new THREE.Group();
+      const anchorX = 26;
+      const anchorZ = -28;
+
+      const base = new THREE.Mesh(new THREE.BoxGeometry(6.2, 2.4, 4.2), stoneMaterial);
+      base.position.y = 1.2;
+      base.castShadow = true;
+      waterfall.add(base);
+
+      const back = new THREE.Mesh(new THREE.BoxGeometry(6.2, 3, 1.4), stoneMaterial);
+      back.position.set(0, 2.2, -1.6);
+      back.castShadow = true;
+      waterfall.add(back);
+
+      const lip = new THREE.Mesh(new THREE.BoxGeometry(6.2, 0.5, 1.2), stoneMaterial);
+      lip.position.set(0, 2.1, -0.2);
+      lip.castShadow = true;
+      waterfall.add(lip);
+
+      const fall = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 2.3), waterMaterial);
+      fall.position.set(0, 1.1, 1.4);
+      waterfall.add(fall);
+
+      const pool = new THREE.Mesh(new THREE.CircleGeometry(2.4, 16), waterMaterial);
+      pool.rotation.x = -Math.PI / 2;
+      pool.position.set(0, 0.08, 2.2);
+      waterfall.add(pool);
+
+      waterfall.position.set(anchorX, 0, anchorZ);
+      scene.add(waterfall);
+
+      return { x: anchorX, z: anchorZ };
+    }
+
+    function createIrrigationSystem(anchorX, anchorZ) {
+      const trough = new THREE.Group();
+      const troughLength = 6;
+      const troughWidth = 1.6;
+      const wallThickness = 0.2;
+      const wallHeight = 0.55;
+
+      const base = new THREE.Mesh(new THREE.BoxGeometry(troughLength, 0.25, troughWidth), stoneMaterial);
+      base.position.y = 0.12;
+      base.castShadow = true;
+      trough.add(base);
+
+      const sideGeo = new THREE.BoxGeometry(troughLength, wallHeight, wallThickness);
+      const sideFront = new THREE.Mesh(sideGeo, stoneMaterial);
+      sideFront.position.set(0, 0.4, troughWidth / 2 - wallThickness / 2);
+      sideFront.castShadow = true;
+      trough.add(sideFront);
+
+      const sideBack = new THREE.Mesh(sideGeo, stoneMaterial);
+      sideBack.position.set(0, 0.4, -troughWidth / 2 + wallThickness / 2);
+      sideBack.castShadow = true;
+      trough.add(sideBack);
+
+      const endGeo = new THREE.BoxGeometry(wallThickness, wallHeight, troughWidth - 0.1);
+      const endLeft = new THREE.Mesh(endGeo, stoneMaterial);
+      endLeft.position.set(-troughLength / 2 + wallThickness / 2, 0.4, 0);
+      endLeft.castShadow = true;
+      trough.add(endLeft);
+
+      const endRight = new THREE.Mesh(endGeo, stoneMaterial);
+      endRight.position.set(troughLength / 2 - wallThickness / 2, 0.4, 0);
+      endRight.castShadow = true;
+      trough.add(endRight);
+
+      const waterStrip = new THREE.Mesh(
+        new THREE.PlaneGeometry(troughLength - 0.4, troughWidth - 0.4),
+        waterMaterial
+      );
+      waterStrip.rotation.x = -Math.PI / 2;
+      waterStrip.position.y = 0.27;
+      trough.add(waterStrip);
+
+      const troughX = anchorX - 5.2;
+      const troughZ = anchorZ + 3.2;
+      trough.position.set(troughX, 0, troughZ);
+      scene.add(trough);
+
+      collisionBoxes.push({
+        minX: troughX - troughLength / 2 - 0.2,
+        maxX: troughX + troughLength / 2 + 0.2,
+        minZ: troughZ - troughWidth / 2 - 0.2,
+        maxZ: troughZ + troughWidth / 2 + 0.2
+      });
+    }
+
     function createBernieListeners() {
       // Get speakers position (Princess Bernie's location)
       const speakersPos = LOCATIONS.find(l => l.id === 'speakers');
@@ -1900,6 +2001,9 @@
 
       // Royal props placed beyond paths
       createRoyalProps();
+
+      const waterfallAnchor = createWaterfallFeature();
+      createIrrigationSystem(waterfallAnchor.x, waterfallAnchor.z);
     }
 
     function createWaterfallFeature() {
@@ -2821,6 +2925,8 @@
       const delta = clock.getDelta() * gameState.timeScale;
       const time = clock.getElapsedTime();
       const now = performance.now();
+
+      waterMaterial.opacity = waterPulse.baseOpacity + Math.sin(time * waterPulse.speed) * waterPulse.amplitude;
 
       if (gameState.started && !gameState.dialogOpen) {
         // Player movement
