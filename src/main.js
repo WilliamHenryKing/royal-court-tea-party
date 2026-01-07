@@ -27,6 +27,13 @@ import {
   createAmbientParticles
 } from './entities/collectibles.js';
 import { createWorld } from './entities/world.js';
+import { createAllStreets } from './entities/streets.js';
+import {
+  createRiver,
+  createAllBridges,
+  createJumpingFish,
+  createFishingDock
+} from './entities/river.js';
 import { handleAction } from './game/interactions.js';
 import { update } from './game/update.js';
 import {
@@ -124,6 +131,15 @@ function init() {
 function initGameWorld() {
   // Create world environment (ground, paths, fountain, decorations, etc.)
   createWorld();
+
+  // Create Austinville street system
+  createAllStreets();
+
+  // Create river, bridges, and fishing dock
+  createRiver();
+  createAllBridges();
+  createFishingDock();
+  createJumpingFish();
 
   // Create buildings
   createBuildings();

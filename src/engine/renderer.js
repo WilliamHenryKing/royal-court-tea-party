@@ -59,17 +59,17 @@ function setupLighting() {
   const hemi = new THREE.HemisphereLight(0xb3d9ff, 0xc7e8ac, 0.3);
   scene.add(hemi);
 
-  // Main directional sunlight
+  // Main directional sunlight (expanded for Austinville)
   const sun = new THREE.DirectionalLight(0xfffef0, 0.7);
-  sun.position.set(12, 20, 10);
+  sun.position.set(20, 30, 15);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
   sun.shadow.camera.near = 0.5;
-  sun.shadow.camera.far = 80;
-  sun.shadow.camera.left = -35;
-  sun.shadow.camera.right = 35;
-  sun.shadow.camera.top = 35;
-  sun.shadow.camera.bottom = -35;
+  sun.shadow.camera.far = 120;
+  sun.shadow.camera.left = -60;
+  sun.shadow.camera.right = 60;
+  sun.shadow.camera.top = 60;
+  sun.shadow.camera.bottom = -60;
   sun.shadow.radius = 4;
   scene.add(sun);
 }

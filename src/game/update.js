@@ -5,6 +5,7 @@ import { buildings } from '../entities/buildings.js';
 import { npcs, wanderers, bernieListeners, corgis, bees, updateCorgis, updateBees, updateWanderers, updateBernieListeners, updateNPCIndicators } from '../entities/npcs.js';
 import { collectibles, clouds, celebrationParticles, updateCelebrationParticles, updateAmbientParticles } from '../entities/collectibles.js';
 import { waterMaterial } from '../entities/world.js';
+import { updateRiverWater, updateJumpingFish } from '../entities/river.js';
 import { checkCollision } from './interactions.js';
 import { getInputVector } from '../systems/inputSystem.js';
 import { camera } from '../engine/renderer.js';
@@ -262,4 +263,10 @@ function updateAmbientAnimations(ctx, delta, time) {
 
   // Floating petals and sparkles
   updateAmbientParticles(time, delta);
+
+  // River water animation
+  updateRiverWater(time);
+
+  // Jumping fish animation
+  updateJumpingFish(time, delta);
 }
