@@ -7,10 +7,10 @@ export let scene, camera, renderer, composer;
 
 // Initialize the Three.js renderer, scene, and camera
 export function initRenderer() {
-  // Scene - Warm golden hour sky
+  // Scene - Neutral background to preserve model colors
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xffecd2); // Soft peachy-gold
-  scene.fog = new THREE.FogExp2(0xfff8f0, 0.006); // Warm dreamy fog
+  scene.background = new THREE.Color(0xffffff);
+  scene.fog = null;
 
   // Camera
   camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -20,8 +20,8 @@ export function initRenderer() {
   renderer = new THREE.WebGLRenderer({ antialias: window.devicePixelRatio < 2 });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.1;
+  renderer.toneMapping = THREE.NoToneMapping;
+  renderer.toneMappingExposure = 1.0;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   document.getElementById('game-container').appendChild(renderer.domElement);
