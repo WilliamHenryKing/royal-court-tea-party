@@ -754,6 +754,7 @@
       nearNPC: null,
       nearWanderer: null,
       completionShown: false,
+      capeUnlocked: false,
       bernieListenersActive: false,
       bernieListenersLeaving: false
     };
@@ -1293,14 +1294,10 @@
       shoeR.castShadow = true;
       group.add(shoeR);
 
-      const cape = createCape();
-      group.add(cape);
-
       player = group;
       player.position.set(0, 0, 5); // Start outside fountain
       player.userData.baseY = 0;
       player.userData.boostEndTime = 0;
-      player.userData.cape = cape.userData.cape;
       scene.add(player);
     }
 
@@ -2875,7 +2872,7 @@
 
       // Completion modal
       document.getElementById('completion-close').addEventListener('click', closeCompletion);
-      document.getElementById('continue-btn').addEventListener('click', closeCompletion);
+      document.getElementById('continue-btn').addEventListener('click', handleCompletionContinue);
 
       // Music controls
       document.getElementById('music-toggle').addEventListener('click', () => {
@@ -3097,6 +3094,22 @@
       document.getElementById('completion-modal').classList.remove('visible');
     }
 
+    function handleCompletionContinue() {
+      closeCompletion();
+      if (!gameState.capeUnlocked) {
+        unlockPlayerCape();
+        showCapeRewardNotification();
+      }
+    }
+
+    function unlockPlayerCape() {
+      if (!player || gameState.capeUnlocked) return;
+      const cape = createCape();
+      player.add(cape);
+      player.userData.cape = cape.userData.cape;
+      gameState.capeUnlocked = true;
+    }
+
     function updateStars() {
       const locationIds = ['palace', 'teashop', 'speakers', 'guests', 'feast'];
       locationIds.forEach((id, index) => {
@@ -3114,6 +3127,14 @@
       const notif = document.createElement('div');
       notif.className = 'mission-notif';
       notif.innerHTML = `<span class="mission-notif-icon">⭐</span>${name} completed!`;
+      document.body.appendChild(notif);
+      setTimeout(() => notif.remove(), 3000);
+    }
+
+    function showCapeRewardNotification() {
+      const notif = document.createElement('div');
+      notif.className = 'mission-notif';
+      notif.innerHTML = '<span class="mission-notif-icon">🧣</span>You earned a tiny royal cape! ✨';
       document.body.appendChild(notif);
       setTimeout(() => notif.remove(), 3000);
     }
