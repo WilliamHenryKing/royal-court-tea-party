@@ -317,6 +317,41 @@
     };
     let corgiFurMaterial;
     let corgiAccentMaterial;
+    const npcTextureCache = new Map();
+    const npcMaterialCache = new Map();
+    const npcGeometries = {
+      body: new THREE.CylinderGeometry(0.3, 0.35, 0.6, 16),
+      bodice: new THREE.CylinderGeometry(0.32, 0.4, 0.45, 16),
+      head: new THREE.SphereGeometry(0.38, 18, 16),
+      hair: new THREE.SphereGeometry(0.4, 16, 12),
+      hairBun: new THREE.SphereGeometry(0.16, 12, 10),
+      indicator: new THREE.SphereGeometry(0.22, 12, 12),
+      skirt: new THREE.ConeGeometry(0.75, 1.4, 12, 1, true),
+      skirtLayer: new THREE.ConeGeometry(0.7, 0.5, 12, 1, true),
+      waistRuffle: new THREE.TorusGeometry(0.35, 0.06, 8, 18),
+      sleeve: new THREE.SphereGeometry(0.18, 12, 10),
+      cuff: new THREE.TorusGeometry(0.12, 0.03, 6, 12),
+      brooch: new THREE.SphereGeometry(0.06, 8, 8),
+      broochRibbon: new THREE.ConeGeometry(0.035, 0.12, 5),
+      collar: new THREE.TorusGeometry(0.19, 0.035, 6, 10),
+      necklace: new THREE.TorusGeometry(0.14, 0.02, 6, 12),
+      hemLayer: new THREE.TorusGeometry(0.62, 0.03, 6, 18),
+      tiara: new THREE.CylinderGeometry(0.18, 0.22, 0.08, 6),
+      jewel: new THREE.SphereGeometry(0.04, 8, 8),
+      apron: new THREE.ConeGeometry(0.42, 0.85, 8, 1, true),
+      bow: new THREE.TorusGeometry(0.12, 0.03, 6, 12),
+      wandererBody: new THREE.SphereGeometry(0.35, 12, 12),
+      wandererHead: new THREE.SphereGeometry(0.3, 12, 12),
+      wandererSkirtLayer: new THREE.ConeGeometry(0.45, 0.28, 8, 1, true),
+      wandererBrooch: new THREE.SphereGeometry(0.045, 6, 6),
+      wandererCollar: new THREE.TorusGeometry(0.14, 0.03, 6, 8),
+      wandererLeg: new THREE.CylinderGeometry(0.08, 0.06, 0.2, 6),
+      wandererHem: new THREE.TorusGeometry(0.38, 0.02, 6, 12),
+      wandererSweat: new THREE.SphereGeometry(0.05, 6, 6),
+      wandererCane: new THREE.CylinderGeometry(0.03, 0.03, 0.8, 6),
+      wandererGlasses: new THREE.TorusGeometry(0.08, 0.015, 8, 16)
+    };
+    const npcSkinMaterial = new THREE.MeshStandardMaterial({ color: 0xffeedd });
     const capeTempVec = new THREE.Vector3();
     const capeTempVec2 = new THREE.Vector3();
     const capeTempVec3 = new THREE.Vector3();
@@ -1059,9 +1094,110 @@
       return group;
     }
 
+    function createGownTexture(cacheKey, baseColor, accentColor, style) {
+      if (npcTextureCache.has(cacheKey)) {
+        return npcTextureCache.get(cacheKey);
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 64;
+      canvas.height = 64;
+      const ctx = canvas.getContext('2d');
+      const base = `#${baseColor.toString(16).padStart(6, '0')}`;
+      const accent = `#${accentColor.toString(16).padStart(6, '0')}`;
+      ctx.fillStyle = base;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      if (style === 'polka') {
+        ctx.fillStyle = accent;
+        const radius = 5;
+        for (let y = 8; y < 64; y += 16) {
+          for (let x = 8; x < 64; x += 16) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      } else if (style === 'lace') {
+        ctx.strokeStyle = accent;
+        ctx.globalAlpha = 0.5;
+        for (let y = 6; y < 64; y += 12) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(64, y);
+          ctx.stroke();
+        }
+        for (let x = 6; x < 64; x += 12) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, 64);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+      } else {
+        const gradient = ctx.createLinearGradient(0, 0, 64, 64);
+        gradient.addColorStop(0, base);
+        gradient.addColorStop(1, accent);
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 64, 64);
+        ctx.fillStyle = accent;
+        ctx.globalAlpha = 0.35;
+        for (let y = 0; y < 64; y += 12) {
+          ctx.fillRect(0, y, 64, 5);
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.repeat.set(2, 2);
+      npcTextureCache.set(cacheKey, texture);
+      return texture;
+    }
+
+    function getNPCMaterials(paletteKey, palette, style) {
+      if (npcMaterialCache.has(paletteKey)) {
+        return npcMaterialCache.get(paletteKey);
+      }
+
+      const gownTexture = createGownTexture(
+        `npc-${paletteKey}`,
+        palette.gown,
+        palette.trim,
+        style
+      );
+      const materials = {
+        gownMat: new THREE.MeshStandardMaterial({ color: palette.gown, roughness: 0.65, map: gownTexture }),
+        accentMat: new THREE.MeshStandardMaterial({ color: palette.accent, roughness: 0.4, metalness: 0.2 }),
+        trimMat: new THREE.MeshStandardMaterial({ color: palette.trim, emissive: palette.trim, emissiveIntensity: 0.2 }),
+        hairMat: new THREE.MeshStandardMaterial({ color: palette.hair, roughness: 0.8 })
+      };
+      npcMaterialCache.set(paletteKey, materials);
+      return materials;
+    }
+
+    function getWanderingMaterials(paletteKey, bodyColor, trimColor, accentColor, style) {
+      if (npcMaterialCache.has(paletteKey)) {
+        return npcMaterialCache.get(paletteKey);
+      }
+      const gownTexture = createGownTexture(
+        `wander-${paletteKey}`,
+        bodyColor,
+        trimColor,
+        style
+      );
+      const materials = {
+        bodyMat: new THREE.MeshStandardMaterial({ color: bodyColor, map: gownTexture }),
+        trimMat: new THREE.MeshStandardMaterial({ color: trimColor }),
+        accessoryMat: new THREE.MeshStandardMaterial({ color: accentColor })
+      };
+      npcMaterialCache.set(paletteKey, materials);
+      return materials;
+    }
+
     function createNPC(locationId) {
       const group = new THREE.Group();
-      const skinMat = new THREE.MeshStandardMaterial({ color: 0xffeedd });
       const palettes = {
         palace: { gown: 0xf7c2d9, accent: 0xffd700, trim: 0xfff2c9, hair: 0x7a4b2a },
         teashop: { gown: 0xbad9ff, accent: 0xfff2c9, trim: 0xffc1d9, hair: 0x5c3a21 },
@@ -1070,40 +1206,38 @@
         feast: { gown: 0xb8e986, accent: 0xffd1e1, trim: 0xfff2c9, hair: 0x6a3b2a }
       };
       const palette = palettes[locationId] || palettes.palace;
-      const gownMat = new THREE.MeshStandardMaterial({ color: palette.gown, roughness: 0.65 });
-      const accentMat = new THREE.MeshStandardMaterial({ color: palette.accent, roughness: 0.4, metalness: 0.2 });
-      const trimMat = new THREE.MeshStandardMaterial({ color: palette.trim, emissive: palette.trim, emissiveIntensity: 0.2 });
-      const hairMat = new THREE.MeshStandardMaterial({ color: palette.hair, roughness: 0.8 });
+      const gownStyle = locationId === 'palace' || locationId === 'guests' ? 'polka' : locationId === 'teashop' ? 'lace' : 'bands';
+      const { gownMat, accentMat, trimMat, hairMat } = getNPCMaterials(locationId, palette, gownStyle);
 
       // Body core
-      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, 0.6, 16), gownMat);
+      const body = new THREE.Mesh(npcGeometries.body, gownMat);
       body.position.y = 0.9;
       body.castShadow = true;
       group.add(body);
 
-      const bodice = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.4, 0.45, 16), accentMat);
+      const bodice = new THREE.Mesh(npcGeometries.bodice, accentMat);
       bodice.position.y = 1.1;
       bodice.castShadow = true;
       group.add(bodice);
 
       // Head
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.38, 18, 16), skinMat);
+      const head = new THREE.Mesh(npcGeometries.head, npcSkinMaterial);
       head.position.y = 1.75;
       head.castShadow = true;
       group.add(head);
 
-      const hair = new THREE.Mesh(new THREE.SphereGeometry(0.4, 16, 12), hairMat);
+      const hair = new THREE.Mesh(npcGeometries.hair, hairMat);
       hair.position.set(0, 1.78, -0.05);
       hair.scale.set(1, 0.9, 1);
       group.add(hair);
 
-      const hairBun = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 10), hairMat);
+      const hairBun = new THREE.Mesh(npcGeometries.hairBun, hairMat);
       hairBun.position.set(0, 1.98, -0.2);
       group.add(hairBun);
 
       // Indicator
       const indicator = new THREE.Mesh(
-        new THREE.SphereGeometry(0.22, 12, 12),
+        npcGeometries.indicator,
         new THREE.MeshStandardMaterial({ color: 0xffd700, emissive: 0xffd700, emissiveIntensity: 0.4, transparent: true, opacity: 0.9 })
       );
       indicator.position.y = 2.5;
@@ -1111,79 +1245,94 @@
       group.add(indicator);
 
       // Main gown
-      const skirt = new THREE.Mesh(new THREE.ConeGeometry(0.75, 1.4, 12, 1, true), gownMat);
+      const skirt = new THREE.Mesh(npcGeometries.skirt, gownMat);
       skirt.position.y = 0.6;
       skirt.rotation.x = Math.PI;
       skirt.castShadow = true;
       group.add(skirt);
 
-      const skirtLayer = new THREE.Mesh(new THREE.ConeGeometry(0.7, 0.5, 12, 1, true), trimMat);
+      const skirtLayer = new THREE.Mesh(npcGeometries.skirtLayer, trimMat);
       skirtLayer.position.y = 0.28;
       skirtLayer.rotation.x = Math.PI;
       group.add(skirtLayer);
 
-      const waistRuffle = new THREE.Mesh(new THREE.TorusGeometry(0.35, 0.06, 8, 18), trimMat);
+      const waistRuffle = new THREE.Mesh(npcGeometries.waistRuffle, trimMat);
       waistRuffle.position.y = 0.9;
       waistRuffle.rotation.x = Math.PI / 2;
       group.add(waistRuffle);
 
+      const hemLayer = new THREE.Mesh(npcGeometries.hemLayer, trimMat);
+      hemLayer.position.y = 0.04;
+      hemLayer.rotation.x = Math.PI / 2;
+      group.add(hemLayer);
+
       // Puff sleeves
-      const sleeveL = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 10), accentMat);
+      const sleeveL = new THREE.Mesh(npcGeometries.sleeve, accentMat);
       sleeveL.position.set(-0.42, 1.25, 0.05);
       group.add(sleeveL);
 
-      const sleeveR = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 10), accentMat);
+      const sleeveR = new THREE.Mesh(npcGeometries.sleeve, accentMat);
       sleeveR.position.set(0.42, 1.25, 0.05);
       group.add(sleeveR);
 
-      const cuffL = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.03, 6, 12), trimMat);
+      const cuffL = new THREE.Mesh(npcGeometries.cuff, trimMat);
       cuffL.position.set(-0.42, 1.05, 0.15);
       cuffL.rotation.x = Math.PI / 2;
       group.add(cuffL);
 
-      const cuffR = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.03, 6, 12), trimMat);
+      const cuffR = new THREE.Mesh(npcGeometries.cuff, trimMat);
       cuffR.position.set(0.42, 1.05, 0.15);
       cuffR.rotation.x = Math.PI / 2;
       group.add(cuffR);
 
       // Accessories: brooches and collar
-      const broochLeft = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), accentMat);
+      const broochLeft = new THREE.Mesh(npcGeometries.brooch, accentMat);
       broochLeft.position.set(-0.14, 1.22, 0.34);
       group.add(broochLeft);
 
-      const broochRight = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), accentMat);
+      const broochRight = new THREE.Mesh(npcGeometries.brooch, accentMat);
       broochRight.position.set(0.14, 1.22, 0.34);
       group.add(broochRight);
 
-      const collar = new THREE.Mesh(new THREE.TorusGeometry(0.19, 0.035, 6, 10), trimMat);
+      const collar = new THREE.Mesh(npcGeometries.collar, trimMat);
       collar.position.y = 1.38;
       collar.rotation.x = Math.PI / 2;
       group.add(collar);
 
-      const necklace = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.02, 6, 12), accentMat);
+      const necklace = new THREE.Mesh(npcGeometries.necklace, accentMat);
       necklace.position.y = 1.47;
       necklace.rotation.x = Math.PI / 2;
       group.add(necklace);
 
+      const ribbonLeft = new THREE.Mesh(npcGeometries.broochRibbon, trimMat);
+      ribbonLeft.position.set(-0.14, 1.12, 0.33);
+      ribbonLeft.rotation.x = Math.PI;
+      group.add(ribbonLeft);
+
+      const ribbonRight = new THREE.Mesh(npcGeometries.broochRibbon, trimMat);
+      ribbonRight.position.set(0.14, 1.12, 0.33);
+      ribbonRight.rotation.x = Math.PI;
+      group.add(ribbonRight);
+
       if (locationId === 'palace') {
-        const tiara = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 0.08, 6), accentMat);
+        const tiara = new THREE.Mesh(npcGeometries.tiara, accentMat);
         tiara.position.y = 2.05;
         group.add(tiara);
         for (let i = 0; i < 5; i++) {
           const a = (i / 5) * Math.PI * 2;
-          const jewel = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8), trimMat);
+          const jewel = new THREE.Mesh(npcGeometries.jewel, trimMat);
           jewel.position.set(Math.cos(a) * 0.16, 2.12, Math.sin(a) * 0.16);
           group.add(jewel);
         }
       }
 
       if (locationId === 'feast') {
-        const apron = new THREE.Mesh(new THREE.ConeGeometry(0.42, 0.85, 8, 1, true), trimMat);
+        const apron = new THREE.Mesh(npcGeometries.apron, trimMat);
         apron.position.y = 0.65;
         apron.rotation.x = Math.PI;
         group.add(apron);
 
-        const bow = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.03, 6, 12), accentMat);
+        const bow = new THREE.Mesh(npcGeometries.bow, accentMat);
         bow.position.set(0, 0.95, 0.35);
         bow.rotation.x = Math.PI / 2;
         group.add(bow);
@@ -1209,46 +1358,58 @@
         trimColors = [0xf7e8ff, 0xfff2c9];
       }
       
-      const bodyMat = new THREE.MeshStandardMaterial({ color: bodyColors[Math.floor(Math.random() * bodyColors.length)] });
-      const trimMat = new THREE.MeshStandardMaterial({ color: trimColors[Math.floor(Math.random() * trimColors.length)] });
-      const accessoryMat = new THREE.MeshStandardMaterial({ color: trimColors[Math.floor(Math.random() * trimColors.length)] });
-      const skinMat = new THREE.MeshStandardMaterial({ color: 0xffeedd });
+      const bodyColor = bodyColors[Math.floor(Math.random() * bodyColors.length)];
+      const trimColor = trimColors[Math.floor(Math.random() * trimColors.length)];
+      const accessoryColor = trimColors[Math.floor(Math.random() * trimColors.length)];
+      const paletteKey = `wanderer-${speedType}-${bodyColor.toString(16)}-${trimColor.toString(16)}-${accessoryColor.toString(16)}`;
+      const gownStyle = speedType === 'fast' ? 'bands' : speedType === 'slow' ? 'lace' : 'polka';
+      const { bodyMat, trimMat, accessoryMat } = getWanderingMaterials(paletteKey, bodyColor, trimColor, accessoryColor, gownStyle);
 
       // Body - slightly hunched for elderly
-      const body = new THREE.Mesh(new THREE.SphereGeometry(0.35, 12, 12), bodyMat);
+      const body = new THREE.Mesh(npcGeometries.wandererBody, bodyMat);
       body.scale.set(1, speedType === 'slow' ? 1.1 : 1.3, 1);
       body.position.y = 0.55;
       body.castShadow = true;
       group.add(body);
 
       // Head
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 12), skinMat);
+      const head = new THREE.Mesh(npcGeometries.wandererHead, npcSkinMaterial);
       head.position.y = speedType === 'slow' ? 1.0 : 1.1;
       head.castShadow = true;
       group.add(head);
 
       // Second skirt layer with trim
-      const skirtLayer = new THREE.Mesh(new THREE.ConeGeometry(0.45, 0.28, 8, 1, true), trimMat);
+      const skirtLayer = new THREE.Mesh(npcGeometries.wandererSkirtLayer, trimMat);
       skirtLayer.position.y = 0.33;
       skirtLayer.rotation.x = Math.PI;
       group.add(skirtLayer);
 
+      const hemLayer = new THREE.Mesh(npcGeometries.wandererHem, accessoryMat);
+      hemLayer.position.y = 0.18;
+      hemLayer.rotation.x = Math.PI / 2;
+      group.add(hemLayer);
+
       // Accessories: brooch and collar
-      const brooch = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 6), accessoryMat);
+      const brooch = new THREE.Mesh(npcGeometries.wandererBrooch, accessoryMat);
       brooch.position.set(0, 0.8, 0.32);
       group.add(brooch);
 
-      const collar = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.03, 6, 8), accessoryMat);
+      const collar = new THREE.Mesh(npcGeometries.wandererCollar, accessoryMat);
       collar.position.y = 0.95;
       collar.rotation.x = Math.PI / 2;
       group.add(collar);
 
+      const ribbon = new THREE.Mesh(npcGeometries.broochRibbon, trimMat);
+      ribbon.position.set(0, 0.72, 0.31);
+      ribbon.rotation.x = Math.PI;
+      group.add(ribbon);
+
       // Legs
-      const legL = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.06, 0.2, 6), bodyMat);
+      const legL = new THREE.Mesh(npcGeometries.wandererLeg, bodyMat);
       legL.position.set(-0.15, 0.1, 0);
       group.add(legL);
 
-      const legR = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.06, 0.2, 6), bodyMat);
+      const legR = new THREE.Mesh(npcGeometries.wandererLeg, bodyMat);
       legR.position.set(0.15, 0.1, 0);
       group.add(legR);
 
@@ -1256,20 +1417,20 @@
       if (speedType === 'fast') {
         // Sweat drops or motion lines effect (small spheres)
         const sweatMat = new THREE.MeshStandardMaterial({ color: 0x87ceeb, transparent: true, opacity: 0.7 });
-        const sweat = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 6), sweatMat);
+        const sweat = new THREE.Mesh(npcGeometries.wandererSweat, sweatMat);
         sweat.position.set(-0.35, 1.15, 0);
         group.add(sweat);
       } else if (speedType === 'slow') {
         // Walking cane
         const caneMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
-        const cane = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.8, 6), caneMat);
+        const cane = new THREE.Mesh(npcGeometries.wandererCane, caneMat);
         cane.position.set(0.35, 0.4, 0);
         cane.rotation.z = 0.2;
         group.add(cane);
         
         // Glasses
         const glassesMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
-        const glasses = new THREE.Mesh(new THREE.TorusGeometry(0.08, 0.015, 8, 16), glassesMat);
+        const glasses = new THREE.Mesh(npcGeometries.wandererGlasses, glassesMat);
         glasses.position.set(0, 1.05, 0.28);
         glasses.rotation.x = Math.PI / 2;
         group.add(glasses);
