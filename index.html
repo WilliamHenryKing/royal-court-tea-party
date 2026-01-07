@@ -1025,6 +1025,7 @@
         const corgi = createCorgi();
         corgi.position.set(x, 0, z);
         corgi.rotation.y = Math.random() * Math.PI * 2;
+        corgi.userData.walkAngle = corgi.rotation.y;
         corgi.userData.baseY = corgi.position.y;
         scene.add(corgi);
         corgis.push(corgi);
@@ -1606,7 +1607,7 @@
       return group;
     }
 
-    function createCorgi() {
+    function createCorgi(speedType = (Math.random() < 0.35 ? 'run' : 'walk')) {
       if (!corgiFurMaterial) {
         corgiFurMaterial = new THREE.MeshStandardMaterial({ color: 0xd49a6a });
       }
@@ -1616,49 +1617,86 @@
 
       const corgi = new THREE.Group();
 
-      const body = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.6, 0.7), corgiFurMaterial);
-      body.position.y = 0.55;
+      const body = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.55, 0.8), corgiFurMaterial);
+      body.position.y = 0.6;
       body.castShadow = true;
       corgi.add(body);
 
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.35, 16, 16), corgiFurMaterial);
-      head.position.set(0.9, 0.85, 0);
+      const chest = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.5, 0.65), corgiFurMaterial);
+      chest.position.set(0.65, 0.6, 0);
+      chest.castShadow = true;
+      corgi.add(chest);
+
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.36, 16, 16), corgiFurMaterial);
+      head.position.set(1.05, 0.9, 0);
       head.castShadow = true;
       corgi.add(head);
 
-      const earL = new THREE.Mesh(new THREE.SphereGeometry(0.15, 12, 12), corgiAccentMaterial);
-      earL.position.set(0.82, 1.05, 0.18);
+      const snout = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.22, 0.26), corgiAccentMaterial);
+      snout.position.set(1.35, 0.78, 0);
+      snout.castShadow = true;
+      corgi.add(snout);
+
+      const nose = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 10), new THREE.MeshStandardMaterial({ color: 0x2b1b15 }));
+      nose.position.set(1.5, 0.78, 0);
+      corgi.add(nose);
+
+      const earL = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.26, 8), corgiAccentMaterial);
+      earL.position.set(0.95, 1.16, 0.18);
+      earL.rotation.z = -0.3;
       corgi.add(earL);
 
-      const earR = new THREE.Mesh(new THREE.SphereGeometry(0.15, 12, 12), corgiAccentMaterial);
-      earR.position.set(0.82, 1.05, -0.18);
+      const earR = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.26, 8), corgiAccentMaterial);
+      earR.position.set(0.95, 1.16, -0.18);
+      earR.rotation.z = -0.3;
       corgi.add(earR);
 
-      const tail = new THREE.Mesh(new THREE.SphereGeometry(0.14, 12, 12), corgiAccentMaterial);
-      tail.position.set(-0.75, 0.72, 0);
+      const hip = new THREE.Mesh(new THREE.SphereGeometry(0.32, 12, 12), corgiFurMaterial);
+      hip.position.set(-0.65, 0.55, 0);
+      hip.castShadow = true;
+      corgi.add(hip);
+
+      const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.1, 0.35, 8), corgiAccentMaterial);
+      tail.position.set(-1.05, 0.78, 0);
+      tail.rotation.z = 1.1;
       corgi.add(tail);
 
-      const legGeo = new THREE.BoxGeometry(0.2, 0.35, 0.2);
+      const legGeo = new THREE.BoxGeometry(0.18, 0.4, 0.18);
       const legs = [];
+      const pawGeo = new THREE.SphereGeometry(0.1, 8, 8);
       const legPositions = [
-        { x: 0.5, z: 0.25, dir: 1 },
-        { x: 0.5, z: -0.25, dir: -1 },
-        { x: -0.35, z: 0.25, dir: -1 },
-        { x: -0.35, z: -0.25, dir: 1 }
+        { x: 0.65, z: 0.25, phase: 0 },
+        { x: 0.65, z: -0.25, phase: Math.PI },
+        { x: -0.5, z: 0.25, phase: Math.PI },
+        { x: -0.5, z: -0.25, phase: 0 }
       ];
 
-      legPositions.forEach(({ x, z, dir }) => {
+      legPositions.forEach(({ x, z, phase }) => {
+        const legGroup = new THREE.Group();
         const leg = new THREE.Mesh(legGeo, corgiFurMaterial);
-        leg.position.set(x, 0.2, z);
-        leg.userData.swingDir = dir;
-        corgi.add(leg);
-        legs.push(leg);
+        leg.position.y = -0.2;
+        legGroup.add(leg);
+        const paw = new THREE.Mesh(pawGeo, corgiAccentMaterial);
+        paw.position.y = -0.4;
+        legGroup.add(paw);
+        legGroup.position.set(x, 0.4, z);
+        legGroup.userData.phase = phase;
+        corgi.add(legGroup);
+        legs.push(legGroup);
       });
 
       corgi.userData = {
         baseY: 0,
         bobOffset: Math.random() * Math.PI * 2,
-        legs
+        legs,
+        tail,
+        speedType,
+        walkAngle: Math.random() * Math.PI * 2,
+        walkSpeed: speedType === 'run' ? 1.4 + Math.random() * 0.6 : 0.4 + Math.random() * 0.4,
+        strideSpeed: speedType === 'run' ? 10 + Math.random() * 3 : 5 + Math.random() * 2,
+        strideAmplitude: speedType === 'run' ? 0.9 : 0.55,
+        bobSpeed: speedType === 'run' ? 7 : 4,
+        timer: 1 + Math.random() * 2
       };
 
       return corgi;
@@ -1921,7 +1959,7 @@
       const flowerColors = [0xff69b4, 0xffd700, 0xff6347, 0x9370db, 0x00ced1];
       for (let i = 0; i < 80; i++) {
         const flower = createFlower(flowerColors[Math.floor(Math.random() * flowerColors.length)]);
-        flower.position.set((Math.random() - 0.5) * 90, 0, (Math.random() - 0.5) * 90);
+        flower.position.set((Math.random() - 0.5) * 70, 0, (Math.random() - 0.5) * 70);
         flower.scale.setScalar(0.4 + Math.random() * 0.5);
         scene.add(flower);
       }
@@ -1948,8 +1986,8 @@
         let x = 0;
         let z = 0;
         for (let tries = 0; tries < 8; tries++) {
-          x = (Math.random() - 0.5) * 80;
-          z = (Math.random() - 0.5) * 80;
+          x = (Math.random() - 0.5) * 65;
+          z = (Math.random() - 0.5) * 65;
           if (isSafeOffPathPlacement(x, z)) break;
         }
         bush.position.set(x, 0, z);
@@ -1962,8 +2000,8 @@
         let x = 0;
         let z = 0;
         for (let tries = 0; tries < 8; tries++) {
-          x = (Math.random() - 0.5) * 80;
-          z = (Math.random() - 0.5) * 80;
+          x = (Math.random() - 0.5) * 65;
+          z = (Math.random() - 0.5) * 65;
           if (isSafeOffPathPlacement(x, z)) break;
         }
         boulder.position.set(x, 0.4, z);
@@ -1975,7 +2013,7 @@
 
       for (let i = 0; i < 6; i++) {
         const insect = createInsect(insectMat);
-        insect.position.set((Math.random() - 0.5) * 70, 0.15 + Math.random() * 0.2, (Math.random() - 0.5) * 70);
+        insect.position.set((Math.random() - 0.5) * 60, 0.15 + Math.random() * 0.2, (Math.random() - 0.5) * 60);
         insect.userData.baseY = insect.position.y;
         insect.rotation.y = Math.random() * Math.PI * 2;
         scene.add(insect);
@@ -1985,7 +2023,7 @@
       // Mushrooms
       for (let i = 0; i < 30; i++) {
         const mushroom = createMushroom();
-        mushroom.position.set((Math.random() - 0.5) * 80, 0, (Math.random() - 0.5) * 80);
+        mushroom.position.set((Math.random() - 0.5) * 65, 0, (Math.random() - 0.5) * 65);
         mushroom.scale.setScalar(0.25 + Math.random() * 0.35);
         scene.add(mushroom);
       }
@@ -2046,6 +2084,7 @@
     }
 
     function createRoyalProps() {
+      const propInset = 0.82;
       const placements = [
         { create: createHugeRedChair, x: 28, z: -30, scale: 1.2 },
         { create: createCakeWithCherry, x: -32, z: -24, scale: 1.1 },
@@ -2065,17 +2104,19 @@
       ];
 
       placements.forEach(({ create, x, z, scale, collision }) => {
-        if (!isSafeOffPathPlacement(x, z)) return;
+        const insetX = x * propInset;
+        const insetZ = z * propInset;
+        if (!isSafeOffPathPlacement(insetX, insetZ)) return;
         const prop = create();
-        prop.position.set(x, 0, z);
+        prop.position.set(insetX, 0, insetZ);
         prop.scale.setScalar(scale);
         scene.add(prop);
         if (collision) {
           collisionBoxes.push({
-            minX: x + collision.minX * scale,
-            maxX: x + collision.maxX * scale,
-            minZ: z + collision.minZ * scale,
-            maxZ: z + collision.maxZ * scale
+            minX: insetX + collision.minX * scale,
+            maxX: insetX + collision.maxX * scale,
+            minZ: insetZ + collision.minZ * scale,
+            maxZ: insetZ + collision.maxZ * scale
           });
         }
       });
@@ -2714,8 +2755,8 @@
         }
       });
 
-      let lastPointerMap = 0;
       const toggleMapZoom = (e) => {
+        e.preventDefault();
         e.stopPropagation();
         if (splashMap.classList.contains('zoomed')) {
           splashMap.classList.remove('zoomed');
@@ -2726,21 +2767,8 @@
         }
       };
 
-      splashMap.addEventListener('pointerup', (e) => {
-        lastPointerMap = performance.now();
-        toggleMapZoom(e);
-      });
-      splashMap.addEventListener('click', (e) => {
-        if (performance.now() - lastPointerMap < 500) return;
-        toggleMapZoom(e);
-      });
-      mapOverlay.addEventListener('pointerup', () => {
-        lastPointerMap = performance.now();
-        splashMap.classList.remove('zoomed');
-        mapOverlay.classList.remove('visible');
-      });
-      mapOverlay.addEventListener('click', () => {
-        if (performance.now() - lastPointerMap < 500) return;
+      splashMap.addEventListener('pointerdown', toggleMapZoom);
+      mapOverlay.addEventListener('pointerdown', () => {
         splashMap.classList.remove('zoomed');
         mapOverlay.classList.remove('visible');
       });
@@ -3189,11 +3217,34 @@
       // Animate corgis
       corgis.forEach(corgi => {
         const data = corgi.userData;
-        const bob = Math.sin(time * 2 + data.bobOffset) * 0.08;
+        data.timer -= delta;
+        if (data.timer <= 0) {
+          data.walkAngle += (Math.random() - 0.5) * Math.PI * 0.8;
+          data.timer = data.speedType === 'run' ? 0.5 + Math.random() * 0.8 : 1.5 + Math.random() * 2.5;
+        }
+
+        const speed = data.walkSpeed * delta;
+        const nextX = corgi.position.x + Math.sin(data.walkAngle) * speed;
+        const nextZ = corgi.position.z + Math.cos(data.walkAngle) * speed;
+
+        if (!checkCollision(nextX, nextZ) && isSafeOffPathPlacement(nextX, nextZ)) {
+          corgi.position.x = nextX;
+          corgi.position.z = nextZ;
+        } else {
+          data.walkAngle += Math.PI * (0.4 + Math.random() * 0.4);
+        }
+
+        corgi.rotation.y = data.walkAngle;
+
+        const bob = Math.sin(time * data.bobSpeed + data.bobOffset) * (data.speedType === 'run' ? 0.12 : 0.07);
         corgi.position.y = data.baseY + bob;
+
         data.legs.forEach(leg => {
-          leg.rotation.x = Math.sin(time * 6 + data.bobOffset) * 0.6 * leg.userData.swingDir;
+          leg.rotation.x = Math.sin(time * data.strideSpeed + leg.userData.phase + data.bobOffset) * data.strideAmplitude;
         });
+        if (data.tail) {
+          data.tail.rotation.y = Math.sin(time * (data.speedType === 'run' ? 12 : 6) + data.bobOffset) * 0.4;
+        }
       });
 
       // Animate Bernie listeners
