@@ -21,7 +21,7 @@ export function initRenderer() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.9;
+  renderer.toneMappingExposure = 1.1;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   document.getElementById('game-container').appendChild(renderer.domElement);
@@ -49,15 +49,15 @@ function setupPostProcessing() {
   // No bloom for now; render with the scene's base lighting.
 }
 
-// Setup scene lighting - Warm, golden-hour feel
+// Setup scene lighting - simple and bright
 function setupLighting() {
-  // Warm ambient light - gives everything a soft glow
-  const ambient = new THREE.AmbientLight(0xffffff, 0.55);
+  // Bright ambient light
+  const ambient = new THREE.AmbientLight(0xffffff, 0.85);
   scene.add(ambient);
 
-  // Main directional light (golden sun)
-  const sun = new THREE.DirectionalLight(0xffffff, 0.75);
-  sun.position.set(15, 25, 15);
+  // Main directional light
+  const sun = new THREE.DirectionalLight(0xffffff, 1.0);
+  sun.position.set(12, 20, 10);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
   sun.shadow.camera.near = 0.5;
@@ -68,21 +68,6 @@ function setupLighting() {
   sun.shadow.camera.bottom = -35;
   sun.shadow.radius = 4;
   scene.add(sun);
-
-  // Hemisphere light - sky/ground gradient for softer shadows
-  // Warm sky color, soft green ground bounce
-  const hemi = new THREE.HemisphereLight(0xffecd2, 0x98fb98, 0.25);
-  scene.add(hemi);
-
-  // Rim light for magical back-lighting (subtle pink/purple)
-  const rimLight = new THREE.DirectionalLight(0xffc0cb, 0.2);
-  rimLight.position.set(-10, 15, -10);
-  scene.add(rimLight);
-
-  // Point lights for building warmth (golden glows)
-  const buildingGlow = new THREE.PointLight(0xffd700, 0.2, 15);
-  buildingGlow.position.set(0, 3, 0); // Near fountain
-  scene.add(buildingGlow);
 }
 
 // Handle window resize
