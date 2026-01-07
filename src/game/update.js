@@ -8,6 +8,7 @@ import { waterMaterial } from '../entities/world.js';
 import { updateRiverWater, updateJumpingFish } from '../entities/river.js';
 import { updateKingAndGuards } from '../entities/king.js';
 import { updateDoomSayer } from '../entities/doomSayer.js';
+import { updateAllActivities } from '../entities/activities.js';
 import { checkCollision } from './interactions.js';
 import { getInputVector } from '../systems/inputSystem.js';
 import { camera } from '../engine/renderer.js';
@@ -277,4 +278,7 @@ function updateAmbientAnimations(ctx, delta, time) {
 
   // Doom Sayer wandering and prophecies
   updateDoomSayer(time, delta, camera);
+
+  // Austinville activities (Boxing Ring, Trampoline, Fishing NPCs, Tea vs Coffee War)
+  updateAllActivities(time, delta, camera);
 }

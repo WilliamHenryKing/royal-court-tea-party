@@ -37,6 +37,7 @@ import {
 import { createKingEntourage, kingBen, royalGuards } from './entities/king.js';
 import { createDoomSayer, doomSayer } from './entities/doomSayer.js';
 import { createAllShops, teaCafe, coffeeCafe, donutShop, pinkieSchool } from './entities/shops.js';
+import { createAllActivities } from './entities/activities.js';
 import { handleAction } from './game/interactions.js';
 import { update } from './game/update.js';
 import {
@@ -163,6 +164,9 @@ function initGameWorld() {
 
   // Create Austinville shops (Tea Café, Coffee Café, Donut Shop, Pinkie School)
   createAllShops();
+
+  // Create Austinville activities (Boxing Ring, Trampoline, Fishing NPCs, Tea vs Coffee War)
+  createAllActivities();
 
   // Create collectibles, clouds, insects, and ambient particles
   createCollectibles();
