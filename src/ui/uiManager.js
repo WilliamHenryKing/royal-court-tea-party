@@ -18,6 +18,11 @@ import {
   setDesktopModeEnabled,
   updateKeyboardVector
 } from '../systems/inputSystem.js';
+import {
+  addClickHandler,
+  addToggleHandler,
+  addCloseHandler
+} from './interactionHandler.js';
 
 // Module-level context reference
 let ctx = null;
@@ -264,53 +269,51 @@ export function setupControls() {
     updateKeyboardVector();
   });
 
-  // Action button
+  // Action button - use consistent click handler
   const actionBtn = document.getElementById('action-btn');
-  actionBtn.addEventListener('pointerup', (e) => {
-    e.preventDefault();
+  addClickHandler(actionBtn, () => {
     ctx.handleAction();
   });
-  actionBtn.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
-      e.preventDefault();
-      ctx.handleAction();
-    }
-  });
 
-  // Dialog close
-  document.getElementById('dialog-close').addEventListener('click', closeDialog);
-  document.getElementById('dialog-overlay').addEventListener('click', (e) => {
+  // Dialog close - use consistent close handler
+  addCloseHandler(document.getElementById('dialog-close'), closeDialog);
+  const dialogOverlay = document.getElementById('dialog-overlay');
+  addClickHandler(dialogOverlay, (e) => {
     if (e.target.id === 'dialog-overlay') closeDialog();
-  });
+  }, { preventDefault: false });
 
-  // Completion modal
-  document.getElementById('completion-close').addEventListener('click', closeCompletion);
-  document.getElementById('continue-btn').addEventListener('click', handleCompletionContinue);
+  // Completion modal - use consistent handlers
+  addCloseHandler(document.getElementById('completion-close'), closeCompletion);
+  addClickHandler(document.getElementById('continue-btn'), handleCompletionContinue, { preventDefault: false });
 
-  // Music controls
-  document.getElementById('music-toggle').addEventListener('click', () => {
+  // Music controls - use consistent handlers
+  addClickHandler(document.getElementById('music-toggle'), () => {
     toggleMusicMute();
     if (!musicState.initialized) {
       musicState.initialized = true;
       playCurrentTrack();
     }
-  });
-  document.getElementById('music-next').addEventListener('click', () => {
+  }, { preventDefault: false });
+
+  addClickHandler(document.getElementById('music-next'), () => {
     musicState.initialized = true;
     playNextTrack();
-  });
+  }, { preventDefault: false });
 
-  document.getElementById('intro-start').addEventListener('click', () => {
+  // Intro modal - use consistent handlers
+  addClickHandler(document.getElementById('intro-start'), () => {
     startAdventure();
-  });
+  }, { preventDefault: false });
 
-  document.getElementById('intro-modal').addEventListener('click', (e) => {
+  const introModal = document.getElementById('intro-modal');
+  addClickHandler(introModal, (e) => {
     if (e.target.id === 'intro-modal') {
       startAdventure();
     }
-  });
+  }, { preventDefault: false });
 
-  document.getElementById('sweet-dismiss').addEventListener('click', dismissSweetIntro);
+  // Sweet intro - use consistent handler
+  addClickHandler(document.getElementById('sweet-dismiss'), dismissSweetIntro, { preventDefault: false });
 }
 
 // Create dynamic sparkles for splash screen
@@ -379,8 +382,8 @@ export function setupSplashInteractions() {
   // Create sparkles when splash screen loads
   createSplashSparkles();
 
+  // Start button handler - using reliable click handler
   let startTriggered = false;
-  let lastPointerStart = 0;
   const triggerStart = () => {
     if (startTriggered) return;
     startTriggered = true;
@@ -399,38 +402,20 @@ export function setupSplashInteractions() {
     }, 2000);
   };
 
-  startBtn.addEventListener('pointerup', (e) => {
-    e.preventDefault();
-    lastPointerStart = performance.now();
-    triggerStart();
-  });
-  startBtn.addEventListener('click', () => {
-    if (performance.now() - lastPointerStart < 500) return;
-    triggerStart();
-  });
-  startBtn.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
-      e.preventDefault();
-      triggerStart();
-    }
-  });
+  // Use the centralized click handler for consistency
+  addClickHandler(startBtn, triggerStart);
 
-  const toggleMapZoom = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (splashMap.classList.contains('zoomed')) {
-      splashMap.classList.remove('zoomed');
-      mapOverlay.classList.remove('visible');
-    } else {
-      splashMap.classList.add('zoomed');
+  // Map zoom toggle - using proper toggle handler
+  addToggleHandler(splashMap, splashMap, mapOverlay, {
+    toggleClass: 'zoomed',
+    onOpen: () => {
+      // When map zooms, also show overlay
       mapOverlay.classList.add('visible');
+    },
+    onClose: () => {
+      // When map closes, hide overlay
+      mapOverlay.classList.remove('visible');
     }
-  };
-
-  splashMap.addEventListener('pointerdown', toggleMapZoom);
-  mapOverlay.addEventListener('pointerdown', () => {
-    splashMap.classList.remove('zoomed');
-    mapOverlay.classList.remove('visible');
   });
 }
 
