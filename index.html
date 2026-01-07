@@ -767,7 +767,9 @@
     const bees = [];
     const insects = [];
     const bernieListeners = [];
+    const corgis = [];
     const collisionBoxes = [];
+    const waterfallSheets = [];
     const celebrationParticles = [];
     let particleTexture;
     let lastCelebrationTime = 0;
@@ -797,6 +799,8 @@
       muted: false,
       initialized: false
     };
+    let corgiFurMaterial;
+    let corgiAccentMaterial;
 
     function updateMusicUI() {
       const trackLabel = document.getElementById('music-track');
@@ -993,6 +997,26 @@
 
       // Create bees and honey around palace
       createBeesAndHoney();
+
+      // Corgis
+      let corgisPlaced = 0;
+      let corgiAttempts = 0;
+      while (corgisPlaced < 5 && corgiAttempts < 120) {
+        corgiAttempts++;
+        const angle = Math.random() * Math.PI * 2;
+        const radius = 18 + Math.random() * 24;
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius;
+        if (!isSafeOffPathPlacement(x, z)) continue;
+
+        const corgi = createCorgi();
+        corgi.position.set(x, 0, z);
+        corgi.rotation.y = Math.random() * Math.PI * 2;
+        corgi.userData.baseY = corgi.position.y;
+        scene.add(corgi);
+        corgis.push(corgi);
+        corgisPlaced++;
+      }
 
       // Collectibles
       for (let i = 0; i < 25; i++) {
@@ -1423,7 +1447,10 @@
     function createNPC() {
       const group = new THREE.Group();
       const skinMat = new THREE.MeshStandardMaterial({ color: 0xffeedd });
-      const robeMat = new THREE.MeshStandardMaterial({ color: 0xd4b8ff });
+      const palacePalette = [0xd4b8ff, 0xf0d6a3, 0xbad9ff];
+      const robeMat = new THREE.MeshStandardMaterial({ color: palacePalette[Math.floor(Math.random() * palacePalette.length)] });
+      const trimMat = new THREE.MeshStandardMaterial({ color: 0xffd700, emissive: 0xffc857, emissiveIntensity: 0.25 });
+      const accessoryMat = new THREE.MeshStandardMaterial({ color: 0xffe6a3 });
 
       // Body
       const body = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.6, 16), skinMat);
@@ -1458,6 +1485,26 @@
       robe.castShadow = true;
       group.add(robe);
 
+      // Second skirt layer with trim
+      const skirtLayer = new THREE.Mesh(new THREE.ConeGeometry(0.65, 0.4, 8, 1, true), trimMat);
+      skirtLayer.position.y = 0.3;
+      skirtLayer.rotation.x = Math.PI;
+      group.add(skirtLayer);
+
+      // Accessories: brooches and collar
+      const broochLeft = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 6), accessoryMat);
+      broochLeft.position.set(-0.12, 1.1, 0.32);
+      group.add(broochLeft);
+
+      const broochRight = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 6), accessoryMat);
+      broochRight.position.set(0.12, 1.1, 0.32);
+      group.add(broochRight);
+
+      const collar = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.035, 6, 8), accessoryMat);
+      collar.position.y = 1.35;
+      collar.rotation.x = Math.PI / 2;
+      group.add(collar);
+
       return group;
     }
 
@@ -1466,15 +1513,21 @@
       
       // Different colors based on speed type
       let bodyColors;
+      let trimColors;
       if (speedType === 'fast') {
         bodyColors = [0xff6b6b, 0xff8c42, 0xffdd59, 0xff6b9d]; // Energetic warm colors
+        trimColors = [0xfff1a8, 0xffc857];
       } else if (speedType === 'slow') {
         bodyColors = [0xc9b8a8, 0xa8a8c9, 0xb8c9a8, 0xd4c4b0]; // Muted elderly colors
+        trimColors = [0xe6d6c0, 0xcbbfa6];
       } else {
         bodyColors = [0xffc0cb, 0xadd8e6, 0x98fb98, 0xdda0dd, 0xf0e68c, 0xffa07a];
+        trimColors = [0xf7e8ff, 0xfff2c9];
       }
       
       const bodyMat = new THREE.MeshStandardMaterial({ color: bodyColors[Math.floor(Math.random() * bodyColors.length)] });
+      const trimMat = new THREE.MeshStandardMaterial({ color: trimColors[Math.floor(Math.random() * trimColors.length)] });
+      const accessoryMat = new THREE.MeshStandardMaterial({ color: trimColors[Math.floor(Math.random() * trimColors.length)] });
       const skinMat = new THREE.MeshStandardMaterial({ color: 0xffeedd });
 
       // Body - slightly hunched for elderly
@@ -1489,6 +1542,22 @@
       head.position.y = speedType === 'slow' ? 1.0 : 1.1;
       head.castShadow = true;
       group.add(head);
+
+      // Second skirt layer with trim
+      const skirtLayer = new THREE.Mesh(new THREE.ConeGeometry(0.45, 0.28, 8, 1, true), trimMat);
+      skirtLayer.position.y = 0.33;
+      skirtLayer.rotation.x = Math.PI;
+      group.add(skirtLayer);
+
+      // Accessories: brooch and collar
+      const brooch = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 6), accessoryMat);
+      brooch.position.set(0, 0.8, 0.32);
+      group.add(brooch);
+
+      const collar = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.03, 6, 8), accessoryMat);
+      collar.position.y = 0.95;
+      collar.rotation.x = Math.PI / 2;
+      group.add(collar);
 
       // Legs
       const legL = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.06, 0.2, 6), bodyMat);
@@ -1523,6 +1592,64 @@
       }
 
       return group;
+    }
+
+    function createCorgi() {
+      if (!corgiFurMaterial) {
+        corgiFurMaterial = new THREE.MeshStandardMaterial({ color: 0xd49a6a });
+      }
+      if (!corgiAccentMaterial) {
+        corgiAccentMaterial = new THREE.MeshStandardMaterial({ color: 0x8b5a3c });
+      }
+
+      const corgi = new THREE.Group();
+
+      const body = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.6, 0.7), corgiFurMaterial);
+      body.position.y = 0.55;
+      body.castShadow = true;
+      corgi.add(body);
+
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.35, 16, 16), corgiFurMaterial);
+      head.position.set(0.9, 0.85, 0);
+      head.castShadow = true;
+      corgi.add(head);
+
+      const earL = new THREE.Mesh(new THREE.SphereGeometry(0.15, 12, 12), corgiAccentMaterial);
+      earL.position.set(0.82, 1.05, 0.18);
+      corgi.add(earL);
+
+      const earR = new THREE.Mesh(new THREE.SphereGeometry(0.15, 12, 12), corgiAccentMaterial);
+      earR.position.set(0.82, 1.05, -0.18);
+      corgi.add(earR);
+
+      const tail = new THREE.Mesh(new THREE.SphereGeometry(0.14, 12, 12), corgiAccentMaterial);
+      tail.position.set(-0.75, 0.72, 0);
+      corgi.add(tail);
+
+      const legGeo = new THREE.BoxGeometry(0.2, 0.35, 0.2);
+      const legs = [];
+      const legPositions = [
+        { x: 0.5, z: 0.25, dir: 1 },
+        { x: 0.5, z: -0.25, dir: -1 },
+        { x: -0.35, z: 0.25, dir: -1 },
+        { x: -0.35, z: -0.25, dir: 1 }
+      ];
+
+      legPositions.forEach(({ x, z, dir }) => {
+        const leg = new THREE.Mesh(legGeo, corgiFurMaterial);
+        leg.position.set(x, 0.2, z);
+        leg.userData.swingDir = dir;
+        corgi.add(leg);
+        legs.push(leg);
+      });
+
+      corgi.userData = {
+        baseY: 0,
+        bobOffset: Math.random() * Math.PI * 2,
+        legs
+      };
+
+      return corgi;
     }
 
     function createCollectible() {
@@ -1775,6 +1902,44 @@
       createRoyalProps();
     }
 
+    function createWaterfallFeature() {
+      const feature = new THREE.Group();
+      const rockMat = new THREE.MeshStandardMaterial({ color: 0x7f7f85, roughness: 0.9 });
+
+      const rocks = [
+        { geo: new THREE.DodecahedronGeometry(0.9, 0), pos: [0, 0.35, 0], scale: [1.2, 0.7, 1] },
+        { geo: new THREE.DodecahedronGeometry(0.6, 0), pos: [-0.9, 0.2, 0.4], scale: [0.9, 0.6, 1.1] },
+        { geo: new THREE.DodecahedronGeometry(0.5, 0), pos: [0.8, 0.2, 0.6], scale: [1, 0.5, 0.8] },
+        { geo: new THREE.SphereGeometry(0.5, 6, 6), pos: [-0.2, 0.15, -0.6], scale: [1.3, 0.5, 1] },
+        { geo: new THREE.SphereGeometry(0.4, 6, 6), pos: [0.6, 0.1, -0.4], scale: [0.8, 0.4, 0.9] }
+      ];
+
+      rocks.forEach(({ geo, pos, scale }) => {
+        const rock = new THREE.Mesh(geo, rockMat);
+        rock.position.set(pos[0], pos[1], pos[2]);
+        rock.scale.set(scale[0], scale[1], scale[2]);
+        rock.castShadow = true;
+        rock.receiveShadow = true;
+        feature.add(rock);
+      });
+
+      const waterfallMat = new THREE.MeshStandardMaterial({
+        color: 0x6ecbff,
+        transparent: true,
+        opacity: 0.55,
+        roughness: 0.3,
+        metalness: 0.1,
+        side: THREE.DoubleSide
+      });
+      const waterfall = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 2.8, 1, 4), waterfallMat);
+      waterfall.position.set(0.2, 1.35, -0.2);
+      waterfall.rotation.y = Math.PI * 0.1;
+      feature.add(waterfall);
+      waterfallSheets.push({ mesh: waterfall, baseY: waterfall.position.y, offset: Math.random() * Math.PI * 2 });
+
+      return feature;
+    }
+
     function createRoyalProps() {
       const placements = [
         { create: createHugeRedChair, x: 28, z: -30, scale: 1.2 },
@@ -1784,15 +1949,30 @@
         { create: createPinkSodaGlass, x: 22, z: 32, scale: 1 },
         { create: createGoldenTeapot, x: -36, z: 12, scale: 1 },
         { create: createMacaronTower, x: 12, z: -36, scale: 1.1 },
-        { create: createCrownCushion, x: -18, z: -34, scale: 1 }
+        { create: createCrownCushion, x: -18, z: -34, scale: 1 },
+        {
+          create: createWaterfallFeature,
+          x: 40,
+          z: -8,
+          scale: 1.1,
+          collision: { minX: -2.2, maxX: 2.2, minZ: -1.8, maxZ: 1.8 }
+        }
       ];
 
-      placements.forEach(({ create, x, z, scale }) => {
+      placements.forEach(({ create, x, z, scale, collision }) => {
         if (!isSafeOffPathPlacement(x, z)) return;
         const prop = create();
         prop.position.set(x, 0, z);
         prop.scale.setScalar(scale);
         scene.add(prop);
+        if (collision) {
+          collisionBoxes.push({
+            minX: x + collision.minX * scale,
+            maxX: x + collision.maxX * scale,
+            minZ: z + collision.minZ * scale,
+            maxZ: z + collision.maxZ * scale
+          });
+        }
       });
     }
 
@@ -2859,6 +3039,14 @@
         const data = insect.userData;
         insect.position.y = data.baseY + Math.sin(time * data.wobbleSpeed + data.wobbleOffset) * data.wobbleAmount;
         insect.rotation.z = Math.sin(time * data.wobbleSpeed + data.wobbleOffset) * 0.4;
+      // Animate corgis
+      corgis.forEach(corgi => {
+        const data = corgi.userData;
+        const bob = Math.sin(time * 2 + data.bobOffset) * 0.08;
+        corgi.position.y = data.baseY + bob;
+        data.legs.forEach(leg => {
+          leg.rotation.x = Math.sin(time * 6 + data.bobOffset) * 0.6 * leg.userData.swingDir;
+        });
       });
 
       // Animate Bernie listeners
@@ -3024,6 +3212,12 @@
         } else {
           building.scale.setScalar(THREE.MathUtils.lerp(building.scale.x, 1, 0.1));
         }
+      });
+
+      // Waterfall motion
+      waterfallSheets.forEach(({ mesh, baseY, offset }) => {
+        mesh.position.y = baseY + Math.sin(time * 3 + offset) * 0.05;
+        mesh.material.opacity = 0.5 + Math.sin(time * 4 + offset) * 0.08;
       });
 
       renderer.render(scene, camera);
