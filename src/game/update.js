@@ -2,8 +2,9 @@
 import * as THREE from 'three';
 import { player, updateCape } from '../entities/player.js';
 import { buildings } from '../entities/buildings.js';
-import { npcs, wanderers, bernieListeners, corgis, bees, insects } from '../entities/npcs.js';
-import { collectibles, clouds, celebrationParticles, waterMaterial, updateCelebrationParticles } from '../entities/collectibles.js';
+import { npcs, wanderers, bernieListeners, corgis, bees, updateCorgis, updateBees, updateWanderers, updateBernieListeners, updateNPCIndicators } from '../entities/npcs.js';
+import { collectibles, clouds, celebrationParticles, waterMaterial, updateCelebrationParticles, updateAmbientParticles } from '../entities/collectibles.js';
+import { updateStringLights } from '../entities/world.js';
 import { checkCollision } from './interactions.js';
 import { getInputVector } from '../systems/inputSystem.js';
 import { camera } from '../engine/renderer.js';
@@ -177,7 +178,11 @@ function updateNPCs(ctx, delta, time) {
 
   updateActionButton(nearestNPC, nearestWanderer);
 
-  // TODO: Add wanderer, bernie listener, corgi, bee, and insect update logic
+  // Update corgis with player awareness
+  updateCorgis(time, delta, player);
+
+  // Update bees
+  updateBees(time, delta);
 }
 
 // Update collectibles
@@ -244,15 +249,8 @@ function updateAmbientAnimations(ctx, delta, time) {
     if (cloud.position.x > 60) cloud.position.x = -60;
   });
 
-  // NPC indicators
-  Object.values(npcs).forEach(npc => {
-    npc.children.forEach(child => {
-      if (child.userData.isIndicator) {
-        child.position.y = 2.5 + Math.sin(time * 3) * 0.15;
-        child.rotation.y = time * 2;
-      }
-    });
-  });
+  // NPC indicators (floating golden spheres)
+  updateNPCIndicators(time);
 
   // Collectible float and spin
   collectibles.forEach(col => {
@@ -262,5 +260,9 @@ function updateAmbientAnimations(ctx, delta, time) {
     }
   });
 
-  // TODO: Add bee, insect, corgi, bernie listener animations
+  // Floating petals and sparkles
+  updateAmbientParticles(time, delta);
+
+  // String light bulb flicker
+  updateStringLights(time);
 }

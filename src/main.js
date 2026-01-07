@@ -23,9 +23,10 @@ import {
   initCollectibles,
   createCollectibles,
   createClouds,
-  createInsects
+  createInsects,
+  createAmbientParticles
 } from './entities/collectibles.js';
-import { createWorld } from './entities/world.js';
+import { createWorld, createStringLights } from './entities/world.js';
 import { handleAction } from './game/interactions.js';
 import { update } from './game/update.js';
 import {
@@ -137,10 +138,14 @@ function initGameWorld() {
   createCorgis();
   createBees();
 
-  // Create collectibles, clouds, and insects
+  // Create collectibles, clouds, insects, and ambient particles
   createCollectibles();
   createClouds();
   createInsects();
+  createAmbientParticles(60); // Floating petals and sparkles
+
+  // Create decorative string lights
+  createStringLights();
 }
 
 // Start the game when DOM is ready

@@ -1,14 +1,17 @@
-// Renderer - Three.js renderer, scene, camera, and lighting setup
+// Renderer - Three.js renderer, scene, camera, lighting, and post-processing setup
 import * as THREE from 'three';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 
-export let scene, camera, renderer;
+export let scene, camera, renderer, composer;
 
 // Initialize the Three.js renderer, scene, and camera
 export function initRenderer() {
-  // Scene
+  // Scene - Warm golden hour sky
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x87ceeb);
-  scene.fog = new THREE.FogExp2(0xc8e8ff, 0.008);
+  scene.background = new THREE.Color(0xffecd2); // Soft peachy-gold
+  scene.fog = new THREE.FogExp2(0xfff8f0, 0.006); // Warm dreamy fog
 
   // Camera
   camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -25,19 +28,41 @@ export function initRenderer() {
   // Setup lighting
   setupLighting();
 
+  // Setup post-processing (bloom effect)
+  setupPostProcessing();
+
   // Handle window resize
   window.addEventListener('resize', onResize);
 
-  return { scene, camera, renderer };
+  return { scene, camera, renderer, composer };
 }
 
-// Setup scene lighting
-function setupLighting() {
-  // Ambient light
-  scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+// Setup bloom post-processing for dreamy glow effect
+function setupPostProcessing() {
+  composer = new EffectComposer(renderer);
 
-  // Directional light (sun)
-  const sun = new THREE.DirectionalLight(0xfff8e7, 0.6);
+  // Render the scene normally first
+  const renderPass = new RenderPass(scene, camera);
+  composer.addPass(renderPass);
+
+  // Add bloom effect - subtle dreamy glow
+  const bloomPass = new UnrealBloomPass(
+    new THREE.Vector2(window.innerWidth, window.innerHeight),
+    0.3,    // strength - subtle bloom
+    0.5,    // radius - how far bloom spreads
+    0.7     // threshold - brightness needed for bloom
+  );
+  composer.addPass(bloomPass);
+}
+
+// Setup scene lighting - Warm, golden-hour feel
+function setupLighting() {
+  // Warm ambient light - gives everything a soft glow
+  const ambient = new THREE.AmbientLight(0xfff0e6, 0.5);
+  scene.add(ambient);
+
+  // Main directional light (golden sun)
+  const sun = new THREE.DirectionalLight(0xffecd2, 0.7);
   sun.position.set(15, 25, 15);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
@@ -50,8 +75,20 @@ function setupLighting() {
   sun.shadow.radius = 4;
   scene.add(sun);
 
-  // Hemisphere light
-  scene.add(new THREE.HemisphereLight(0x87ceeb, 0x98fb98, 0.3));
+  // Hemisphere light - sky/ground gradient for softer shadows
+  // Warm sky color, soft green ground bounce
+  const hemi = new THREE.HemisphereLight(0xffecd2, 0x98fb98, 0.35);
+  scene.add(hemi);
+
+  // Rim light for magical back-lighting (subtle pink/purple)
+  const rimLight = new THREE.DirectionalLight(0xffc0cb, 0.2);
+  rimLight.position.set(-10, 15, -10);
+  scene.add(rimLight);
+
+  // Point lights for building warmth (golden glows)
+  const buildingGlow = new THREE.PointLight(0xffd700, 0.3, 15);
+  buildingGlow.position.set(0, 3, 0); // Near fountain
+  scene.add(buildingGlow);
 }
 
 // Handle window resize
@@ -59,4 +96,7 @@ function onResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+  if (composer) {
+    composer.setSize(window.innerWidth, window.innerHeight);
+  }
 }

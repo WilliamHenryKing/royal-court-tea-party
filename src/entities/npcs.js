@@ -427,95 +427,263 @@ function createWanderingNPC(speedType) {
 // ============================================
 
 function createCorgi(speedType = (Math.random() < 0.35 ? 'run' : 'walk')) {
-  if (!corgiFurMaterial) {
-    corgiFurMaterial = new THREE.MeshStandardMaterial({ color: 0xd49a6a });
-  }
-  if (!corgiAccentMaterial) {
-    corgiAccentMaterial = new THREE.MeshStandardMaterial({ color: 0x8b5a3c });
-  }
+  // Softer, warmer fur colors
+  const furColors = [0xd49a6a, 0xc98b5a, 0xe5a872, 0xd4915f];
+  const selectedFur = furColors[Math.floor(Math.random() * furColors.length)];
+
+  const corgiFurMat = new THREE.MeshStandardMaterial({
+    color: selectedFur,
+    roughness: 0.9  // Fluffy look
+  });
+  const corgiWhiteMat = new THREE.MeshStandardMaterial({
+    color: 0xfff8f0,  // Cream white chest
+    roughness: 0.85
+  });
+  const corgiAccentMat = new THREE.MeshStandardMaterial({
+    color: 0x8b5a3c,
+    roughness: 0.8
+  });
+  const noseMat = new THREE.MeshStandardMaterial({
+    color: 0x2b1b15,
+    roughness: 0.3  // Shiny nose!
+  });
+  const eyeMat = new THREE.MeshStandardMaterial({
+    color: 0x1a1208,
+    roughness: 0.2
+  });
+  const tongueMat = new THREE.MeshStandardMaterial({
+    color: 0xff8fa3,
+    roughness: 0.5
+  });
 
   const corgi = new THREE.Group();
 
-  const body = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.55, 0.8), corgiFurMaterial);
-  body.position.y = 0.6;
-  body.castShadow = true;
-  corgi.add(body);
+  // === BODY - Rounder, more organic ===
+  const bodyGroup = new THREE.Group();
 
-  const chest = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.5, 0.65), corgiFurMaterial);
-  chest.position.set(0.65, 0.6, 0);
-  chest.castShadow = true;
-  corgi.add(chest);
+  // Back sphere
+  const backBody = new THREE.Mesh(
+    new THREE.SphereGeometry(0.35, 16, 12),
+    corgiFurMat
+  );
+  backBody.scale.set(1.2, 0.9, 1);
+  backBody.position.set(-0.3, 0, 0);
+  bodyGroup.add(backBody);
 
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.36, 16, 16), corgiFurMaterial);
-  head.position.set(1.05, 0.9, 0);
-  head.castShadow = true;
-  corgi.add(head);
+  // Middle body
+  const midBody = new THREE.Mesh(
+    new THREE.SphereGeometry(0.38, 16, 12),
+    corgiFurMat
+  );
+  midBody.scale.set(1.3, 0.85, 1);
+  bodyGroup.add(midBody);
 
-  const snout = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.22, 0.26), corgiAccentMaterial);
-  snout.position.set(1.35, 0.78, 0);
-  snout.castShadow = true;
-  corgi.add(snout);
+  // Front body/chest
+  const frontBody = new THREE.Mesh(
+    new THREE.SphereGeometry(0.32, 16, 12),
+    corgiFurMat
+  );
+  frontBody.scale.set(1.1, 0.95, 1);
+  frontBody.position.set(0.35, 0.05, 0);
+  bodyGroup.add(frontBody);
 
-  const nose = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 10), new THREE.MeshStandardMaterial({ color: 0x2b1b15 }));
-  nose.position.set(1.5, 0.78, 0);
-  corgi.add(nose);
+  // White chest patch
+  const chestPatch = new THREE.Mesh(
+    new THREE.SphereGeometry(0.22, 12, 10),
+    corgiWhiteMat
+  );
+  chestPatch.scale.set(0.8, 1, 0.9);
+  chestPatch.position.set(0.4, -0.05, 0);
+  bodyGroup.add(chestPatch);
 
-  const earL = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.26, 8), corgiAccentMaterial);
-  earL.position.set(0.95, 1.16, 0.18);
-  earL.rotation.z = -0.3;
-  corgi.add(earL);
+  bodyGroup.position.y = 0.45;
+  bodyGroup.castShadow = true;
+  corgi.add(bodyGroup);
 
-  const earR = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.26, 8), corgiAccentMaterial);
-  earR.position.set(0.95, 1.16, -0.18);
-  earR.rotation.z = -0.3;
-  corgi.add(earR);
+  // === FLUFFY BUTT (iconic corgi feature!) ===
+  const fluffyButt = new THREE.Mesh(
+    new THREE.SphereGeometry(0.28, 12, 10),
+    corgiFurMat
+  );
+  fluffyButt.scale.set(1, 0.9, 1.1);
+  fluffyButt.position.set(-0.55, 0.4, 0);
+  corgi.add(fluffyButt);
 
-  const hip = new THREE.Mesh(new THREE.SphereGeometry(0.32, 12, 12), corgiFurMaterial);
-  hip.position.set(-0.65, 0.55, 0);
-  hip.castShadow = true;
-  corgi.add(hip);
+  // === HEAD - Rounder, cuter ===
+  const headGroup = new THREE.Group();
 
-  const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.1, 0.35, 8), corgiAccentMaterial);
-  tail.position.set(-1.05, 0.78, 0);
-  tail.rotation.z = 1.1;
-  corgi.add(tail);
+  const head = new THREE.Mesh(
+    new THREE.SphereGeometry(0.28, 16, 14),
+    corgiFurMat
+  );
+  head.scale.set(1.1, 0.95, 1);
+  headGroup.add(head);
 
-  const legGeo = new THREE.BoxGeometry(0.18, 0.4, 0.18);
+  // Forehead marking (white blaze)
+  const blaze = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.12, 0.18),
+    corgiWhiteMat
+  );
+  blaze.position.set(0, 0.08, 0.27);
+  blaze.rotation.x = -0.2;
+  headGroup.add(blaze);
+
+  // Snout - rounder
+  const snout = new THREE.Mesh(
+    new THREE.SphereGeometry(0.16, 12, 10),
+    corgiAccentMat
+  );
+  snout.scale.set(1.2, 0.7, 1);
+  snout.position.set(0, -0.08, 0.22);
+  headGroup.add(snout);
+
+  // Nose
+  const nose = new THREE.Mesh(
+    new THREE.SphereGeometry(0.06, 10, 10),
+    noseMat
+  );
+  nose.position.set(0, -0.05, 0.36);
+  headGroup.add(nose);
+
+  // === EYES with shine ===
+  const eyeGroup = new THREE.Group();
+
+  [-0.1, 0.1].forEach(x => {
+    const eye = new THREE.Mesh(
+      new THREE.SphereGeometry(0.055, 10, 10),
+      eyeMat
+    );
+    eye.position.set(x, 0.05, 0.22);
+    eyeGroup.add(eye);
+
+    // Eye shine (makes them look alive!)
+    const shine = new THREE.Mesh(
+      new THREE.SphereGeometry(0.02, 6, 6),
+      new THREE.MeshBasicMaterial({ color: 0xffffff })
+    );
+    shine.position.set(x + 0.02, 0.07, 0.26);
+    eyeGroup.add(shine);
+  });
+  headGroup.add(eyeGroup);
+
+  // === EARS - Bigger, more expressive ===
+  const earGroup = new THREE.Group();
+
+  const earGeo = new THREE.ConeGeometry(0.1, 0.22, 8);
+  [-0.15, 0.15].forEach((x, i) => {
+    const ear = new THREE.Mesh(earGeo, corgiFurMat);
+    ear.position.set(x, 0.22, -0.05);
+    ear.rotation.z = x > 0 ? -0.25 : 0.25;
+    ear.rotation.x = 0.15;
+    ear.userData.baseRotationZ = ear.rotation.z;
+    ear.userData.side = i;
+    earGroup.add(ear);
+  });
+  headGroup.add(earGroup);
+
+  // === TONGUE (optional, shows when happy) ===
+  const tongue = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.08, 0.12),
+    tongueMat
+  );
+  tongue.position.set(0, -0.15, 0.32);
+  tongue.rotation.x = 0.4;
+  tongue.visible = speedType === 'run'; // Runners have tongue out
+  headGroup.add(tongue);
+
+  headGroup.position.set(0.6, 0.65, 0);
+  corgi.add(headGroup);
+
+  // === TAIL - Fluffy stub with proper wagging ===
+  const tailGroup = new THREE.Group();
+
+  const tail = new THREE.Mesh(
+    new THREE.SphereGeometry(0.1, 10, 10),
+    corgiFurMat
+  );
+  tail.scale.set(0.8, 1, 0.9);
+  tailGroup.add(tail);
+
+  // Tail fluff
+  const tailFluff = new THREE.Mesh(
+    new THREE.SphereGeometry(0.07, 8, 8),
+    corgiFurMat
+  );
+  tailFluff.position.set(0, 0.08, -0.03);
+  tailGroup.add(tailFluff);
+
+  tailGroup.position.set(-0.7, 0.55, 0);
+  corgi.add(tailGroup);
+
+  // === LEGS - Stubby corgi legs! ===
+  const legGeo = new THREE.CylinderGeometry(0.06, 0.07, 0.25, 8);
+  const pawGeo = new THREE.SphereGeometry(0.08, 8, 8);
   const legs = [];
-  const pawGeo = new THREE.SphereGeometry(0.1, 8, 8);
+
   const legPositions = [
-    { x: 0.65, z: 0.25, phase: 0 },
-    { x: 0.65, z: -0.25, phase: Math.PI },
-    { x: -0.5, z: 0.25, phase: Math.PI },
-    { x: -0.5, z: -0.25, phase: 0 }
+    { x: 0.35, z: 0.15, phase: 0 },
+    { x: 0.35, z: -0.15, phase: Math.PI },
+    { x: -0.4, z: 0.15, phase: Math.PI },
+    { x: -0.4, z: -0.15, phase: 0 }
   ];
 
   legPositions.forEach(({ x, z, phase }) => {
     const legGroup = new THREE.Group();
-    const leg = new THREE.Mesh(legGeo, corgiFurMaterial);
-    leg.position.y = -0.2;
+
+    const leg = new THREE.Mesh(legGeo, corgiFurMat);
+    leg.position.y = -0.12;
     legGroup.add(leg);
-    const paw = new THREE.Mesh(pawGeo, corgiAccentMaterial);
-    paw.position.y = -0.4;
+
+    const paw = new THREE.Mesh(pawGeo, corgiAccentMat);
+    paw.scale.set(1.1, 0.7, 1.2);
+    paw.position.y = -0.26;
     legGroup.add(paw);
-    legGroup.position.set(x, 0.4, z);
+
+    legGroup.position.set(x, 0.28, z);
     legGroup.userData.phase = phase;
     corgi.add(legGroup);
     legs.push(legGroup);
   });
 
+  // === SHADOW ===
+  const shadow = new THREE.Mesh(
+    new THREE.CircleGeometry(0.5, 16),
+    new THREE.MeshBasicMaterial({
+      color: 0x000000,
+      transparent: true,
+      opacity: 0.15
+    })
+  );
+  shadow.rotation.x = -Math.PI / 2;
+  shadow.position.y = 0.01;
+  corgi.add(shadow);
+
+  // === USER DATA for animations ===
   corgi.userData = {
     baseY: 0,
     bobOffset: Math.random() * Math.PI * 2,
     legs,
-    tail,
+    tailGroup,
+    earGroup,
+    headGroup,
+    eyeGroup,
+    tongue,
     speedType,
     walkAngle: Math.random() * Math.PI * 2,
     walkSpeed: speedType === 'run' ? 1.4 + Math.random() * 0.6 : 0.4 + Math.random() * 0.4,
     strideSpeed: speedType === 'run' ? 10 + Math.random() * 3 : 5 + Math.random() * 2,
-    strideAmplitude: speedType === 'run' ? 0.9 : 0.55,
-    bobSpeed: speedType === 'run' ? 7 : 4,
-    timer: 1 + Math.random() * 2
+    strideAmplitude: speedType === 'run' ? 0.7 : 0.45,
+    bobSpeed: speedType === 'run' ? 8 : 5,
+    timer: 1 + Math.random() * 2,
+    // NEW: Emotion/behavior states
+    happiness: 0.7 + Math.random() * 0.3,
+    isExcited: false,
+    lastBlink: 0,
+    blinkDuration: 150,
+    nextBlink: 2000 + Math.random() * 3000,
+    // Player awareness
+    noticeDistance: 5,
+    lookAtPlayer: false
   };
 
   return corgi;
@@ -821,15 +989,20 @@ export function updateBees(time, delta) {
   });
 }
 
-export function updateCorgis(time, delta) {
+export function updateCorgis(time, delta, player = null) {
+  const now = performance.now();
+
   corgis.forEach(corgi => {
     const data = corgi.userData;
+
+    // === Direction change timer ===
     data.timer -= delta;
     if (data.timer <= 0) {
       data.walkAngle += (Math.random() - 0.5) * Math.PI * 0.8;
       data.timer = data.speedType === 'run' ? 0.5 + Math.random() * 0.8 : 1.5 + Math.random() * 2.5;
     }
 
+    // === Movement ===
     const speed = data.walkSpeed * delta;
     const nextX = corgi.position.x + Math.sin(data.walkAngle) * speed;
     const nextZ = corgi.position.z + Math.cos(data.walkAngle) * speed;
@@ -841,16 +1014,111 @@ export function updateCorgis(time, delta) {
       data.walkAngle += Math.PI * (0.4 + Math.random() * 0.4);
     }
 
-    corgi.rotation.y = data.walkAngle;
+    // Face movement direction
+    corgi.rotation.y = THREE.MathUtils.lerp(
+      corgi.rotation.y,
+      data.walkAngle,
+      0.1
+    );
 
-    const bob = Math.sin(time * data.bobSpeed + data.bobOffset) * (data.speedType === 'run' ? 0.12 : 0.07);
-    corgi.position.y = data.baseY + bob;
+    // === Player awareness - Look at player when nearby ===
+    if (player) {
+      const distToPlayer = corgi.position.distanceTo(player.position);
+      if (distToPlayer < data.noticeDistance) {
+        data.lookAtPlayer = true;
+        data.isExcited = distToPlayer < 3;
 
+        // Head turns toward player
+        if (data.headGroup) {
+          const toPlayer = new THREE.Vector3()
+            .subVectors(player.position, corgi.position)
+            .normalize();
+          const localToPlayer = toPlayer.clone().applyQuaternion(
+            corgi.quaternion.clone().invert()
+          );
+          const targetHeadY = Math.atan2(localToPlayer.x, localToPlayer.z) * 0.5;
+          data.headGroup.rotation.y = THREE.MathUtils.lerp(
+            data.headGroup.rotation.y,
+            THREE.MathUtils.clamp(targetHeadY, -0.4, 0.4),
+            0.08
+          );
+        }
+      } else {
+        data.lookAtPlayer = false;
+        data.isExcited = false;
+        if (data.headGroup) {
+          data.headGroup.rotation.y = THREE.MathUtils.lerp(data.headGroup.rotation.y, 0, 0.05);
+        }
+      }
+    }
+
+    // === Body bob ===
+    const bobIntensity = data.isExcited ? 0.15 : (data.speedType === 'run' ? 0.12 : 0.07);
+    const bob = Math.sin(time * data.bobSpeed + data.bobOffset) * bobIntensity;
+    corgi.position.y = data.baseY + Math.abs(bob);
+
+    // === Leg animation ===
     data.legs.forEach(leg => {
       leg.rotation.x = Math.sin(time * data.strideSpeed + leg.userData.phase + data.bobOffset) * data.strideAmplitude;
     });
-    if (data.tail) {
-      data.tail.rotation.y = Math.sin(time * (data.speedType === 'run' ? 12 : 6) + data.bobOffset) * 0.4;
+
+    // === TAIL WAGGING - More expressive! ===
+    if (data.tailGroup) {
+      const wagSpeed = data.isExcited ? 20 : (data.speedType === 'run' ? 14 : 8);
+      const wagAmount = data.isExcited ? 0.7 : (data.speedType === 'run' ? 0.5 : 0.35);
+
+      // Side-to-side wag
+      data.tailGroup.rotation.y = Math.sin(time * wagSpeed + data.bobOffset) * wagAmount;
+      // Slight vertical movement
+      data.tailGroup.rotation.x = Math.sin(time * wagSpeed * 0.5) * 0.2 - 0.3;
+      // Excited tail goes higher
+      data.tailGroup.position.y = 0.55 + (data.isExcited ? 0.1 : 0);
+    }
+
+    // === EAR WIGGLE ===
+    if (data.earGroup && data.earGroup.children.length >= 2) {
+      const earWiggle = data.isExcited ? 0.15 : 0.05;
+      data.earGroup.children.forEach((ear, i) => {
+        const offset = i === 0 ? 0 : Math.PI;
+        ear.rotation.z = ear.userData.baseRotationZ + Math.sin(time * 4 + offset) * earWiggle;
+        // Perk up when excited
+        ear.rotation.x = 0.15 - (data.isExcited ? 0.1 : 0);
+      });
+    }
+
+    // === EYE BLINK ===
+    if (data.eyeGroup) {
+      if (now - data.lastBlink > data.nextBlink) {
+        // Start blink
+        data.lastBlink = now;
+        data.nextBlink = 2000 + Math.random() * 4000;
+
+        // Quick scale down/up for blink effect
+        data.eyeGroup.children.forEach(eye => {
+          if (eye.geometry && eye.geometry.type === 'SphereGeometry') {
+            eye.scale.y = 0.1;
+          }
+        });
+
+        setTimeout(() => {
+          if (data.eyeGroup) {
+            data.eyeGroup.children.forEach(eye => {
+              if (eye.geometry && eye.geometry.type === 'SphereGeometry') {
+                eye.scale.y = 1;
+              }
+            });
+          }
+        }, data.blinkDuration);
+      }
+    }
+
+    // === TONGUE (panting when running/excited) ===
+    if (data.tongue) {
+      data.tongue.visible = data.speedType === 'run' || data.isExcited;
+      if (data.tongue.visible) {
+        // Panting animation
+        data.tongue.scale.y = 1 + Math.sin(time * 12) * 0.2;
+      }
     }
   });
 }
