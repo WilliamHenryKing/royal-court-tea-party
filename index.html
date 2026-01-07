@@ -3185,6 +3185,7 @@
         const data = insect.userData;
         insect.position.y = data.baseY + Math.sin(time * data.wobbleSpeed + data.wobbleOffset) * data.wobbleAmount;
         insect.rotation.z = Math.sin(time * data.wobbleSpeed + data.wobbleOffset) * 0.4;
+      });
       // Animate corgis
       corgis.forEach(corgi => {
         const data = corgi.userData;
