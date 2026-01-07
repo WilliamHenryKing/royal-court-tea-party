@@ -27,6 +27,17 @@ import {
   createAmbientParticles
 } from './entities/collectibles.js';
 import { createWorld } from './entities/world.js';
+import { createAllStreets } from './entities/streets.js';
+import {
+  createRiver,
+  createAllBridges,
+  createJumpingFish,
+  createFishingDock
+} from './entities/river.js';
+import { createKingEntourage, kingBen, royalGuards } from './entities/king.js';
+import { createDoomSayer, doomSayer } from './entities/doomSayer.js';
+import { createAllShops, teaCafe, coffeeCafe, donutShop, pinkieSchool } from './entities/shops.js';
+import { createAllActivities } from './entities/activities.js';
 import { handleAction } from './game/interactions.js';
 import { update } from './game/update.js';
 import {
@@ -125,6 +136,15 @@ function initGameWorld() {
   // Create world environment (ground, paths, fountain, decorations, etc.)
   createWorld();
 
+  // Create Austinville street system
+  createAllStreets();
+
+  // Create river, bridges, and fishing dock
+  createRiver();
+  createAllBridges();
+  createFishingDock();
+  createJumpingFish();
+
   // Create buildings
   createBuildings();
 
@@ -137,6 +157,16 @@ function initGameWorld() {
   createBernieListenersGroup();
   createCorgis();
   createBees();
+
+  // Create special characters (King Ben and Doom Sayer)
+  createKingEntourage();
+  createDoomSayer();
+
+  // Create Austinville shops (Tea Café, Coffee Café, Donut Shop, Pinkie School)
+  createAllShops();
+
+  // Create Austinville activities (Boxing Ring, Trampoline, Fishing NPCs, Tea vs Coffee War)
+  createAllActivities();
 
   // Create collectibles, clouds, insects, and ambient particles
   createCollectibles();

@@ -32,7 +32,8 @@ const grassTuftDummy = new THREE.Object3D();
 
 export function isSafeOffPathPlacement(x, z) {
   const radius = Math.hypot(x, z);
-  if (radius < 16 || radius > 46) {
+  // Expanded range for Austinville
+  if (radius < 16 || radius > 72) {
     return false;
   }
   if (isNearPath(x, z, 2.5)) {
@@ -75,8 +76,8 @@ export function checkCollision(x, z) {
       return true;
     }
   }
-  // Check world boundary
-  if (Math.sqrt(x * x + z * z) > 48) {
+  // Check world boundary (expanded for Austinville)
+  if (Math.sqrt(x * x + z * z) > 75) {
     return true;
   }
   return false;
@@ -581,7 +582,8 @@ function createFountain() {
 // ============================================
 
 function createGrassTufts() {
-  const tuftCount = 480;
+  // Increased grass count for expanded Austinville
+  const tuftCount = 720;
   const tuftGeo = new THREE.ConeGeometry(0.08, 0.6, 5);
   const tuftMat = new THREE.MeshStandardMaterial({ color: 0x4fae5d, roughness: 0.9 });
   grassTufts = new THREE.InstancedMesh(tuftGeo, tuftMat, tuftCount);
@@ -594,7 +596,8 @@ function createGrassTufts() {
   while (placed < tuftCount && attempts < tuftCount * 8) {
     attempts++;
     const angle = Math.random() * Math.PI * 2;
-    const radius = 16 + Math.random() * 30;
+    // Expanded range for Austinville
+    const radius = 16 + Math.random() * 55;
     const x = Math.cos(angle) * radius;
     const z = Math.sin(angle) * radius;
     const nearPathBand = isNearPath(x, z, 4.2) && !isNearPath(x, z, 1.2);
@@ -630,19 +633,22 @@ function createGrassTufts() {
 // ============================================
 
 function createDecorations() {
-  // Flowers
+  // Flowers (more for expanded Austinville)
   const flowerColors = [0xff69b4, 0xffd700, 0xff6347, 0x9370db, 0x00ced1];
-  for (let i = 0; i < 80; i++) {
+  for (let i = 0; i < 120; i++) {
     const flower = createFlower(flowerColors[Math.floor(Math.random() * flowerColors.length)]);
-    flower.position.set((Math.random() - 0.5) * 70, 0, (Math.random() - 0.5) * 70);
+    flower.position.set((Math.random() - 0.5) * 140, 0, (Math.random() - 0.5) * 140);
     flower.scale.setScalar(0.4 + Math.random() * 0.5);
     scene.add(flower);
   }
 
-  // Trees
+  // Trees (expanded for Austinville)
   const treePositions = [
     { x: 10, z: -10 }, { x: -10, z: -10 }, { x: 18, z: 5 },
-    { x: -18, z: 5 }, { x: 0, z: 22 }, { x: 15, z: 18 }, { x: -15, z: 18 }
+    { x: -18, z: 5 }, { x: 0, z: 22 }, { x: 15, z: 18 }, { x: -15, z: 18 },
+    // Additional trees for expanded area
+    { x: 30, z: 15 }, { x: -30, z: 15 }, { x: 35, z: -15 }, { x: -35, z: -15 },
+    { x: 25, z: 30 }, { x: -25, z: 30 }, { x: 0, z: 35 }, { x: 40, z: 0 }
   ];
   treePositions.forEach(pos => {
     const tree = createTree();
@@ -651,17 +657,17 @@ function createDecorations() {
     scene.add(tree);
   });
 
-  // Sparse bushes and boulders
+  // Sparse bushes and boulders (more for expanded area)
   const bushMat = new THREE.MeshStandardMaterial({ color: 0x3a9d5d });
   const boulderMat = new THREE.MeshStandardMaterial({ color: 0x9aa0a6, roughness: 0.9 });
 
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 12; i++) {
     const bush = createBush(bushMat);
     let x = 0;
     let z = 0;
     for (let tries = 0; tries < 8; tries++) {
-      x = (Math.random() - 0.5) * 65;
-      z = (Math.random() - 0.5) * 65;
+      x = (Math.random() - 0.5) * 130;
+      z = (Math.random() - 0.5) * 130;
       if (isSafeOffPathPlacement(x, z)) break;
     }
     bush.position.set(x, 0, z);
@@ -669,13 +675,13 @@ function createDecorations() {
     scene.add(bush);
   }
 
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 6; i++) {
     const boulder = createBoulder(boulderMat);
     let x = 0;
     let z = 0;
     for (let tries = 0; tries < 8; tries++) {
-      x = (Math.random() - 0.5) * 65;
-      z = (Math.random() - 0.5) * 65;
+      x = (Math.random() - 0.5) * 130;
+      z = (Math.random() - 0.5) * 130;
       if (isSafeOffPathPlacement(x, z)) break;
     }
     boulder.position.set(x, 0.4, z);
@@ -685,10 +691,10 @@ function createDecorations() {
     scene.add(boulder);
   }
 
-  // Mushrooms
-  for (let i = 0; i < 30; i++) {
+  // Mushrooms (more for expanded area)
+  for (let i = 0; i < 50; i++) {
     const mushroom = createMushroom();
-    mushroom.position.set((Math.random() - 0.5) * 65, 0, (Math.random() - 0.5) * 65);
+    mushroom.position.set((Math.random() - 0.5) * 130, 0, (Math.random() - 0.5) * 130);
     mushroom.scale.setScalar(0.25 + Math.random() * 0.35);
     scene.add(mushroom);
   }
@@ -760,8 +766,8 @@ export function createWorld() {
     });
   });
 
-  // Ground
-  const groundGeo = new THREE.CircleGeometry(55, 64);
+  // Ground (expanded for Austinville town)
+  const groundGeo = new THREE.CircleGeometry(80, 64);
   const groundMat = new THREE.MeshStandardMaterial({ color: 0x90d860, roughness: 0.8 });
   const ground = new THREE.Mesh(groundGeo, groundMat);
   ground.rotation.x = -Math.PI / 2;

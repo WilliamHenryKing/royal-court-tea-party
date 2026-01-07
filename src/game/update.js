@@ -5,6 +5,11 @@ import { buildings } from '../entities/buildings.js';
 import { npcs, wanderers, bernieListeners, corgis, bees, updateCorgis, updateBees, updateWanderers, updateBernieListeners, updateNPCIndicators } from '../entities/npcs.js';
 import { collectibles, clouds, celebrationParticles, updateCelebrationParticles, updateAmbientParticles } from '../entities/collectibles.js';
 import { waterMaterial } from '../entities/world.js';
+import { updateRiverWater, updateJumpingFish } from '../entities/river.js';
+import { updateKingAndGuards } from '../entities/king.js';
+import { updateDoomSayer } from '../entities/doomSayer.js';
+import { updateAllActivities } from '../entities/activities.js';
+import { updateCameraZoom, isZoomedIn } from '../systems/cameraZoom.js';
 import { checkCollision } from './interactions.js';
 import { getInputVector } from '../systems/inputSystem.js';
 import { camera } from '../engine/renderer.js';
@@ -114,11 +119,16 @@ function updatePlayer(ctx, delta, time, now) {
   updateCape(delta, time, isMoving, moveDirection);
 
   // Camera follow with zoom
-  updateCamera(ctx, time, isMoving);
+  updateCamera(ctx, delta, time, isMoving);
 }
 
 // Update camera position and zoom
-function updateCamera(ctx, time, isMoving) {
+function updateCamera(ctx, delta, time, isMoving) {
+  // Check if NPC interaction zoom is active - let it handle camera
+  if (updateCameraZoom(delta)) {
+    return;
+  }
+
   if (isMoving !== cameraZoomState.moving) {
     cameraZoomState.moving = isMoving;
     cameraZoomState.lastMoveChange = time;
@@ -262,4 +272,19 @@ function updateAmbientAnimations(ctx, delta, time) {
 
   // Floating petals and sparkles
   updateAmbientParticles(time, delta);
+
+  // River water animation
+  updateRiverWater(time);
+
+  // Jumping fish animation
+  updateJumpingFish(time, delta);
+
+  // King Ben and guards patrol
+  updateKingAndGuards(time, delta, camera);
+
+  // Doom Sayer wandering and prophecies
+  updateDoomSayer(time, delta, camera);
+
+  // Austinville activities (Boxing Ring, Trampoline, Fishing NPCs, Tea vs Coffee War)
+  updateAllActivities(time, delta, camera);
 }
