@@ -34,6 +34,8 @@ import {
   createJumpingFish,
   createFishingDock
 } from './entities/river.js';
+import { createKingEntourage, kingBen, royalGuards } from './entities/king.js';
+import { createDoomSayer, doomSayer } from './entities/doomSayer.js';
 import { handleAction } from './game/interactions.js';
 import { update } from './game/update.js';
 import {
@@ -153,6 +155,10 @@ function initGameWorld() {
   createBernieListenersGroup();
   createCorgis();
   createBees();
+
+  // Create special characters (King Ben and Doom Sayer)
+  createKingEntourage();
+  createDoomSayer();
 
   // Create collectibles, clouds, insects, and ambient particles
   createCollectibles();

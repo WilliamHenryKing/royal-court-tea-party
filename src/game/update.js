@@ -6,6 +6,8 @@ import { npcs, wanderers, bernieListeners, corgis, bees, updateCorgis, updateBee
 import { collectibles, clouds, celebrationParticles, updateCelebrationParticles, updateAmbientParticles } from '../entities/collectibles.js';
 import { waterMaterial } from '../entities/world.js';
 import { updateRiverWater, updateJumpingFish } from '../entities/river.js';
+import { updateKingAndGuards } from '../entities/king.js';
+import { updateDoomSayer } from '../entities/doomSayer.js';
 import { checkCollision } from './interactions.js';
 import { getInputVector } from '../systems/inputSystem.js';
 import { camera } from '../engine/renderer.js';
@@ -269,4 +271,10 @@ function updateAmbientAnimations(ctx, delta, time) {
 
   // Jumping fish animation
   updateJumpingFish(time, delta);
+
+  // King Ben and guards patrol
+  updateKingAndGuards(time, delta, camera);
+
+  // Doom Sayer wandering and prophecies
+  updateDoomSayer(time, delta, camera);
 }
