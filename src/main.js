@@ -36,6 +36,7 @@ import {
 } from './entities/river.js';
 import { createKingEntourage, kingBen, royalGuards } from './entities/king.js';
 import { createDoomSayer, doomSayer } from './entities/doomSayer.js';
+import { createAllShops, teaCafe, coffeeCafe, donutShop, pinkieSchool } from './entities/shops.js';
 import { handleAction } from './game/interactions.js';
 import { update } from './game/update.js';
 import {
@@ -159,6 +160,9 @@ function initGameWorld() {
   // Create special characters (King Ben and Doom Sayer)
   createKingEntourage();
   createDoomSayer();
+
+  // Create Austinville shops (Tea Café, Coffee Café, Donut Shop, Pinkie School)
+  createAllShops();
 
   // Create collectibles, clouds, insects, and ambient particles
   createCollectibles();
