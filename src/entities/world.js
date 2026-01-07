@@ -442,10 +442,11 @@ function createWaterfallFeature() {
   return feature;
 }
 
+// AUSTINVILLE GRID LAYOUT - Big waterfall positioned in north-east area, away from donut shop
 function createBigWaterfallFeature() {
   const waterfall = new THREE.Group();
-  const anchorX = 26;
-  const anchorZ = -28;
+  const anchorX = 32;
+  const anchorZ = -30;
 
   const base = new THREE.Mesh(new THREE.BoxGeometry(6.2, 2.4, 4.2), stoneMaterial);
   base.position.y = 1.2;
@@ -642,13 +643,21 @@ function createDecorations() {
     scene.add(flower);
   }
 
-  // Trees (expanded for Austinville)
+  // Trees (AUSTINVILLE GRID LAYOUT - placed between blocks and along edges, avoiding buildings)
+  // Core buildings: palace x=10 z=5, teashop x=12 z=-5, speakers x=0 z=15, guests x=-10 z=5, feast x=-10 z=-5
+  // Shops: teaCafe x=25 z=5, coffeeCafe x=25 z=-15, donutShop x=10 z=-24, pinkieSchool x=-25 z=5
+  // Activities: boxingRing x=-25 z=-15, trampoline x=-25 z=-5
   const treePositions = [
-    { x: 10, z: -10 }, { x: -10, z: -10 }, { x: 18, z: 5 },
-    { x: -18, z: 5 }, { x: 0, z: 22 }, { x: 15, z: 18 }, { x: -15, z: 18 },
-    // Additional trees for expanded area
-    { x: 30, z: 15 }, { x: -30, z: 15 }, { x: 35, z: -15 }, { x: -35, z: -15 },
-    { x: 25, z: 30 }, { x: -25, z: 30 }, { x: 0, z: 35 }, { x: 40, z: 0 }
+    // Along southern edge
+    { x: 0, z: 28 }, { x: 15, z: 26 }, { x: -15, z: 26 }, { x: 30, z: 22 }, { x: -30, z: 22 },
+    // Between Crumpet Court (z=10) and Scone Street (z=20)
+    { x: 35, z: 15 }, { x: -35, z: 15 }, { x: 18, z: 16 }, { x: -18, z: 16 },
+    // Along eastern edge
+    { x: 38, z: 0 }, { x: 35, z: -8 }, { x: 38, z: -22 },
+    // Along western edge
+    { x: -38, z: 0 }, { x: -38, z: -22 },
+    // Near river (north)
+    { x: -15, z: -28 }, { x: 28, z: -26 }
   ];
   treePositions.forEach(pos => {
     const tree = createTree();
@@ -712,21 +721,29 @@ function createDecorations() {
 // ROYAL PROPS PLACEMENT
 // ============================================
 
+// AUSTINVILLE GRID LAYOUT - Royal props placed in open areas away from buildings and streets
+// Avoiding: Core buildings (around center), Shops (at ±25, various z), Activities (west side),
+// Streets (z: -20, -10, 0, 10, 20), River (z≈-27)
 function createRoyalProps() {
   const propInset = 0.82;
   const placements = [
-    { create: createHugeRedChair, x: 28, z: -30, scale: 1.2 },
-    { create: createCakeWithCherry, x: -32, z: -24, scale: 1.1 },
-    { create: createMilkTart, x: 34, z: 22, scale: 1 },
-    { create: createIceCreamGlass, x: -26, z: 30, scale: 1.05 },
-    { create: createPinkSodaGlass, x: 22, z: 32, scale: 1 },
-    { create: createGoldenTeapot, x: -36, z: 12, scale: 1 },
-    { create: createMacaronTower, x: 12, z: -36, scale: 1.1 },
-    { create: createCrownCushion, x: -18, z: -34, scale: 1 },
+    // South-east corner area
+    { create: createHugeRedChair, x: 38, z: 28, scale: 1.2 },
+    { create: createMilkTart, x: 35, z: 18, scale: 1 },
+    { create: createPinkSodaGlass, x: 32, z: 25, scale: 1 },
+    // South-west corner area
+    { create: createCakeWithCherry, x: -38, z: 28, scale: 1.1 },
+    { create: createIceCreamGlass, x: -35, z: 18, scale: 1.05 },
+    // West side (away from trampoline and boxing ring)
+    { create: createGoldenTeapot, x: -38, z: -3, scale: 1 },
+    // North area near river (spaced from donut shop)
+    { create: createMacaronTower, x: 32, z: -28, scale: 1.1 },
+    { create: createCrownCushion, x: -5, z: -32, scale: 1 },
+    // East side waterfall
     {
       create: createWaterfallFeature,
-      x: 40,
-      z: -8,
+      x: 42,
+      z: -3,
       scale: 1.1,
       collision: { minX: -2.2, maxX: 2.2, minZ: -1.8, maxZ: 1.8 }
     }
