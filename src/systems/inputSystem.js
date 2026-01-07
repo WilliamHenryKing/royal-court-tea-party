@@ -33,5 +33,5 @@ export function getInputVector() {
   if (desktopModeEnabled) {
     return { x: keyboardVector.x, y: keyboardVector.y };
   }
-  return { x: joystickInput.x, y: -joystickInput.y }; // Invert Y for joystick
+  return { x: joystickInput.x, y: joystickInput.y };
 }
