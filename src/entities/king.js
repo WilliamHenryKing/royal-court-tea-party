@@ -79,7 +79,7 @@ export const KING_BEN = {
   ],
 
   // Time between Queen visits (in seconds)
-  queenVisitInterval: 45, // Visit Queen every ~45 seconds
+  queenVisitInterval: 30, // Visit Queen every ~30 seconds
 
   // Guard reactions when King stops or comments
   guardReactions: [
@@ -312,8 +312,10 @@ export function createKingBen() {
     queenVisitTimer: 30,          // Start with short timer to visit soon
     isVisitingQueen: false,       // Whether currently on Queen visit
     queenVisitDuration: 0,        // How long to stay at Queen's side
+    queenLingerTimer: 0,          // Extra linger time near Queen Bee
     romanticMode: false,          // Enhanced romantic behavior when near Queen
-    heartsSpawned: 0              // Track heart effects
+    heartsSpawned: 0,             // Track heart effects
+    patrolWaypointCount: 0        // Count patrol waypoints between visits
   };
 
   scene.add(group);
@@ -584,11 +586,21 @@ export function updateKingAndGuards(time, delta, camera) {
   // === QUEEN VISIT TIMER ===
   data.queenVisitTimer += delta;
 
+  const queenBee = npcs['palace'];
+  const palaceAnchor = queenBee
+    ? queenBee.position
+    : new THREE.Vector3(data.palaceWaypoints[0].x, 0, data.palaceWaypoints[0].z);
+  const playerNearPalace = camera
+    ? camera.position.distanceTo(palaceAnchor) < 14
+    : false;
+
   // Check if it's time to visit the Queen
   if (!data.isVisitingQueen && data.queenVisitTimer >= data.queenVisitInterval) {
     data.isVisitingQueen = true;
     data.queenVisitTimer = 0;
     data.queenVisitDuration = 8 + Math.random() * 5; // Stay 8-13 seconds
+    data.queenLingerTimer = 2 + Math.random() * 1.5;
+    data.patrolWaypointCount = 0;
     // Set target to palace area
     const palaceWp = data.palaceWaypoints[Math.floor(Math.random() * data.palaceWaypoints.length)];
     data.currentTarget = palaceWp;
@@ -602,7 +614,18 @@ export function updateKingAndGuards(time, delta, camera) {
       const palaceWp = data.palaceWaypoints[Math.floor(Math.random() * data.palaceWaypoints.length)];
       data.currentTarget = palaceWp;
     } else {
-      data.currentTarget = pickNextRoadWaypoint(kingBen.position.x, kingBen.position.z, data.roadWaypoints);
+      const shouldFavorPalace = playerNearPalace || data.patrolWaypointCount >= 6;
+      if (shouldFavorPalace && Math.random() < 0.55) {
+        data.isVisitingQueen = true;
+        data.queenVisitTimer = 0;
+        data.queenVisitDuration = 8 + Math.random() * 5;
+        data.queenLingerTimer = 2 + Math.random() * 1.5;
+        data.patrolWaypointCount = 0;
+        const palaceWp = data.palaceWaypoints[Math.floor(Math.random() * data.palaceWaypoints.length)];
+        data.currentTarget = palaceWp;
+      } else {
+        data.currentTarget = pickNextRoadWaypoint(kingBen.position.x, kingBen.position.z, data.roadWaypoints);
+      }
     }
   }
 
@@ -634,52 +657,73 @@ export function updateKingAndGuards(time, delta, camera) {
         showKingMessage(kingBen, quote, camera);
       }
     } else {
-      // Move toward current target
-      const target = data.currentTarget;
-      const dx = target.x - kingBen.position.x;
-      const dz = target.z - kingBen.position.z;
-      const dist = Math.sqrt(dx * dx + dz * dz);
-
-      if (dist < 0.5) {
-        // Reached waypoint - immediately pick next one (no stopping)
-        data.currentTarget = pickNextRoadWaypoint(kingBen.position.x, kingBen.position.z, data.roadWaypoints, target);
+      if (data.queenLingerTimer > 0) {
+        data.queenLingerTimer = Math.max(0, data.queenLingerTimer - delta);
+        kingBen.position.y = Math.abs(Math.sin(time * 3)) * 0.03;
       } else {
-        // Move toward waypoint
-        const moveX = (dx / dist) * data.walkSpeed * delta;
-        const moveZ = (dz / dist) * data.walkSpeed * delta;
+        // Move toward current target
+        const target = data.currentTarget;
+        const dx = target.x - kingBen.position.x;
+        const dz = target.z - kingBen.position.z;
+        const dist = Math.sqrt(dx * dx + dz * dz);
 
-        const targetX = kingBen.position.x + moveX;
-        const targetZ = kingBen.position.z + moveZ;
+        if (dist < 0.5) {
+          if (data.isVisitingQueen) {
+            data.queenLingerTimer = 2 + Math.random() * 1.5;
+            data.currentTarget = null;
+          } else {
+            // Reached waypoint - immediately pick next one (no stopping)
+            data.patrolWaypointCount += 1;
+            const shouldFavorPalace = playerNearPalace || data.patrolWaypointCount >= 6;
+            if (shouldFavorPalace && Math.random() < 0.45) {
+              data.isVisitingQueen = true;
+              data.queenVisitTimer = 0;
+              data.queenVisitDuration = 8 + Math.random() * 5;
+              data.queenLingerTimer = 2 + Math.random() * 1.5;
+              data.patrolWaypointCount = 0;
+              const palaceWp = data.palaceWaypoints[Math.floor(Math.random() * data.palaceWaypoints.length)];
+              data.currentTarget = palaceWp;
+            } else {
+              data.currentTarget = pickNextRoadWaypoint(kingBen.position.x, kingBen.position.z, data.roadWaypoints, target);
+            }
+          }
+        } else {
+          // Move toward waypoint
+          const moveX = (dx / dist) * data.walkSpeed * delta;
+          const moveZ = (dz / dist) * data.walkSpeed * delta;
 
-        // Use collision system with sliding
-        const validated = collisionManager.getValidatedPosition(
-          data.collisionId,
-          targetX,
-          targetZ,
-          0.5,
-          true
-        );
+          const targetX = kingBen.position.x + moveX;
+          const targetZ = kingBen.position.z + moveZ;
 
-        kingBen.position.x = validated.x;
-        kingBen.position.z = validated.z;
+          // Use collision system with sliding
+          const validated = collisionManager.getValidatedPosition(
+            data.collisionId,
+            targetX,
+            targetZ,
+            0.5,
+            true
+          );
 
-        // Face movement direction
-        kingBen.rotation.y = Math.atan2(dx, dz);
+          kingBen.position.x = validated.x;
+          kingBen.position.z = validated.z;
 
-        // Stately walk animation
-        kingBen.position.y = Math.abs(Math.sin(time * 4)) * 0.05;
-        kingBen.rotation.z = Math.sin(time * 4) * 0.03;
+          // Face movement direction
+          kingBen.rotation.y = Math.atan2(dx, dz);
 
-        // Scepter sway
-        if (data.scepterGroup) {
-          data.scepterGroup.rotation.z = 0.2 + Math.sin(time * 2) * 0.1;
+          // Stately walk animation
+          kingBen.position.y = Math.abs(Math.sin(time * 4)) * 0.05;
+          kingBen.rotation.z = Math.sin(time * 4) * 0.03;
+
+          // Scepter sway
+          if (data.scepterGroup) {
+            data.scepterGroup.rotation.z = 0.2 + Math.sin(time * 2) * 0.1;
+          }
         }
       }
     }
   }
 
   // === CHECK IF NEAR QUEEN BEE ===
-  const queenBee = npcs['palace'];
   if (queenBee) {
     const distToQueen = kingBen.position.distanceTo(queenBee.position);
 
