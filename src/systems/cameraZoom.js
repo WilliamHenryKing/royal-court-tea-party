@@ -35,7 +35,9 @@ export const cameraZoomConfig = {
   // Store original player position for smooth return
   playerPosAtZoom: null,
   // Callback when zoom-in completes
-  onZoomInComplete: null
+  onZoomInComplete: null,
+  // Callback when zoom-out completes
+  onZoomOutComplete: null
 };
 
 // Target vectors for smooth camera movement
@@ -121,10 +123,12 @@ export function zoomToBuildingNPC(npcId, onComplete = null) {
 
 /**
  * Zoom camera back out to normal gameplay view
+ * @param {Function} onComplete - Optional callback when zoom-out completes
  */
-export function zoomOut() {
+export function zoomOut(onComplete = null) {
   cameraZoomConfig.current = 'normal';
   cameraZoomConfig.isTransitioning = true;
+  cameraZoomConfig.onZoomOutComplete = onComplete;
 
   // Stop NPC talking animation
   if (cameraZoomConfig.targetNPC) {
@@ -247,6 +251,13 @@ export function updateCameraZoom(delta) {
     if (wasTransitioning && cameraZoomConfig.current === 'interaction' && cameraZoomConfig.onZoomInComplete) {
       const callback = cameraZoomConfig.onZoomInComplete;
       cameraZoomConfig.onZoomInComplete = null; // Clear to prevent multiple calls
+      callback();
+    }
+
+    // Call zoom-out complete callback if transitioning TO normal mode
+    if (wasTransitioning && cameraZoomConfig.current === 'normal' && cameraZoomConfig.onZoomOutComplete) {
+      const callback = cameraZoomConfig.onZoomOutComplete;
+      cameraZoomConfig.onZoomOutComplete = null; // Clear to prevent multiple calls
       callback();
     }
   }
