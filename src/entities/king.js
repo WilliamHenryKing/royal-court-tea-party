@@ -51,6 +51,8 @@ export const KING_BEN = {
     { x: -20, z: -15 }, { x: -20, z: -5 }, { x: -20, z: 5 }, { x: -20, z: 15 },
     // Honey Way (x=0) - additional points (skip near fountain at center)
     { x: 0, z: -15 }, { x: 0, z: 15 },
+    // Fountain loop (stay just outside fountain collision)
+    { x: -4, z: -3 }, { x: 4, z: -3 }, { x: -4, z: 3 }, { x: 4, z: 3 },
     // Biscuit Boulevard (x=20) - additional points
     { x: 20, z: -15 }, { x: 20, z: -5 }, { x: 20, z: 5 }, { x: 20, z: 15 }
   ],
@@ -478,6 +480,33 @@ function pickNextRoadWaypoint(currentX, currentZ, waypoints, lastTarget = null) 
   // Find waypoints that are connected via road (same x OR same z)
   // Allow small tolerance for floating point
   const tolerance = 1;
+  const fountainBounds = {
+    minX: -1.6,
+    maxX: 1.6,
+    minZ: -1.6,
+    maxZ: 1.6
+  };
+
+  const segmentCrossesRange = (start, end, min, max) => {
+    const low = Math.min(start, end);
+    const high = Math.max(start, end);
+    return low <= max && high >= min;
+  };
+
+  const pathCrossesFountain = (wp) => {
+    const sameRow = Math.abs(wp.z - currentZ) < tolerance;
+    const sameCol = Math.abs(wp.x - currentX) < tolerance;
+
+    if (sameRow && Math.abs(currentZ) < tolerance) {
+      return segmentCrossesRange(currentX, wp.x, fountainBounds.minX, fountainBounds.maxX);
+    }
+
+    if (sameCol && Math.abs(currentX) < tolerance) {
+      return segmentCrossesRange(currentZ, wp.z, fountainBounds.minZ, fountainBounds.maxZ);
+    }
+
+    return false;
+  };
 
   const connectedWaypoints = waypoints.filter(wp => {
     // Skip if this is the last target (don't go back immediately)
@@ -501,6 +530,10 @@ function pickNextRoadWaypoint(currentX, currentZ, waypoints, lastTarget = null) 
     const atMainStreet = mainStreetZ.some(z => Math.abs(currentZ - z) < tolerance);
     const wpAtCrossStreet = crossStreetX.some(x => Math.abs(wp.x - x) < tolerance);
     const wpAtMainStreet = mainStreetZ.some(z => Math.abs(wp.z - z) < tolerance);
+
+    if (pathCrossesFountain(wp)) {
+      return false;
+    }
 
     // If at intersection, can go to waypoints on either connecting road
     if (atCrossStreet && atMainStreet) {
