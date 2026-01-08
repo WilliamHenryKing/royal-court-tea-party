@@ -302,6 +302,12 @@ function updateAmbientAnimations(ctx, delta, time) {
   // Doom Sayer wandering and prophecies
   updateDoomSayer(time, delta, camera);
 
+  // Wandering NPCs movement
+  updateWanderers(ctx, delta, time, camera);
+
+  // Bernie listeners movement
+  updateBernieListeners(ctx, delta, time, camera);
+
   // Austinville activities (Boxing Ring, Trampoline, Fishing NPCs, Tea vs Coffee War)
   updateAllActivities(time, delta, camera);
 }

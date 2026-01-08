@@ -47,9 +47,10 @@ export const KING_BEN = {
   // Road network waypoints - King Ben ONLY walks on roads
   // Main streets (E-W): Royal Road (z=0), Milk Lane (z=-10), Crumpet Court (z=10), Peppermint Ave (z=-20), Scone Street (z=20)
   // Cross streets (N-S): Sugar Lane (x=-20), Honey Way (x=0), Biscuit Boulevard (x=20)
+  // Note: Fountain at (0,0) blocks center - waypoints go around it
   roadWaypoints: [
-    // Royal Road (z=0) - main road intersections and points
-    { x: -35, z: 0 }, { x: -20, z: 0 }, { x: -10, z: 0 }, { x: 0, z: 0 }, { x: 10, z: 0 }, { x: 20, z: 0 }, { x: 35, z: 0 },
+    // Royal Road (z=0) - main road intersections and points (goes around fountain)
+    { x: -35, z: 0 }, { x: -20, z: 0 }, { x: -10, z: 0 }, { x: -4, z: 0 }, { x: 4, z: 0 }, { x: 10, z: 0 }, { x: 20, z: 0 }, { x: 35, z: 0 },
     // Milk Lane (z=-10)
     { x: -35, z: -10 }, { x: -20, z: -10 }, { x: -10, z: -10 }, { x: 0, z: -10 }, { x: 10, z: -10 }, { x: 20, z: -10 }, { x: 35, z: -10 },
     // Crumpet Court (z=10)
@@ -60,14 +61,14 @@ export const KING_BEN = {
     { x: -35, z: 20 }, { x: -20, z: 20 }, { x: 0, z: 20 }, { x: 20, z: 20 }, { x: 35, z: 20 },
     // Sugar Lane (x=-20) - additional points between main streets
     { x: -20, z: -15 }, { x: -20, z: -5 }, { x: -20, z: 5 }, { x: -20, z: 15 },
-    // Honey Way (x=0) - additional points
-    { x: 0, z: -15 }, { x: 0, z: -5 }, { x: 0, z: 5 }, { x: 0, z: 15 },
+    // Honey Way (x=0) - additional points (skip near fountain at center)
+    { x: 0, z: -15 }, { x: 0, z: 15 },
     // Biscuit Boulevard (x=20) - additional points
     { x: 20, z: -15 }, { x: 20, z: -5 }, { x: 20, z: 5 }, { x: 20, z: 15 }
   ],
 
-  // Starting position on Royal Road
-  startingWaypoint: { x: 0, z: 0 }
+  // Starting position on Royal Road (away from fountain at 0,0)
+  startingWaypoint: { x: 5, z: 0 }
 };
 
 // Store references
