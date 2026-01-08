@@ -1,5 +1,5 @@
 // Interactions - collision detection, NPC interactions, and dialog triggers
-import { openDialog, openWandererDialog } from '../ui/uiManager.js';
+import { openDialog, openWandererDialog, openBuildingNPCDialog } from '../ui/uiManager.js';
 
 // Collision boxes storage
 export const collisionBoxes = [];
@@ -16,7 +16,9 @@ export function checkCollision(x, z) {
 
 // Handle action button press (interact with NPCs)
 export function handleAction(ctx) {
-  if (ctx.gameState.nearNPC) {
+  if (ctx.gameState.nearBuildingNPC) {
+    openBuildingNPCDialog(ctx.gameState.nearBuildingNPC);
+  } else if (ctx.gameState.nearNPC) {
     openDialog(ctx.gameState.nearNPC);
   } else if (ctx.gameState.nearWanderer) {
     openWandererDialog(ctx.gameState.nearWanderer);
