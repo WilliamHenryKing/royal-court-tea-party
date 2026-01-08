@@ -24,9 +24,6 @@ import { getInputVector } from '../systems/inputSystem.js';
 import { camera, getZoomLevel } from '../engine/renderer.js';
 import { PLAYER_CONFIG } from '../config.js';
 import { collisionManager, COLLISION_LAYERS } from '../systems/CollisionManager.js';
-import { updateAmbientAudio } from '../audio/audioManager.js';
-import { BOXING_RING_DATA } from '../entities/activities.js';
-import { forestBounds } from '../entities/river.js';
 import { LOCATIONS } from '../assets/data.js';
 
 // Player collision registration
@@ -56,12 +53,6 @@ const cameraZoomState = {
 
 // Movement state
 const moveDirection = new THREE.Vector3();
-const footstepState = {
-  nextStepTime: 0,
-  nextBridgeCreakTime: 0
-};
-
-const cafeLocation = LOCATIONS.find(loc => loc.id === 'teashop');
 const palaceLocation = LOCATIONS.find(loc => loc.id === 'palace');
 const palaceCarpet = palaceLocation ? {
   x: palaceLocation.x,
@@ -71,14 +62,6 @@ const palaceCarpet = palaceLocation ? {
   bottomZ: palaceLocation.z + PALACE_HILL_RADIUS + PALACE_CARPET_FRONT_OFFSET,
   maxHeight: PALACE_HILL_HEIGHT
 } : null;
-
-function getForestCenter() {
-  if (!forestBounds) return { x: 15, z: -45 };
-  return {
-    x: (forestBounds.minX + forestBounds.maxX) * 0.5,
-    z: (forestBounds.minZ + forestBounds.maxZ) * 0.5
-  };
-}
 
 function getPalaceCarpetHeight(x, z) {
   if (!palaceCarpet) return 0;
@@ -177,7 +160,6 @@ function updatePlayer(ctx, delta, time, now) {
     // Waddle animation
     player.rotation.z = Math.sin(time * 15) * 0.12;
     player.position.y = player.userData.baseY + Math.abs(Math.sin(time * 18)) * 0.12;
-    updateFootsteps(now, getPlayerSpeed(now));
   } else {
     player.userData.baseY = getPalaceCarpetHeight(player.position.x, player.position.z);
     // Idle animation
@@ -231,13 +213,6 @@ function updateCamera(ctx, delta, time, isMoving) {
   );
   camera.position.lerp(idealPos, 0.08);
   camera.lookAt(cameraTarget);
-}
-
-function updateFootsteps(now, speed) {
-  if (now < footstepState.nextStepTime) return;
-
-  const interval = speed > PLAYER_CONFIG.BASE_SPEED ? 220 : 320;
-  footstepState.nextStepTime = now + interval;
 }
 
 // Update NPCs
@@ -469,21 +444,6 @@ function updateAmbientAnimations(ctx, delta, time) {
   // Butterflies near flower beds
   updateButterflies(time);
 
-  // Ambient soundscapes
-  if (player) {
-    const forestCenter = getForestCenter();
-    const zones = [
-      { key: 'birds', position: forestCenter, minDistance: 6, maxDistance: 35 },
-      { key: 'wind', position: forestCenter, minDistance: 8, maxDistance: 40 },
-      { key: 'crowd', position: BOXING_RING_DATA.position, minDistance: 6, maxDistance: 24 }
-    ];
-
-    if (cafeLocation) {
-      zones.push({ key: 'cafe', position: cafeLocation, minDistance: 4, maxDistance: 18 });
-    }
-
-    updateAmbientAudio(player.position, zones);
-  }
 }
 
 // Add CSS animations for floating points
