@@ -8,7 +8,6 @@ import {
   openWandererDialog,
 } from '../ui/uiManager.js';
 import { spawnHearts } from '../entities/collectibles.js';
-import { playCorgiBark } from '../audio/audioManager.js';
 
 // Collision boxes storage
 export const collisionBoxes = [];
@@ -103,8 +102,6 @@ function petCorgi(corgi) {
 
   // Spawn hearts above the corgi
   spawnHearts(corgi.position.clone().add(new THREE.Vector3(0, 0.8, 0)), 8);
-  playCorgiBark();
-
   // Show happy message (using existing floating message system)
   const messages = [
     "*happy wiggle*",

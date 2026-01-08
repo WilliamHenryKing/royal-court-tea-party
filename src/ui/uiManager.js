@@ -7,11 +7,7 @@ import {
   musicAudio,
   playCurrentTrack,
   toggleMusicMute,
-  playNextTrack,
-  initializeAmbientAudio,
-  playNpcGreeting,
-  playNpcLaugh,
-  playNpcSigh
+  playNextTrack
 } from '../audio/audioManager.js';
 import { LOCATIONS } from '../assets/data.js';
 import { AUDIO_CONFIG } from '../config.js';
@@ -110,7 +106,6 @@ export function startAdventure() {
   document.getElementById('intro-modal').classList.remove('visible');
   ctx.gameState.dialogOpen = false;
   ctx.gameState.started = true;
-  initializeAmbientAudio();
   if (!musicState.initialized) {
     musicState.initialized = true;
     playCurrentTrack();
@@ -476,7 +471,6 @@ export function openDialog(locationId) {
 
     // Play voice when dialog appears
     playVoice(locationId);
-    playNpcGreeting();
 
     // Update dialog UI
     document.getElementById('dialog-avatar').textContent = dialog.avatar;
@@ -510,7 +504,6 @@ export function openKingDialog() {
     ctx.gameState.dialogOpen = true;
 
     playRandomWandererVoice();
-    playNpcGreeting();
 
     const dialog = generateKingDialog(isNewVisit);
     if (dialog) {
@@ -534,7 +527,6 @@ export function openWandererDialog(npc) {
 
   // Play random voice
   playRandomWandererVoice();
-  playNpcLaugh();
 
   ctx.gameState.dialogOpen = true;
 
@@ -563,7 +555,6 @@ export function openTrollDialog(troll) {
 
   // Play random voice (reusing wanderer voice for now)
   playRandomWandererVoice();
-  playNpcSigh();
 
   ctx.gameState.dialogOpen = true;
 
@@ -692,7 +683,6 @@ export function openBuildingNPCDialog(npcId) {
     // Play voice when dialog appears (skip donut shop audio)
     if (npcId !== 'donutShop') {
       playRandomWandererVoice();
-      playNpcGreeting();
     }
 
     // Generate dialog based on visit status
@@ -889,7 +879,6 @@ function setupSettingsModal() {
   // Get all settings elements
   const musicVolumeSlider = document.getElementById('music-volume-slider');
   const musicVolumeValue = document.getElementById('music-volume-value');
-  const soundEffectsToggle = document.getElementById('sound-effects-toggle');
   const cameraSensitivitySlider = document.getElementById('camera-sensitivity-slider');
   const cameraSensitivityValue = document.getElementById('camera-sensitivity-value');
   const minimapToggle = document.getElementById('minimap-toggle');
@@ -902,7 +891,6 @@ function setupSettingsModal() {
   const settings = settingsManager.getAll();
   musicVolumeSlider.value = settings.musicVolume;
   musicVolumeValue.textContent = settings.musicVolume + '%';
-  soundEffectsToggle.checked = settings.soundEffects;
   cameraSensitivitySlider.value = settings.cameraSensitivity;
   cameraSensitivityValue.textContent = settings.cameraSensitivity;
   minimapToggle.checked = settings.showMinimap;
@@ -917,11 +905,6 @@ function setupSettingsModal() {
     const value = parseInt(e.target.value);
     musicVolumeValue.textContent = value + '%';
     settingsManager.set('musicVolume', value);
-  });
-
-  // Sound effects toggle
-  soundEffectsToggle.addEventListener('change', (e) => {
-    settingsManager.set('soundEffects', e.target.checked);
   });
 
   // Camera sensitivity slider
@@ -953,7 +936,6 @@ function setupSettingsModal() {
     const newSettings = settingsManager.getAll();
     musicVolumeSlider.value = newSettings.musicVolume;
     musicVolumeValue.textContent = newSettings.musicVolume + '%';
-    soundEffectsToggle.checked = newSettings.soundEffects;
     cameraSensitivitySlider.value = newSettings.cameraSensitivity;
     cameraSensitivityValue.textContent = newSettings.cameraSensitivity;
     minimapToggle.checked = newSettings.showMinimap;

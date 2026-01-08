@@ -5,7 +5,6 @@
 
 const DEFAULT_SETTINGS = {
   musicVolume: 70,
-  soundEffects: true,
   cameraSensitivity: 5,
   showMinimap: true,
   showJoystick: true,
