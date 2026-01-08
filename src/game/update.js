@@ -26,6 +26,7 @@ import {
   showSweetIntro,
   showFloatingMessage
 } from '../ui/uiManager.js';
+import { maybePlayAmbientVoice } from '../audio/audioManager.js';
 
 // Camera state
 const cameraTarget = new THREE.Vector3();
@@ -303,10 +304,10 @@ function updateAmbientAnimations(ctx, delta, time) {
   updateDoomSayer(time, delta, camera);
 
   // Wandering NPCs movement
-  updateWanderers(ctx, delta, time, camera);
+  updateWanderers(ctx, delta, time, showFloatingMessage, maybePlayAmbientVoice);
 
   // Bernie listeners movement
-  updateBernieListeners(ctx, delta, time, camera);
+  updateBernieListeners(ctx, delta, time, showFloatingMessage, maybePlayAmbientVoice);
 
   // Austinville activities (Boxing Ring, Trampoline, Fishing NPCs, Tea vs Coffee War)
   updateAllActivities(time, delta, camera);
