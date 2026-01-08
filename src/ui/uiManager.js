@@ -380,9 +380,6 @@ export function setupSplashInteractions() {
 
   if (!splashScreen || !splashMap || !mapOverlay || !startBtn) return;
 
-  // Create sparkles when splash screen loads
-  createSplashSparkles();
-
   // Start button handler - using reliable click handler
   let startTriggered = false;
   const triggerStart = () => {
