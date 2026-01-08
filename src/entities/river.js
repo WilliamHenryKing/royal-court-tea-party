@@ -1,6 +1,7 @@
 // River - Austinville river system with animated water, bridges, and fish
 import * as THREE from 'three';
 import { scene } from '../engine/renderer.js';
+import { collisionManager } from '../systems/CollisionManager.js';
 
 // River configuration
 export const RIVER_CONFIG = {
@@ -404,20 +405,11 @@ export function updateJumpingFish(time, delta) {
 }
 
 /**
- * Update river water animation
+ * Update river water - now still water (no animation for performance)
  */
 export function updateRiverWater(time) {
-  if (!riverWater) return;
-
-  const positions = riverWater.geometry.attributes.position;
-  for (let i = 0; i < positions.count; i++) {
-    const x = positions.getX(i);
-    const originalZ = positions.array[i * 3 + 2]; // Get original z
-    const wave = Math.sin(x * 0.2 + time * RIVER_CONFIG.flowSpeed) * 0.1;
-    // Only modify Y (which is Z after rotation)
-    positions.setZ(i, wave);
-  }
-  positions.needsUpdate = true;
+  // Still water - no animation needed for performance
+  // The water surface is static now
 }
 
 /**
@@ -449,6 +441,878 @@ export function isOnBridge(x, z) {
     }
   }
   return false;
+}
+
+// ============================================
+// IMPROVED RIVER VISUALS - Additional details
+// ============================================
+
+// Lily pads and water plants for still water
+export const lilyPads = [];
+export const waterPlants = [];
+
+/**
+ * Create lily pads for still water appearance
+ */
+export function createLilyPads() {
+  const lilyPadPositions = [
+    { x: -15, z: -26 }, { x: -12, z: -28 }, { x: -8, z: -27 },
+    { x: 2, z: -29 }, { x: 8, z: -26 }, { x: 15, z: -28 },
+    { x: 20, z: -27 }, { x: -30, z: -27 }, { x: 30, z: -26 }
+  ];
+
+  const lilyPadMat = new THREE.MeshStandardMaterial({
+    color: 0x228b22,
+    roughness: 0.8,
+    side: THREE.DoubleSide
+  });
+
+  lilyPadPositions.forEach(pos => {
+    const group = new THREE.Group();
+
+    // Lily pad (circular leaf)
+    const padGeo = new THREE.CircleGeometry(0.4 + Math.random() * 0.2, 12);
+    const pad = new THREE.Mesh(padGeo, lilyPadMat);
+    pad.rotation.x = -Math.PI / 2;
+    pad.position.y = 0.08;
+    group.add(pad);
+
+    // Optional flower on some pads
+    if (Math.random() > 0.5) {
+      const flowerColors = [0xff69b4, 0xffffff, 0xffff00];
+      const flowerMat = new THREE.MeshStandardMaterial({
+        color: flowerColors[Math.floor(Math.random() * flowerColors.length)]
+      });
+
+      // Flower petals
+      for (let i = 0; i < 5; i++) {
+        const petalGeo = new THREE.SphereGeometry(0.08, 8, 8);
+        const petal = new THREE.Mesh(petalGeo, flowerMat);
+        const angle = (i / 5) * Math.PI * 2;
+        petal.position.set(Math.cos(angle) * 0.1, 0.15, Math.sin(angle) * 0.1);
+        petal.scale.set(1, 0.5, 1);
+        group.add(petal);
+      }
+
+      // Flower center
+      const centerGeo = new THREE.SphereGeometry(0.06, 8, 8);
+      const centerMat = new THREE.MeshStandardMaterial({ color: 0xffd700 });
+      const center = new THREE.Mesh(centerGeo, centerMat);
+      center.position.y = 0.15;
+      group.add(center);
+    }
+
+    group.position.set(pos.x, 0, pos.z);
+    group.rotation.y = Math.random() * Math.PI * 2;
+    scene.add(group);
+    lilyPads.push(group);
+  });
+}
+
+/**
+ * Create reeds and cattails along river banks
+ */
+export function createRiverPlants() {
+  const plantPositions = [
+    // North bank
+    { x: -20, z: -23.5 }, { x: -15, z: -23.2 }, { x: -5, z: -23.5 },
+    { x: 10, z: -23.3 }, { x: 20, z: -23.5 }, { x: 30, z: -23.2 },
+    // South bank
+    { x: -25, z: -30.5 }, { x: -18, z: -30.3 }, { x: 0, z: -30.5 },
+    { x: 12, z: -30.8 }, { x: 22, z: -30.3 }, { x: 35, z: -30.5 }
+  ];
+
+  const reedMat = new THREE.MeshStandardMaterial({ color: 0x4a7c4e });
+  const cattailMat = new THREE.MeshStandardMaterial({ color: 0x5d4037 });
+
+  plantPositions.forEach(pos => {
+    const group = new THREE.Group();
+
+    // Create 2-4 reeds per position
+    const reedCount = 2 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < reedCount; i++) {
+      const height = 1 + Math.random() * 0.8;
+      const reedGeo = new THREE.CylinderGeometry(0.02, 0.03, height, 6);
+      const reed = new THREE.Mesh(reedGeo, reedMat);
+      reed.position.set(
+        (Math.random() - 0.5) * 0.5,
+        height / 2,
+        (Math.random() - 0.5) * 0.5
+      );
+      reed.rotation.z = (Math.random() - 0.5) * 0.2;
+      group.add(reed);
+
+      // Add cattail top to some reeds
+      if (Math.random() > 0.5) {
+        const cattailGeo = new THREE.CylinderGeometry(0.05, 0.04, 0.25, 8);
+        const cattail = new THREE.Mesh(cattailGeo, cattailMat);
+        cattail.position.copy(reed.position);
+        cattail.position.y = height - 0.1;
+        group.add(cattail);
+      }
+    }
+
+    group.position.set(pos.x, 0, pos.z);
+    scene.add(group);
+    waterPlants.push(group);
+  });
+}
+
+// ============================================
+// IMPROVED BRIDGE DETAILS
+// ============================================
+
+/**
+ * Add decorative details to bridge area
+ */
+export function createBridgeDecorations() {
+  // Add lanterns/posts at bridge entrances
+  const bridgeEntrances = [
+    { x: 5, z: -23 }, { x: 5, z: -33 },    // Main bridge
+    { x: -10, z: -23 }, { x: -10, z: -31 }, // West bridge
+    { x: 25, z: -23 }, { x: 25, z: -32 }    // East bridge
+  ];
+
+  const postMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
+  const lanternMat = new THREE.MeshStandardMaterial({
+    color: 0xffd700,
+    emissive: 0xffa500,
+    emissiveIntensity: 0.3
+  });
+
+  bridgeEntrances.forEach(pos => {
+    const group = new THREE.Group();
+
+    // Post
+    const postGeo = new THREE.CylinderGeometry(0.08, 0.1, 1.5, 8);
+    const post = new THREE.Mesh(postGeo, postMat);
+    post.position.y = 0.75;
+    post.castShadow = true;
+    group.add(post);
+
+    // Lantern
+    const lanternGeo = new THREE.BoxGeometry(0.25, 0.3, 0.25);
+    const lantern = new THREE.Mesh(lanternGeo, lanternMat);
+    lantern.position.y = 1.6;
+    lantern.castShadow = true;
+    group.add(lantern);
+
+    // Lantern top
+    const topGeo = new THREE.ConeGeometry(0.18, 0.15, 4);
+    const top = new THREE.Mesh(topGeo, postMat);
+    top.position.y = 1.85;
+    group.add(top);
+
+    group.position.set(pos.x, 0, pos.z);
+    scene.add(group);
+  });
+}
+
+// ============================================
+// HIKE SIGN POST
+// ============================================
+
+export let hikeSign = null;
+
+/**
+ * Create HIKE sign post on the other side of the bridge
+ */
+export function createHikeSign() {
+  const group = new THREE.Group();
+
+  // Sign post
+  const postMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
+  const postGeo = new THREE.CylinderGeometry(0.1, 0.12, 3, 8);
+  const post = new THREE.Mesh(postGeo, postMat);
+  post.position.y = 1.5;
+  post.castShadow = true;
+  group.add(post);
+
+  // Sign board
+  const signMat = new THREE.MeshStandardMaterial({ color: 0xdeb887 });
+  const signGeo = new THREE.BoxGeometry(2, 0.8, 0.1);
+  const signBoard = new THREE.Mesh(signGeo, signMat);
+  signBoard.position.set(0, 2.8, 0);
+  signBoard.castShadow = true;
+  group.add(signBoard);
+
+  // Sign text using canvas texture
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+
+  // Background
+  ctx.fillStyle = '#deb887';
+  ctx.fillRect(0, 0, 256, 128);
+
+  // Border
+  ctx.strokeStyle = '#8b4513';
+  ctx.lineWidth = 8;
+  ctx.strokeRect(4, 4, 248, 120);
+
+  // Text
+  ctx.fillStyle = '#2f4f2f';
+  ctx.font = 'bold 64px Georgia';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('HIKE', 128, 64);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  const textMat = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
+  const textPlane = new THREE.Mesh(new THREE.PlaneGeometry(2, 0.8), textMat);
+  textPlane.position.set(0, 2.8, 0.06);
+  group.add(textPlane);
+
+  // Back text (reversed)
+  const textPlaneBack = new THREE.Mesh(new THREE.PlaneGeometry(2, 0.8), textMat);
+  textPlaneBack.position.set(0, 2.8, -0.06);
+  textPlaneBack.rotation.y = Math.PI;
+  group.add(textPlaneBack);
+
+  // Arrow pointing to forest
+  const arrowMat = new THREE.MeshStandardMaterial({ color: 0x2f4f2f });
+  const arrowGeo = new THREE.ConeGeometry(0.15, 0.4, 3);
+  const arrow = new THREE.Mesh(arrowGeo, arrowMat);
+  arrow.position.set(0, 2.2, 0);
+  arrow.rotation.z = -Math.PI / 2;
+  arrow.rotation.y = Math.PI / 4;
+  group.add(arrow);
+
+  // Position on the south side of the main bridge (other side of river)
+  group.position.set(8, 0, -35);
+  group.rotation.y = Math.PI / 4;
+
+  scene.add(group);
+  hikeSign = group;
+
+  return group;
+}
+
+// ============================================
+// FOREST WITH ANIMALS
+// ============================================
+
+export const forestTrees = [];
+export const foxes = [];
+export const birds = [];
+export let forestBounds = null;
+
+/**
+ * Create a small forest area with collision
+ */
+export function createForest() {
+  const forestGroup = new THREE.Group();
+
+  // Forest area bounds (south of the river, past the bridge)
+  const forestCenter = { x: 15, z: -45 };
+  const forestSize = { width: 30, depth: 20 };
+
+  // Store bounds for collision
+  forestBounds = {
+    minX: forestCenter.x - forestSize.width / 2,
+    maxX: forestCenter.x + forestSize.width / 2,
+    minZ: forestCenter.z - forestSize.depth / 2,
+    maxZ: forestCenter.z + forestSize.depth / 2
+  };
+
+  // Ground cover
+  const groundMat = new THREE.MeshStandardMaterial({ color: 0x3d5c3d, roughness: 0.9 });
+  const groundGeo = new THREE.PlaneGeometry(forestSize.width, forestSize.depth);
+  const ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.set(forestCenter.x, 0.02, forestCenter.z);
+  ground.receiveShadow = true;
+  forestGroup.add(ground);
+
+  // Tree materials
+  const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: 0.9 });
+  const leafMat = new THREE.MeshStandardMaterial({ color: 0x228b22, roughness: 0.8 });
+  const darkLeafMat = new THREE.MeshStandardMaterial({ color: 0x1a5c1a, roughness: 0.8 });
+
+  // Create trees in a natural pattern
+  const treePositions = [];
+  for (let i = 0; i < 25; i++) {
+    const x = forestCenter.x + (Math.random() - 0.5) * (forestSize.width - 4);
+    const z = forestCenter.z + (Math.random() - 0.5) * (forestSize.depth - 4);
+    treePositions.push({ x, z });
+  }
+
+  treePositions.forEach((pos, index) => {
+    const treeGroup = new THREE.Group();
+
+    const treeHeight = 3 + Math.random() * 2;
+    const treeType = Math.random();
+
+    if (treeType < 0.6) {
+      // Pine tree
+      const trunkGeo = new THREE.CylinderGeometry(0.15, 0.2, treeHeight * 0.4, 8);
+      const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+      trunk.position.y = treeHeight * 0.2;
+      trunk.castShadow = true;
+      treeGroup.add(trunk);
+
+      // Pine layers
+      for (let layer = 0; layer < 3; layer++) {
+        const layerSize = 1.2 - layer * 0.3;
+        const layerHeight = treeHeight * 0.3 + layer * treeHeight * 0.2;
+        const coneGeo = new THREE.ConeGeometry(layerSize, treeHeight * 0.35, 8);
+        const cone = new THREE.Mesh(coneGeo, layer % 2 === 0 ? leafMat : darkLeafMat);
+        cone.position.y = layerHeight;
+        cone.castShadow = true;
+        treeGroup.add(cone);
+      }
+    } else {
+      // Round tree
+      const trunkGeo = new THREE.CylinderGeometry(0.12, 0.18, treeHeight * 0.5, 8);
+      const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+      trunk.position.y = treeHeight * 0.25;
+      trunk.castShadow = true;
+      treeGroup.add(trunk);
+
+      // Foliage
+      const foliageGeo = new THREE.SphereGeometry(1 + Math.random() * 0.5, 8, 8);
+      const foliage = new THREE.Mesh(foliageGeo, Math.random() > 0.5 ? leafMat : darkLeafMat);
+      foliage.position.y = treeHeight * 0.6;
+      foliage.scale.y = 0.8;
+      foliage.castShadow = true;
+      treeGroup.add(foliage);
+    }
+
+    treeGroup.position.set(pos.x, 0, pos.z);
+    treeGroup.userData = { isTree: true, radius: 0.5 };
+    scene.add(treeGroup);
+    forestTrees.push(treeGroup);
+
+    // Add collision for tree trunk
+    collisionManager.addStaticBox(pos.x, pos.z, 0.6, 0.6);
+  });
+
+  // Add some bushes
+  const bushMat = new THREE.MeshStandardMaterial({ color: 0x2e7d32, roughness: 0.9 });
+  for (let i = 0; i < 15; i++) {
+    const x = forestCenter.x + (Math.random() - 0.5) * (forestSize.width - 2);
+    const z = forestCenter.z + (Math.random() - 0.5) * (forestSize.depth - 2);
+
+    const bushGroup = new THREE.Group();
+    const bushCount = 2 + Math.floor(Math.random() * 2);
+    for (let j = 0; j < bushCount; j++) {
+      const bushGeo = new THREE.SphereGeometry(0.3 + Math.random() * 0.2, 8, 6);
+      const bush = new THREE.Mesh(bushGeo, bushMat);
+      bush.position.set(
+        (Math.random() - 0.5) * 0.4,
+        0.2,
+        (Math.random() - 0.5) * 0.4
+      );
+      bush.scale.y = 0.7;
+      bush.castShadow = true;
+      bushGroup.add(bush);
+    }
+    bushGroup.position.set(x, 0, z);
+    forestGroup.add(bushGroup);
+  }
+
+  scene.add(forestGroup);
+  return forestGroup;
+}
+
+/**
+ * Create foxes in the forest
+ */
+export function createFoxes() {
+  const foxCount = 3;
+
+  for (let i = 0; i < foxCount; i++) {
+    const fox = new THREE.Group();
+
+    // Materials
+    const furMat = new THREE.MeshStandardMaterial({ color: 0xd2691e, roughness: 0.9 });
+    const whiteMat = new THREE.MeshStandardMaterial({ color: 0xfffaf0, roughness: 0.9 });
+    const blackMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a });
+
+    // Body
+    const bodyGeo = new THREE.SphereGeometry(0.35, 12, 10);
+    const body = new THREE.Mesh(bodyGeo, furMat);
+    body.scale.set(1.4, 0.9, 1);
+    body.position.y = 0.35;
+    body.castShadow = true;
+    fox.add(body);
+
+    // Chest (white)
+    const chestGeo = new THREE.SphereGeometry(0.2, 10, 8);
+    const chest = new THREE.Mesh(chestGeo, whiteMat);
+    chest.position.set(0.25, 0.3, 0);
+    fox.add(chest);
+
+    // Head
+    const headGeo = new THREE.SphereGeometry(0.22, 12, 10);
+    const head = new THREE.Mesh(headGeo, furMat);
+    head.position.set(0.5, 0.5, 0);
+    head.castShadow = true;
+    fox.add(head);
+
+    // Snout
+    const snoutGeo = new THREE.ConeGeometry(0.1, 0.25, 8);
+    const snout = new THREE.Mesh(snoutGeo, furMat);
+    snout.position.set(0.7, 0.45, 0);
+    snout.rotation.z = -Math.PI / 2;
+    fox.add(snout);
+
+    // Nose
+    const noseGeo = new THREE.SphereGeometry(0.04, 8, 8);
+    const nose = new THREE.Mesh(noseGeo, blackMat);
+    nose.position.set(0.82, 0.45, 0);
+    fox.add(nose);
+
+    // Eyes
+    [-0.08, 0.08].forEach(zOffset => {
+      const eyeGeo = new THREE.SphereGeometry(0.04, 8, 8);
+      const eye = new THREE.Mesh(eyeGeo, blackMat);
+      eye.position.set(0.62, 0.55, zOffset);
+      fox.add(eye);
+    });
+
+    // Ears
+    const earGeo = new THREE.ConeGeometry(0.08, 0.18, 4);
+    [-0.1, 0.1].forEach(zOffset => {
+      const ear = new THREE.Mesh(earGeo, furMat);
+      ear.position.set(0.45, 0.72, zOffset);
+      ear.rotation.x = zOffset > 0 ? -0.2 : 0.2;
+      fox.add(ear);
+    });
+
+    // Legs
+    const legGeo = new THREE.CylinderGeometry(0.04, 0.05, 0.25, 6);
+    const legPositions = [
+      { x: 0.2, z: 0.12 }, { x: 0.2, z: -0.12 },
+      { x: -0.25, z: 0.12 }, { x: -0.25, z: -0.12 }
+    ];
+    const legs = [];
+    legPositions.forEach(pos => {
+      const leg = new THREE.Mesh(legGeo, blackMat);
+      leg.position.set(pos.x, 0.12, pos.z);
+      fox.add(leg);
+      legs.push(leg);
+    });
+
+    // Fluffy tail
+    const tailGroup = new THREE.Group();
+    const tailGeo = new THREE.ConeGeometry(0.15, 0.6, 8);
+    const tail = new THREE.Mesh(tailGeo, furMat);
+    tail.rotation.z = Math.PI / 3;
+    tailGroup.add(tail);
+
+    const tailTipGeo = new THREE.SphereGeometry(0.1, 8, 8);
+    const tailTip = new THREE.Mesh(tailTipGeo, whiteMat);
+    tailTip.position.set(-0.25, 0.15, 0);
+    tailGroup.add(tailTip);
+
+    tailGroup.position.set(-0.4, 0.4, 0);
+    fox.add(tailGroup);
+
+    // Position in forest
+    const forestCenter = { x: 15, z: -45 };
+    fox.position.set(
+      forestCenter.x + (Math.random() - 0.5) * 20,
+      0,
+      forestCenter.z + (Math.random() - 0.5) * 15
+    );
+    fox.rotation.y = Math.random() * Math.PI * 2;
+
+    fox.userData = {
+      baseY: 0,
+      walkAngle: fox.rotation.y,
+      walkSpeed: 0.3 + Math.random() * 0.2,
+      timer: Math.random() * 5,
+      legs,
+      tailGroup,
+      isFox: true
+    };
+
+    scene.add(fox);
+    foxes.push(fox);
+  }
+}
+
+/**
+ * Create birds flying around the forest
+ */
+export function createBirds() {
+  const birdCount = 8;
+  const birdColors = [0x4169e1, 0xff6347, 0xffd700, 0x32cd32, 0xff69b4];
+
+  for (let i = 0; i < birdCount; i++) {
+    const bird = new THREE.Group();
+    const birdColor = birdColors[Math.floor(Math.random() * birdColors.length)];
+    const birdMat = new THREE.MeshStandardMaterial({ color: birdColor });
+    const blackMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a });
+
+    // Body
+    const bodyGeo = new THREE.SphereGeometry(0.12, 10, 8);
+    const body = new THREE.Mesh(bodyGeo, birdMat);
+    body.scale.set(1.3, 1, 1);
+    bird.add(body);
+
+    // Head
+    const headGeo = new THREE.SphereGeometry(0.08, 10, 8);
+    const head = new THREE.Mesh(headGeo, birdMat);
+    head.position.set(0.12, 0.05, 0);
+    bird.add(head);
+
+    // Beak
+    const beakGeo = new THREE.ConeGeometry(0.03, 0.1, 4);
+    const beak = new THREE.Mesh(beakGeo, new THREE.MeshStandardMaterial({ color: 0xffa500 }));
+    beak.position.set(0.22, 0.05, 0);
+    beak.rotation.z = -Math.PI / 2;
+    bird.add(beak);
+
+    // Eyes
+    const eyeGeo = new THREE.SphereGeometry(0.015, 6, 6);
+    const eye = new THREE.Mesh(eyeGeo, blackMat);
+    eye.position.set(0.15, 0.08, 0.05);
+    bird.add(eye);
+
+    // Wings
+    const wingGeo = new THREE.PlaneGeometry(0.25, 0.1);
+    const wingMat = new THREE.MeshStandardMaterial({ color: birdColor, side: THREE.DoubleSide });
+
+    const leftWing = new THREE.Mesh(wingGeo, wingMat);
+    leftWing.position.set(0, 0, 0.1);
+    leftWing.rotation.x = Math.PI / 4;
+    bird.add(leftWing);
+
+    const rightWing = new THREE.Mesh(wingGeo, wingMat);
+    rightWing.position.set(0, 0, -0.1);
+    rightWing.rotation.x = -Math.PI / 4;
+    bird.add(rightWing);
+
+    // Tail
+    const tailGeo = new THREE.PlaneGeometry(0.15, 0.06);
+    const tail = new THREE.Mesh(tailGeo, wingMat);
+    tail.position.set(-0.18, 0, 0);
+    tail.rotation.y = Math.PI / 2;
+    bird.add(tail);
+
+    // Position above forest
+    const forestCenter = { x: 15, z: -45 };
+    bird.position.set(
+      forestCenter.x + (Math.random() - 0.5) * 35,
+      4 + Math.random() * 4,
+      forestCenter.z + (Math.random() - 0.5) * 25
+    );
+
+    bird.userData = {
+      baseY: bird.position.y,
+      baseX: bird.position.x,
+      baseZ: bird.position.z,
+      flyRadius: 5 + Math.random() * 10,
+      flySpeed: 0.5 + Math.random() * 0.5,
+      flyAngle: Math.random() * Math.PI * 2,
+      bobSpeed: 2 + Math.random(),
+      leftWing,
+      rightWing,
+      isBird: true
+    };
+
+    scene.add(bird);
+    birds.push(bird);
+  }
+}
+
+/**
+ * Update foxes animation
+ */
+export function updateFoxes(time, delta) {
+  foxes.forEach(fox => {
+    const data = fox.userData;
+
+    // Random direction changes
+    data.timer -= delta;
+    if (data.timer <= 0) {
+      data.walkAngle += (Math.random() - 0.5) * Math.PI * 0.5;
+      data.timer = 2 + Math.random() * 4;
+    }
+
+    // Movement within forest bounds
+    const speed = data.walkSpeed * delta;
+    const newX = fox.position.x + Math.sin(data.walkAngle) * speed;
+    const newZ = fox.position.z + Math.cos(data.walkAngle) * speed;
+
+    // Keep within forest bounds
+    if (forestBounds) {
+      if (newX > forestBounds.minX + 2 && newX < forestBounds.maxX - 2) {
+        fox.position.x = newX;
+      } else {
+        data.walkAngle = Math.PI - data.walkAngle;
+      }
+      if (newZ > forestBounds.minZ + 2 && newZ < forestBounds.maxZ - 2) {
+        fox.position.z = newZ;
+      } else {
+        data.walkAngle = -data.walkAngle;
+      }
+    }
+
+    // Face movement direction
+    fox.rotation.y = THREE.MathUtils.lerp(fox.rotation.y, data.walkAngle, 0.1);
+
+    // Leg animation
+    data.legs.forEach((leg, index) => {
+      const phase = index < 2 ? 0 : Math.PI;
+      leg.rotation.x = Math.sin(time * 8 + phase) * 0.3;
+    });
+
+    // Tail wag
+    if (data.tailGroup) {
+      data.tailGroup.rotation.y = Math.sin(time * 4) * 0.3;
+    }
+
+    // Small bob
+    fox.position.y = data.baseY + Math.abs(Math.sin(time * 6)) * 0.03;
+  });
+}
+
+/**
+ * Update birds animation
+ */
+export function updateBirds(time, delta) {
+  birds.forEach(bird => {
+    const data = bird.userData;
+
+    // Circular flying pattern
+    data.flyAngle += data.flySpeed * delta;
+    bird.position.x = data.baseX + Math.cos(data.flyAngle) * data.flyRadius;
+    bird.position.z = data.baseZ + Math.sin(data.flyAngle) * data.flyRadius;
+
+    // Bobbing height
+    bird.position.y = data.baseY + Math.sin(time * data.bobSpeed) * 0.5;
+
+    // Face direction of flight
+    bird.rotation.y = data.flyAngle + Math.PI / 2;
+
+    // Wing flapping
+    if (data.leftWing && data.rightWing) {
+      const flapAngle = Math.sin(time * 15) * 0.5;
+      data.leftWing.rotation.x = Math.PI / 4 + flapAngle;
+      data.rightWing.rotation.x = -Math.PI / 4 - flapAngle;
+    }
+  });
+}
+
+// ============================================
+// BRIDGE TROLL
+// ============================================
+
+export let bridgeTroll = null;
+export const BRIDGE_TROLL_DIALOGUES = [
+  "Halt! Who goes- *cough* *cough* ...sorry, my voice isn't what it used to be...",
+  "Back in MY day, I'd charge THREE riddles! Now I can't even remember one...",
+  "You shall not- oh, who am I kidding, my knees hurt too much to stop you...",
+  "I'm supposed to be terrifying, but honestly, would you like a biscuit? I baked too many...",
+  "NONE SHALL PASS! ...unless you want to, I guess. I'm too old for this...",
+  "I used to make brave knights tremble! Now I tremble going down stairs...",
+  "Pay the toll or face my- *yawn* ...sorry, it's past my bedtime...",
+  "You dare cross MY bridge?! ...Actually, it's quite nice to have visitors...",
+  "I'm a fearsome bridge troll! Well, I was. Now I'm more of a... bridge-adjacent pensioner."
+];
+
+/**
+ * Create the bridge troll character
+ */
+export function createBridgeTroll() {
+  const troll = new THREE.Group();
+
+  // Materials
+  const skinMat = new THREE.MeshStandardMaterial({ color: 0x7b8b6f, roughness: 0.9 });
+  const darkSkinMat = new THREE.MeshStandardMaterial({ color: 0x5a6b4f, roughness: 0.9 });
+  const clothMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
+  const hairMat = new THREE.MeshStandardMaterial({ color: 0xd3d3d3 });
+  const eyeMat = new THREE.MeshStandardMaterial({ color: 0xffff00, emissive: 0xffff00, emissiveIntensity: 0.2 });
+
+  // Body (hunched and round)
+  const bodyGeo = new THREE.SphereGeometry(0.6, 12, 12);
+  const body = new THREE.Mesh(bodyGeo, clothMat);
+  body.position.y = 0.8;
+  body.scale.set(1.2, 0.9, 1);
+  body.castShadow = true;
+  troll.add(body);
+
+  // Head
+  const headGeo = new THREE.SphereGeometry(0.4, 12, 12);
+  const head = new THREE.Mesh(headGeo, skinMat);
+  head.position.set(0.1, 1.5, 0);
+  head.scale.set(1.1, 0.9, 1);
+  head.castShadow = true;
+  troll.add(head);
+
+  // Big nose
+  const noseGeo = new THREE.SphereGeometry(0.15, 8, 8);
+  const nose = new THREE.Mesh(noseGeo, darkSkinMat);
+  nose.position.set(0.5, 1.45, 0);
+  nose.scale.set(1.5, 1, 1);
+  troll.add(nose);
+
+  // Warty bumps on nose
+  for (let i = 0; i < 3; i++) {
+    const wartGeo = new THREE.SphereGeometry(0.03, 6, 6);
+    const wart = new THREE.Mesh(wartGeo, darkSkinMat);
+    wart.position.set(
+      0.6 + Math.random() * 0.1,
+      1.4 + Math.random() * 0.15,
+      (Math.random() - 0.5) * 0.1
+    );
+    troll.add(wart);
+  }
+
+  // Eyes (tired looking)
+  [-0.12, 0.12].forEach(zOffset => {
+    // Eye socket
+    const socketGeo = new THREE.SphereGeometry(0.1, 8, 8);
+    const socket = new THREE.Mesh(socketGeo, darkSkinMat);
+    socket.position.set(0.35, 1.55, zOffset);
+    socket.scale.set(1.2, 0.8, 1);
+    troll.add(socket);
+
+    // Eye
+    const eyeGeo = new THREE.SphereGeometry(0.06, 8, 8);
+    const eye = new THREE.Mesh(eyeGeo, eyeMat);
+    eye.position.set(0.4, 1.55, zOffset);
+    troll.add(eye);
+
+    // Pupil
+    const pupilGeo = new THREE.SphereGeometry(0.03, 6, 6);
+    const pupilMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a });
+    const pupil = new THREE.Mesh(pupilGeo, pupilMat);
+    pupil.position.set(0.45, 1.55, zOffset);
+    troll.add(pupil);
+
+    // Droopy eyelid
+    const lidGeo = new THREE.SphereGeometry(0.08, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2);
+    const lid = new THREE.Mesh(lidGeo, skinMat);
+    lid.position.set(0.38, 1.58, zOffset);
+    lid.rotation.x = Math.PI;
+    troll.add(lid);
+  });
+
+  // Big ears
+  const earGeo = new THREE.SphereGeometry(0.15, 8, 8);
+  [-0.35, 0.35].forEach(zOffset => {
+    const ear = new THREE.Mesh(earGeo, skinMat);
+    ear.position.set(0, 1.5, zOffset);
+    ear.scale.set(0.5, 1.2, 1);
+    troll.add(ear);
+  });
+
+  // Scraggly hair (grey/white)
+  for (let i = 0; i < 8; i++) {
+    const hairGeo = new THREE.CylinderGeometry(0.02, 0.01, 0.2 + Math.random() * 0.15, 4);
+    const hair = new THREE.Mesh(hairGeo, hairMat);
+    const angle = (i / 8) * Math.PI - Math.PI / 2;
+    hair.position.set(
+      -0.1 + Math.cos(angle) * 0.25,
+      1.8,
+      Math.sin(angle) * 0.2
+    );
+    hair.rotation.z = (Math.random() - 0.5) * 0.5;
+    hair.rotation.x = (Math.random() - 0.5) * 0.3;
+    troll.add(hair);
+  }
+
+  // Arms
+  const armGeo = new THREE.CylinderGeometry(0.1, 0.12, 0.6, 8);
+  [-0.5, 0.5].forEach(zOffset => {
+    const arm = new THREE.Mesh(armGeo, skinMat);
+    arm.position.set(0.1, 0.8, zOffset);
+    arm.rotation.x = Math.PI / 2;
+    arm.rotation.z = zOffset > 0 ? 0.3 : -0.3;
+    arm.castShadow = true;
+    troll.add(arm);
+
+    // Hand
+    const handGeo = new THREE.SphereGeometry(0.1, 8, 8);
+    const hand = new THREE.Mesh(handGeo, skinMat);
+    hand.position.set(0.1, 0.8, zOffset > 0 ? 0.8 : -0.8);
+    troll.add(hand);
+  });
+
+  // Legs (short and stumpy)
+  const legGeo = new THREE.CylinderGeometry(0.12, 0.15, 0.4, 8);
+  const legs = [];
+  [-0.25, 0.25].forEach(zOffset => {
+    const leg = new THREE.Mesh(legGeo, skinMat);
+    leg.position.set(-0.1, 0.2, zOffset);
+    leg.castShadow = true;
+    troll.add(leg);
+    legs.push(leg);
+
+    // Foot
+    const footGeo = new THREE.SphereGeometry(0.12, 8, 8);
+    const foot = new THREE.Mesh(footGeo, skinMat);
+    foot.position.set(0, 0.05, zOffset);
+    foot.scale.set(1.3, 0.6, 1);
+    troll.add(foot);
+  });
+
+  // Walking stick
+  const stickGeo = new THREE.CylinderGeometry(0.03, 0.04, 1.5, 6);
+  const stickMat = new THREE.MeshStandardMaterial({ color: 0x5d4037 });
+  const stick = new THREE.Mesh(stickGeo, stickMat);
+  stick.position.set(0.3, 0.75, 0.7);
+  stick.rotation.z = 0.2;
+  troll.add(stick);
+
+  // Indicator sphere (like other NPCs)
+  const indicatorMat = new THREE.MeshStandardMaterial({
+    color: 0x9370db,
+    emissive: 0x9370db,
+    emissiveIntensity: 0.4,
+    transparent: true,
+    opacity: 0.9
+  });
+  const indicator = new THREE.Mesh(
+    new THREE.SphereGeometry(0.22, 12, 12),
+    indicatorMat
+  );
+  indicator.position.y = 2.3;
+  indicator.userData.isIndicator = true;
+  troll.add(indicator);
+
+  // Position next to the main bridge
+  troll.position.set(3, 0, -28);
+  troll.rotation.y = Math.PI / 2;
+
+  troll.userData = {
+    name: 'Grumbold the Bridge Troll',
+    role: 'Retired Bridge Guardian',
+    quotes: BRIDGE_TROLL_DIALOGUES,
+    isTroll: true,
+    indicator,
+    legs,
+    dialogueIndex: 0,
+    lastInteraction: 0
+  };
+
+  scene.add(troll);
+  bridgeTroll = troll;
+
+  return troll;
+}
+
+/**
+ * Update bridge troll animation
+ */
+export function updateBridgeTroll(time) {
+  if (!bridgeTroll) return;
+
+  const data = bridgeTroll.userData;
+
+  // Indicator bob
+  if (data.indicator) {
+    data.indicator.position.y = 2.3 + Math.sin(time * 2) * 0.1;
+  }
+
+  // Subtle idle animation (swaying)
+  bridgeTroll.rotation.z = Math.sin(time * 0.5) * 0.02;
+  bridgeTroll.position.y = Math.sin(time * 0.8) * 0.02;
 }
 
 // Fishing Dock configuration

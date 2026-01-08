@@ -32,7 +32,17 @@ import {
   createRiver,
   createAllBridges,
   createJumpingFish,
-  createFishingDock
+  createFishingDock,
+  createLilyPads,
+  createRiverPlants,
+  createBridgeDecorations,
+  createHikeSign,
+  createForest,
+  createFoxes,
+  createBirds,
+  createBridgeTroll,
+  bridgeTroll,
+  forestTrees
 } from './entities/river.js';
 import { createKingEntourage, kingBen, royalGuards } from './entities/king.js';
 import { createDoomSayer, doomSayer } from './entities/doomSayer.js';
@@ -82,7 +92,10 @@ const ctx = {
 
   // Functions that need to be accessible from UI
   handleAction: null,
-  unlockPlayerCape: null
+  unlockPlayerCape: null,
+
+  // Bridge troll reference (set after creation)
+  bridgeTroll: null
 };
 
 // Initialize the game
@@ -149,6 +162,25 @@ function initGameWorld() {
   createAllBridges();
   createFishingDock();
   createJumpingFish();
+
+  // Create improved river visuals (lily pads, plants, decorations)
+  createLilyPads();
+  createRiverPlants();
+  createBridgeDecorations();
+
+  // Create HIKE sign on the other side of bridge
+  createHikeSign();
+
+  // Create forest with foxes and birds
+  createForest();
+  createFoxes();
+  createBirds();
+
+  // Create bridge troll
+  createBridgeTroll();
+
+  // Set bridge troll reference in context
+  ctx.bridgeTroll = bridgeTroll;
 
   // Create buildings
   createBuildings();

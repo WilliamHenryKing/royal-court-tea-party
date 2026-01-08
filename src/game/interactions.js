@@ -1,4 +1,5 @@
 // Interactions - collision detection, NPC interactions, and dialog triggers
+import { openDialog, openWandererDialog, openTrollDialog } from '../ui/uiManager.js';
 import { openDialog, openWandererDialog, openBuildingNPCDialog } from '../ui/uiManager.js';
 
 // Collision boxes storage
@@ -22,6 +23,8 @@ export function handleAction(ctx) {
     openDialog(ctx.gameState.nearNPC);
   } else if (ctx.gameState.nearWanderer) {
     openWandererDialog(ctx.gameState.nearWanderer);
+  } else if (ctx.gameState.nearTroll) {
+    openTrollDialog(ctx.gameState.nearTroll);
   }
 }
 

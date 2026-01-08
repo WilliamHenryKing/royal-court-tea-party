@@ -13,6 +13,7 @@ export function createGameState() {
     currentLocation: 'palace',
     nearNPC: null,
     nearWanderer: null,
+    nearTroll: null,
     nearBuildingNPC: null, // Track proximity to building NPCs
     pendingNotification: null,
     completionShown: false,
