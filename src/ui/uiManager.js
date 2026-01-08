@@ -135,24 +135,11 @@ export function setupControls() {
   const base = document.getElementById('joystick-base');
   const thumb = document.getElementById('joystick-thumb');
   const ripple = document.querySelector('.joystick-ripple');
-  const dirUp = document.querySelector('.joystick-dir.up');
-  const dirDown = document.querySelector('.joystick-dir.down');
-  const dirLeft = document.querySelector('.joystick-dir.left');
-  const dirRight = document.querySelector('.joystick-dir.right');
   const baseRadius = 55;
   const maxDistance = 32;
   let active = false;
   let centerX = 0;
   let centerY = 0;
-
-  // Update direction indicators based on joystick position
-  function updateDirectionIndicators(x, y) {
-    const threshold = 0.3;
-    dirUp.classList.toggle('active', y < -threshold);
-    dirDown.classList.toggle('active', y > threshold);
-    dirLeft.classList.toggle('active', x < -threshold);
-    dirRight.classList.toggle('active', x > threshold);
-  }
 
   // Trigger ripple effect
   function triggerRipple() {
@@ -208,9 +195,6 @@ export function setupControls() {
     thumb.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
     joystickInput.x = dx / maxDistance;
     joystickInput.y = dy / maxDistance;
-
-    // Update direction indicators
-    updateDirectionIndicators(joystickInput.x, joystickInput.y);
   }
 
   function end() {
@@ -222,7 +206,6 @@ export function setupControls() {
     // Remove active visual states
     base.classList.remove('active');
     thumb.classList.remove('active');
-    updateDirectionIndicators(0, 0);
   }
 
   container.addEventListener('touchstart', start, { passive: false });
@@ -489,19 +472,10 @@ export function openDialog(locationId) {
     document.getElementById('dialog-name').textContent = dialog.name;
     document.getElementById('dialog-role').textContent = dialog.role;
 
-    // Apply typewriter effect to dialog content
     const dialogContent = document.getElementById('dialog-content');
-    typewriterEffect(dialogContent, dialog.content);
+    dialogContent.innerHTML = dialog.content;
 
     document.getElementById('dialog-overlay').classList.add('visible');
-
-    // Click anywhere on dialog to skip typewriter
-    const dialogBox = document.getElementById('dialog-box');
-    const skipHandler = () => {
-      skipTypewriter();
-      dialogBox.removeEventListener('click', skipHandler);
-    };
-    dialogBox.addEventListener('click', skipHandler, { once: true });
   };
 
   // Zoom camera to NPC, then show dialog when zoom completes
@@ -527,17 +501,11 @@ export function openWandererDialog(npc) {
     <p style="text-align: center; color: var(--text-light); font-size: 0.9rem; margin-top: 1rem;">*${data.name} wanders off humming*</p>
   `;
 
-  // Apply typewriter effect
   const dialogContent = document.getElementById('dialog-content');
-  typewriterEffect(dialogContent, content);
+  dialogContent.innerHTML = content;
 
   document.getElementById('dialog-overlay').classList.add('visible');
   document.getElementById('action-btn').classList.remove('visible');
-
-  // Click to skip typewriter
-  const dialogBox = document.getElementById('dialog-box');
-  const skipHandler = () => skipTypewriter();
-  dialogBox.addEventListener('click', skipHandler, { once: true });
 }
 
 export function openTrollDialog(troll) {
@@ -598,7 +566,7 @@ export function openTrollDialog(troll) {
       </div>
     `;
 
-    // Don't apply typewriter to riddle content
+    // Show riddle content immediately
     document.getElementById('dialog-content').innerHTML = content;
 
     // Add click handlers for options
@@ -626,14 +594,8 @@ export function openTrollDialog(troll) {
       <p style="text-align: center; color: var(--text-light); font-size: 0.9rem; margin-top: 1rem;">*${data.name} sighs and leans heavily on his walking stick*</p>
     `;
 
-    // Apply typewriter effect
     const dialogContent = document.getElementById('dialog-content');
-    typewriterEffect(dialogContent, content);
-
-    // Click to skip typewriter
-    const dialogBox = document.getElementById('dialog-box');
-    const skipHandler = () => skipTypewriter();
-    dialogBox.addEventListener('click', skipHandler, { once: true });
+    dialogContent.innerHTML = content;
   }
 
   document.getElementById('dialog-overlay').classList.add('visible');
@@ -711,14 +673,8 @@ export function openBuildingNPCDialog(npcId) {
       document.getElementById('dialog-name').textContent = dialog.name;
       document.getElementById('dialog-role').textContent = dialog.role;
 
-      // Apply typewriter effect
       const dialogContent = document.getElementById('dialog-content');
-      typewriterEffect(dialogContent, dialog.content);
-
-      // Click to skip typewriter
-      const dialogBox = document.getElementById('dialog-box');
-      const skipHandler = () => skipTypewriter();
-      dialogBox.addEventListener('click', skipHandler, { once: true });
+      dialogContent.innerHTML = dialog.content;
     }
 
     document.getElementById('dialog-overlay').classList.add('visible');
@@ -1043,55 +999,5 @@ function toggleFullscreen() {
     if (document.exitFullscreen) {
       document.exitFullscreen();
     }
-  }
-}
-
-// Typewriter Effect for Dialogs
-let typewriterTimeout = null;
-let typewriterSkipped = false;
-
-function typewriterEffect(element, htmlContent, speed = 15) {
-  // Clear any existing typewriter
-  if (typewriterTimeout) {
-    clearTimeout(typewriterTimeout);
-    typewriterTimeout = null;
-  }
-
-  typewriterSkipped = false;
-
-  // Create a temporary div to parse HTML
-  const temp = document.createElement('div');
-  temp.innerHTML = htmlContent;
-
-  // Extract text content while preserving structure
-  const textContent = temp.textContent;
-
-  // Start with empty content
-  element.innerHTML = '';
-  let charIndex = 0;
-
-  function typeNextChar() {
-    if (typewriterSkipped || charIndex >= textContent.length) {
-      // Animation complete or skipped, show full content
-      element.innerHTML = htmlContent;
-      typewriterTimeout = null;
-      return;
-    }
-
-    // Add next character
-    element.textContent = textContent.substring(0, charIndex + 1);
-    charIndex++;
-
-    typewriterTimeout = setTimeout(typeNextChar, speed);
-  }
-
-  typeNextChar();
-}
-
-function skipTypewriter() {
-  typewriterSkipped = true;
-  if (typewriterTimeout) {
-    clearTimeout(typewriterTimeout);
-    typewriterTimeout = null;
   }
 }
