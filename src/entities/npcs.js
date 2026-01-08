@@ -4,6 +4,12 @@ import { scene, camera } from '../engine/renderer.js';
 import { LOCATIONS, WANDERING_NPCS } from '../assets/data.js';
 import { AUDIO_CONFIG } from '../config.js';
 import { isSafeOffPathPlacement, checkCollision } from './world.js';
+import { collisionManager, COLLISION_LAYERS } from '../systems/CollisionManager.js';
+import { npcPathfinder } from '../systems/NPCPathfinding.js';
+
+// Entity registration counter for unique IDs
+let npcIdCounter = 0;
+let corgiIdCounter = 0;
 
 // NPC storage
 export const npcs = {};
@@ -926,31 +932,84 @@ export function updateNPCIndicators(time) {
 
 export function updateWanderers(ctx, delta, time, showFloatingMessage, maybePlayAmbientVoice) {
   wanderers.forEach(npc => {
-    npc.userData.timer -= delta;
-    if (npc.userData.timer <= 0) {
-      npc.userData.walkAngle += (Math.random() - 0.5) * Math.PI;
-      // Fast runners change direction more often
-      npc.userData.timer = npc.userData.speed === 'fast'
-        ? 0.5 + Math.random() * 1
-        : 2 + Math.random() * 4;
+    // Register NPC with collision system if not already registered
+    if (!npc.userData.collisionId) {
+      npc.userData.collisionId = `npc_${npcIdCounter++}`;
+      collisionManager.registerEntity(npc.userData.collisionId, npc, 0.4, COLLISION_LAYERS.NPC);
+    }
+
+    // Initialize pathfinding state if needed
+    if (!npc.userData.pathfindingState) {
+      npc.userData.pathfindingState = npcPathfinder.createState(npc.userData.speed);
     }
 
     // Always try to show message - the function handles the 3s cooldown
     showFloatingMessage(npc);
     maybePlayAmbientVoice(npc);
 
-    const speed = npc.userData.walkSpeed * delta;
-    const newX = npc.position.x + Math.sin(npc.userData.walkAngle) * speed;
-    const newZ = npc.position.z + Math.cos(npc.userData.walkAngle) * speed;
+    // Use pathfinding system to determine movement
+    const pathResult = npcPathfinder.updateNPC(npc, delta);
 
-    if (!checkCollision(newX, newZ)) {
-      npc.position.x = newX;
-      npc.position.z = newZ;
+    if (pathResult.shouldMove && pathResult.targetAngle !== null) {
+      // Pathfinding wants us to move to a destination
+      npc.userData.walkAngle = pathResult.targetAngle;
+
+      const speed = npc.userData.walkSpeed * delta;
+      const targetX = npc.position.x + Math.sin(npc.userData.walkAngle) * speed;
+      const targetZ = npc.position.z + Math.cos(npc.userData.walkAngle) * speed;
+
+      // Use collision system with sliding
+      const validated = collisionManager.getValidatedPosition(
+        npc.userData.collisionId,
+        targetX,
+        targetZ,
+        0.4,
+        true
+      );
+
+      npc.position.x = validated.x;
+      npc.position.z = validated.z;
+
+      // Smoothly rotate to face movement direction
+      npc.rotation.y = THREE.MathUtils.lerp(npc.rotation.y, npc.userData.walkAngle, 0.1);
+    } else if (pathResult.isArrived) {
+      // NPC has arrived at destination - idle animation
+      npc.rotation.y = THREE.MathUtils.lerp(npc.rotation.y, npc.rotation.y, 0.05);
     } else {
-      npc.userData.walkAngle += Math.PI * 0.5;
-    }
+      // Fallback to old random wander behavior if pathfinding returns nothing
+      npc.userData.timer -= delta;
+      if (npc.userData.timer <= 0) {
+        npc.userData.walkAngle += (Math.random() - 0.5) * Math.PI;
+        npc.userData.timer = npc.userData.speed === 'fast'
+          ? 0.5 + Math.random() * 1
+          : 2 + Math.random() * 4;
+      }
 
-    npc.rotation.y = npc.userData.walkAngle;
+      const speed = npc.userData.walkSpeed * delta;
+      const targetX = npc.position.x + Math.sin(npc.userData.walkAngle) * speed;
+      const targetZ = npc.position.z + Math.cos(npc.userData.walkAngle) * speed;
+
+      const validated = collisionManager.getValidatedPosition(
+        npc.userData.collisionId,
+        targetX,
+        targetZ,
+        0.4,
+        true
+      );
+
+      const didMove = Math.abs(validated.x - npc.position.x) > 0.001 ||
+                      Math.abs(validated.z - npc.position.z) > 0.001;
+
+      npc.position.x = validated.x;
+      npc.position.z = validated.z;
+
+      if (validated.collided && !didMove) {
+        npc.userData.walkAngle = Math.random() * Math.PI * 2;
+        npc.userData.timer = 0.1;
+      }
+
+      npc.rotation.y = THREE.MathUtils.lerp(npc.rotation.y, npc.userData.walkAngle, 0.1);
+    }
 
     // Different animation speeds based on NPC type
     if (npc.userData.speed === 'fast') {
@@ -995,6 +1054,12 @@ export function updateCorgis(time, delta, player = null) {
   corgis.forEach(corgi => {
     const data = corgi.userData;
 
+    // Register corgi with collision system if not already registered
+    if (!data.collisionId) {
+      data.collisionId = `corgi_${corgiIdCounter++}`;
+      collisionManager.registerEntity(data.collisionId, corgi, 0.35, COLLISION_LAYERS.NPC);
+    }
+
     // === Direction change timer ===
     data.timer -= delta;
     if (data.timer <= 0) {
@@ -1004,21 +1069,37 @@ export function updateCorgis(time, delta, player = null) {
 
     // === Movement ===
     const speed = data.walkSpeed * delta;
-    const nextX = corgi.position.x + Math.sin(data.walkAngle) * speed;
-    const nextZ = corgi.position.z + Math.cos(data.walkAngle) * speed;
+    const targetX = corgi.position.x + Math.sin(data.walkAngle) * speed;
+    const targetZ = corgi.position.z + Math.cos(data.walkAngle) * speed;
 
-    if (!checkCollision(nextX, nextZ) && isSafeOffPathPlacement(nextX, nextZ)) {
-      corgi.position.x = nextX;
-      corgi.position.z = nextZ;
-    } else {
-      data.walkAngle += Math.PI * (0.4 + Math.random() * 0.4);
+    // Use new collision system - this prevents infinite spinning
+    const validated = collisionManager.getValidatedPosition(
+      data.collisionId,
+      targetX,
+      targetZ,
+      0.35,
+      true
+    );
+
+    // Check if we actually moved
+    const didMove = Math.abs(validated.x - corgi.position.x) > 0.001 ||
+                    Math.abs(validated.z - corgi.position.z) > 0.001;
+
+    corgi.position.x = validated.x;
+    corgi.position.z = validated.z;
+
+    // If we collided and couldn't move, pick a new random direction
+    // This prevents the infinite spinning bug
+    if (validated.collided && !didMove) {
+      data.walkAngle = Math.random() * Math.PI * 2;
+      data.timer = 0.1; // Try new direction soon
     }
 
-    // Face movement direction
+    // Face movement direction smoothly
     corgi.rotation.y = THREE.MathUtils.lerp(
       corgi.rotation.y,
       data.walkAngle,
-      0.1
+      0.15
     );
 
     // === Player awareness - Look at player when nearby ===

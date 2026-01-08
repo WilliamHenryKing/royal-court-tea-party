@@ -3,8 +3,10 @@ import * as THREE from 'three';
 import { scene } from '../engine/renderer.js';
 import { PATH_CONFIG } from '../config.js';
 import { LOCATIONS } from '../assets/data.js';
+import { collisionManager, COLLISION_LAYERS } from '../systems/CollisionManager.js';
 
-// Collision boxes for world boundaries and objects
+// Legacy collision boxes for world boundaries and objects
+// NOTE: This is kept for backward compatibility but should be migrated to collisionManager
 export const collisionBoxes = [];
 
 // Grass tuft data and instance
@@ -69,18 +71,14 @@ export function isClearOfBuildings(x, z, buffer = 2) {
   );
 }
 
+/**
+ * Legacy collision check - DEPRECATED
+ * Use collisionManager.canMove() instead for new code
+ * This is kept for backward compatibility during migration
+ */
 export function checkCollision(x, z) {
-  // Check building collisions
-  for (const box of collisionBoxes) {
-    if (x > box.minX && x < box.maxX && z > box.minZ && z < box.maxZ) {
-      return true;
-    }
-  }
-  // Check world boundary (expanded for Austinville)
-  if (Math.sqrt(x * x + z * z) > 75) {
-    return true;
-  }
-  return false;
+  // Use new collision manager (without entity checking for backward compatibility)
+  return !collisionManager.canMove(null, x, z, 0.5, false);
 }
 
 // ============================================
@@ -540,6 +538,9 @@ function createFountain() {
   // Small collision for fountain
   collisionBoxes.push({ minX: -1.5, maxX: 1.5, minZ: -1.5, maxZ: 1.5 });
 
+  // Add fountain to collision manager
+  collisionManager.addStaticBox(0, 0, 3, 3);
+
   const fountain = new THREE.Group();
 
   // Base
@@ -758,12 +759,20 @@ function createRoyalProps() {
     prop.scale.setScalar(scale);
     scene.add(prop);
     if (collision) {
+      // Add to legacy collision boxes
       collisionBoxes.push({
         minX: insetX + collision.minX * scale,
         maxX: insetX + collision.maxX * scale,
         minZ: insetZ + collision.minZ * scale,
         maxZ: insetZ + collision.maxZ * scale
       });
+
+      // Add to new collision manager
+      const minX = insetX + collision.minX * scale;
+      const maxX = insetX + collision.maxX * scale;
+      const minZ = insetZ + collision.minZ * scale;
+      const maxZ = insetZ + collision.maxZ * scale;
+      collisionManager.addStaticBoxMinMax(minX, maxX, minZ, maxZ);
     }
   });
 }
@@ -773,14 +782,18 @@ function createRoyalProps() {
 // ============================================
 
 export function createWorld() {
-  // Add collision boxes for buildings first (will be populated by buildings module)
+  // Initialize collision system with buildings
   LOCATIONS.forEach(loc => {
+    // Add to legacy collision boxes (for backward compatibility)
     collisionBoxes.push({
       minX: loc.x - loc.sx / 2 - 0.5,
       maxX: loc.x + loc.sx / 2 + 0.5,
       minZ: loc.z - loc.sz / 2 - 0.5,
       maxZ: loc.z + loc.sz / 2 + 0.5
     });
+
+    // Add to new collision manager
+    collisionManager.addStaticBox(loc.x, loc.z, loc.sx, loc.sz, 0.5);
   });
 
   // Ground (expanded for Austinville town)

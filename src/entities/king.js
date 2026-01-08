@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { scene } from '../engine/renderer.js';
 import { checkCollision } from '../entities/world.js';
 import { npcs } from './npcs.js';
+import { collisionManager, COLLISION_LAYERS } from '../systems/CollisionManager.js';
 
 // King Ben configuration
 export const KING_BEN = {
@@ -43,17 +44,26 @@ export const KING_BEN = {
     "Eyes forward! ...wait, which way is forward?"
   ],
 
-  // Route around town
+  // Enhanced route around town - visits more locations
   patrolRoute: [
-    { x: 5, z: 5 },      // Start near palace
-    { x: 15, z: 5 },     // East
-    { x: 15, z: 15 },    // Southeast
-    { x: 0, z: 20 },     // South (park area)
-    { x: -15, z: 15 },   // Southwest
-    { x: -15, z: 5 },    // West
-    { x: -15, z: -5 },   // Near tea/coffee war
-    { x: 0, z: -10 },    // Center
-    { x: 5, z: 5 }       // Return to palace
+    { x: 5, z: 5 },       // Start near palace
+    { x: 12, z: -5 },     // Tea Shop visit
+    { x: 20, z: 0 },      // East street
+    { x: 25, z: 10 },     // East park area
+    { x: 20, z: 20 },     // Northeast
+    { x: 0, z: 25 },      // North plaza
+    { x: 0, z: 15 },      // Speakers area
+    { x: -10, z: 15 },    // Near speakers
+    { x: -20, z: 20 },    // Northwest
+    { x: -25, z: 10 },    // West park
+    { x: -20, z: 0 },     // West street
+    { x: -10, z: 5 },     // Guests hall
+    { x: -10, z: -5 },    // Feast hall
+    { x: -15, z: -15 },   // Southwest
+    { x: 0, z: -15 },     // South street
+    { x: 10, z: -10 },    // Southeast
+    { x: 0, z: 0 },       // Central plaza
+    { x: 5, z: 5 }        // Return to palace
   ]
 };
 
@@ -402,6 +412,12 @@ export function updateKingAndGuards(time, delta, camera) {
 
   const data = kingBen.userData;
 
+  // Register King with collision system
+  if (!data.collisionId) {
+    data.collisionId = 'king_ben';
+    collisionManager.registerEntity(data.collisionId, kingBen, 0.5, COLLISION_LAYERS.NPC);
+  }
+
   // === PATROL ROUTE ===
   if (!data.isWaiting) {
     const target = data.patrolRoute[data.currentWaypoint];
@@ -419,10 +435,20 @@ export function updateKingAndGuards(time, delta, camera) {
       const moveX = (dx / dist) * data.walkSpeed * delta;
       const moveZ = (dz / dist) * data.walkSpeed * delta;
 
-      if (!checkCollision(kingBen.position.x + moveX, kingBen.position.z + moveZ)) {
-        kingBen.position.x += moveX;
-        kingBen.position.z += moveZ;
-      }
+      const targetX = kingBen.position.x + moveX;
+      const targetZ = kingBen.position.z + moveZ;
+
+      // Use new collision system with sliding
+      const validated = collisionManager.getValidatedPosition(
+        data.collisionId,
+        targetX,
+        targetZ,
+        0.5,
+        true
+      );
+
+      kingBen.position.x = validated.x;
+      kingBen.position.z = validated.z;
 
       // Face movement direction
       kingBen.rotation.y = Math.atan2(dx, dz);

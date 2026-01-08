@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { scene } from '../engine/renderer.js';
 import { checkCollision } from '../entities/world.js';
+import { collisionManager, COLLISION_LAYERS } from '../systems/CollisionManager.js';
 
 // AUSTINVILLE GRID LAYOUT - Doom Sayer in north-west area near river, between Fishing Dock and Donut Shop
 export const DOOM_SAYER_CONFIG = {
@@ -194,6 +195,12 @@ export function updateDoomSayer(time, delta, camera) {
 
   const data = doomSayer.userData;
 
+  // Register with collision system
+  if (!data.collisionId) {
+    data.collisionId = 'doom_sayer';
+    collisionManager.registerEntity(data.collisionId, doomSayer, 0.4, COLLISION_LAYERS.NPC);
+  }
+
   // Wander erratically
   data.timer -= delta;
   if (data.timer <= 0) {
@@ -202,19 +209,38 @@ export function updateDoomSayer(time, delta, camera) {
   }
 
   const speed = data.walkSpeed * delta;
-  const newX = doomSayer.position.x + Math.sin(data.walkAngle) * speed;
-  const newZ = doomSayer.position.z + Math.cos(data.walkAngle) * speed;
+  const targetX = doomSayer.position.x + Math.sin(data.walkAngle) * speed;
+  const targetZ = doomSayer.position.z + Math.cos(data.walkAngle) * speed;
 
   // Stay in general area
-  const distFromStart = Math.hypot(newX - DOOM_SAYER_CONFIG.position.x, newZ - DOOM_SAYER_CONFIG.position.z);
-  if (distFromStart < 15 && !checkCollision(newX, newZ)) {
-    doomSayer.position.x = newX;
-    doomSayer.position.z = newZ;
+  const distFromStart = Math.hypot(targetX - DOOM_SAYER_CONFIG.position.x, targetZ - DOOM_SAYER_CONFIG.position.z);
+  if (distFromStart < 15) {
+    // Use new collision system
+    const validated = collisionManager.getValidatedPosition(
+      data.collisionId,
+      targetX,
+      targetZ,
+      0.4,
+      true
+    );
+
+    const didMove = Math.abs(validated.x - doomSayer.position.x) > 0.001 ||
+                    Math.abs(validated.z - doomSayer.position.z) > 0.001;
+
+    doomSayer.position.x = validated.x;
+    doomSayer.position.z = validated.z;
+
+    // If stuck, pick new direction
+    if (validated.collided && !didMove) {
+      data.walkAngle = Math.random() * Math.PI * 2;
+      data.timer = 0.1;
+    }
   } else {
+    // Turn around if too far from home
     data.walkAngle += Math.PI;
   }
 
-  doomSayer.rotation.y = data.walkAngle;
+  doomSayer.rotation.y = THREE.MathUtils.lerp(doomSayer.rotation.y, data.walkAngle, 0.1);
 
   // Frantic movement
   doomSayer.rotation.z = Math.sin(time * 8) * 0.15;
