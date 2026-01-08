@@ -260,8 +260,17 @@ function updateCollectibles(ctx, delta, time, now) {
     if (player.position.distanceTo(col.position) < 1.2) {
       col.userData.collected = true;
       col.visible = false;
-      ctx.gameState.collected++;
+
+      // Get collectible value (1 for normal, 5 for golden)
+      const value = col.userData.value || 1;
+      const isGolden = col.userData.isGolden || false;
+
+      ctx.gameState.collected += value;
       updateCollectibleCount(ctx.gameState.collected);
+
+      // Show floating +X number
+      showFloatingPoints(col.position, value, isGolden);
+
       showCollectPopup();
       // spawnCelebrationBurst();
       player.userData.boostEndTime = now + PLAYER_CONFIG.BOOST_DURATION;
@@ -273,6 +282,37 @@ function updateCollectibles(ctx, delta, time, now) {
       }
     }
   });
+}
+
+/**
+ * Show floating +X points number at collection position
+ */
+function showFloatingPoints(position, value, isGolden) {
+  const vec = position.clone().project(camera);
+  if (vec.z > 1) return;
+
+  const x = (vec.x * 0.5 + 0.5) * window.innerWidth;
+  const y = (-vec.y * 0.5 + 0.5) * window.innerHeight;
+
+  const pointsDiv = document.createElement('div');
+  pointsDiv.style.cssText = `
+    position: fixed;
+    left: ${x}px;
+    top: ${y}px;
+    transform: translateX(-50%);
+    font-size: ${isGolden ? '2.5rem' : '2rem'};
+    font-weight: bold;
+    color: ${isGolden ? '#ffd700' : '#90EE90'};
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8), 0 0 ${isGolden ? '20px #ffd700' : '10px #90EE90'};
+    pointer-events: none;
+    z-index: 1000;
+    animation: floatUpPoints 1.5s ease-out forwards;
+  `;
+  pointsDiv.textContent = `+${value}`;
+
+  document.body.appendChild(pointsDiv);
+
+  setTimeout(() => pointsDiv.remove(), 1500);
 }
 
 // Update building proximity and location display
@@ -373,3 +413,14 @@ function updateAmbientAnimations(ctx, delta, time) {
   // Butterflies near flower beds
   updateButterflies(time);
 }
+
+// Add CSS animations for floating points
+const pointsStyle = document.createElement('style');
+pointsStyle.textContent = `
+  @keyframes floatUpPoints {
+    0% { opacity: 1; transform: translateX(-50%) translateY(0) scale(0.5); }
+    20% { transform: translateX(-50%) translateY(-10px) scale(1.2); }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-60px) scale(1); }
+  }
+`;
+document.head.appendChild(pointsStyle);

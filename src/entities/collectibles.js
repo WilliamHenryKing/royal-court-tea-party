@@ -196,17 +196,69 @@ export function spawnCelebrationBurst(playerRef) {
 
 function createCollectible() {
   const group = new THREE.Group();
-  const colors = [0xff6b6b, 0xffd93d, 0x6bcb77, 0x4d96ff, 0xff6bd6, 0xffd700];
-  const color = colors[Math.floor(Math.random() * colors.length)];
-  const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.25 });
 
-  const types = ['candy', 'crown', 'gem'];
+  // 5% chance for golden collectible (worth 5 points)
+  const isGolden = Math.random() < 0.05;
+
+  const colors = [0xff6b6b, 0xffd93d, 0x6bcb77, 0x4d96ff, 0xff6bd6, 0xffd700];
+  const color = isGolden ? 0xffd700 : colors[Math.floor(Math.random() * colors.length)];
+  const emissiveIntensity = isGolden ? 0.6 : 0.25;
+  const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity });
+
+  const types = ['candy', 'lollipop', 'cupcake', 'cookie', 'crown', 'gem'];
   const type = types[Math.floor(Math.random() * types.length)];
 
   if (type === 'candy') {
     const candy = new THREE.Mesh(new THREE.SphereGeometry(0.25, 12, 12), mat);
     candy.scale.set(1.5, 1, 1);
     group.add(candy);
+    group.userData.effect = 'speed'; // Brief speed boost
+  } else if (type === 'lollipop') {
+    // Lollipop: stick + round candy
+    const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.4, 6),
+      new THREE.MeshStandardMaterial({ color: 0xffffff }));
+    stick.position.y = -0.2;
+    group.add(stick);
+    const candy = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 12), mat);
+    candy.position.y = 0.1;
+    group.add(candy);
+    // Add spiral pattern
+    for (let i = 0; i < 8; i++) {
+      const spiral = new THREE.Mesh(new THREE.TorusGeometry(0.05 + i * 0.02, 0.015, 8, 12),
+        new THREE.MeshStandardMaterial({ color: 0xffffff }));
+      spiral.position.y = 0.1;
+      spiral.rotation.x = Math.PI / 2 + i * 0.1;
+      group.add(spiral);
+    }
+    group.userData.effect = 'sparkle'; // Sparkle trail when moving
+  } else if (type === 'cupcake') {
+    // Cupcake: wrapper + frosting
+    const wrapper = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.2, 0.25, 8),
+      new THREE.MeshStandardMaterial({ color: isGolden ? 0xffd700 : 0xff69b4 }));
+    wrapper.position.y = -0.1;
+    group.add(wrapper);
+    const frosting = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), mat);
+    frosting.position.y = 0.05;
+    group.add(frosting);
+    // Cherry on top
+    const cherry = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8),
+      new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 0.3 }));
+    cherry.position.y = 0.2;
+    group.add(cherry);
+    group.userData.effect = 'jump'; // Higher jump power
+  } else if (type === 'cookie') {
+    // Cookie: flat cylinder with chips
+    const cookie = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.08, 16), mat);
+    group.add(cookie);
+    // Chocolate chips
+    for (let i = 0; i < 6; i++) {
+      const chip = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 6),
+        new THREE.MeshStandardMaterial({ color: 0x3d2817 }));
+      const angle = (i / 6) * Math.PI * 2;
+      chip.position.set(Math.cos(angle) * 0.12, 0.05, Math.sin(angle) * 0.12);
+      group.add(chip);
+    }
+    group.userData.effect = 'size'; // Temporarily larger player
   } else if (type === 'crown') {
     const base = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.25, 0.15, 6), mat);
     group.add(base);
@@ -216,10 +268,16 @@ function createCollectible() {
       point.position.set(Math.cos(a) * 0.15, 0.12, Math.sin(a) * 0.15);
       group.add(point);
     }
+    group.userData.effect = 'crown'; // Show crown above player briefly
   } else {
     const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.25), mat);
     group.add(gem);
+    group.userData.effect = 'sparkle';
   }
+
+  group.userData.isGolden = isGolden;
+  group.userData.type = type;
+  group.userData.value = isGolden ? 5 : 1;
 
   return group;
 }

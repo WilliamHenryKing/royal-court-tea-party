@@ -510,7 +510,11 @@ export const bounceState = {
   isBouncing: false,
   bounceVelocity: 0,
   bounceHeight: 0,
-  maxHeight: 0
+  maxHeight: 0,
+  comboCount: 0, // Track consecutive bounces
+  lastBounceTime: 0,
+  isFlipping: false, // Track if player is doing a flip
+  flipRotation: 0 // Current flip rotation
 };
 
 export function createTrampoline() {
@@ -629,12 +633,34 @@ export function checkTrampolineCollision(playerPos) {
 export function updatePlayerBounce(delta) {
   if (!player) return;
 
+  const now = performance.now();
   const onTrampoline = checkTrampolineCollision(player.position);
+
+  // Reset combo if player hasn't bounced in 3 seconds
+  if (now - bounceState.lastBounceTime > 3000) {
+    bounceState.comboCount = 0;
+  }
 
   if (onTrampoline && !bounceState.isBouncing) {
     bounceState.isBouncing = true;
-    bounceState.bounceVelocity = TRAMPOLINE_DATA.bouncePower;
-    bounceState.maxHeight = 8 + Math.random() * 4;
+    bounceState.comboCount++;
+    bounceState.lastBounceTime = now;
+
+    // Higher bounces based on combo
+    const comboBonus = Math.min(bounceState.comboCount * 0.5, 4);
+    bounceState.bounceVelocity = TRAMPOLINE_DATA.bouncePower + comboBonus;
+    bounceState.maxHeight = 8 + Math.random() * 4 + comboBonus;
+
+    // Start flip at higher combos
+    if (bounceState.comboCount >= 2) {
+      bounceState.isFlipping = true;
+      bounceState.flipRotation = 0;
+    }
+
+    // Show combo counter
+    if (bounceState.comboCount > 1) {
+      showComboCounter(bounceState.comboCount);
+    }
 
     const quote = TRAMPOLINE_DATA.quotes[
       Math.floor(Math.random() * TRAMPOLINE_DATA.quotes.length)
@@ -649,7 +675,18 @@ export function updatePlayerBounce(delta) {
 
     player.position.y = player.userData.baseY + bounceState.bounceHeight + 0.8;
 
-    if (bounceState.bounceHeight > 2) {
+    // Flip animation
+    if (bounceState.isFlipping && bounceState.bounceHeight > 2) {
+      bounceState.flipRotation += delta * 8; // 360° flip
+      player.rotation.x = bounceState.flipRotation;
+
+      // Complete flip
+      if (bounceState.flipRotation >= Math.PI * 2) {
+        bounceState.isFlipping = false;
+        bounceState.flipRotation = 0;
+      }
+    } else if (!bounceState.isFlipping && bounceState.bounceHeight > 2) {
+      // Regular tilt for low combos
       player.rotation.x = Math.sin(bounceState.bounceHeight * 0.5) * 0.3;
     }
 
@@ -658,6 +695,8 @@ export function updatePlayerBounce(delta) {
       bounceState.bounceHeight = 0;
       bounceState.bounceVelocity = 0;
       player.rotation.x = 0;
+      bounceState.isFlipping = false;
+      bounceState.flipRotation = 0;
 
       if (onTrampoline) {
         bounceState.bounceVelocity = TRAMPOLINE_DATA.bouncePower * 0.8;
@@ -665,6 +704,36 @@ export function updatePlayerBounce(delta) {
       }
     }
   }
+}
+
+/**
+ * Show combo counter UI
+ */
+function showComboCounter(combo) {
+  // Remove existing combo display
+  const existing = document.getElementById('combo-counter');
+  if (existing) existing.remove();
+
+  const comboDiv = document.createElement('div');
+  comboDiv.id = 'combo-counter';
+  comboDiv.style.cssText = `
+    position: fixed;
+    top: 30%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 3rem;
+    font-weight: bold;
+    color: #ffd700;
+    text-shadow: 3px 3px 6px rgba(0,0,0,0.8), 0 0 20px #ffd700;
+    pointer-events: none;
+    z-index: 1000;
+    animation: comboPopIn 0.3s ease-out;
+  `;
+  comboDiv.textContent = `${combo}x COMBO!`;
+
+  document.body.appendChild(comboDiv);
+
+  setTimeout(() => comboDiv.remove(), 1500);
 }
 
 function showBounceQuote(quote) {
@@ -1209,6 +1278,11 @@ activityStyle.textContent = `
     0% { opacity: 1; transform: translateX(-50%) scale(0.5); }
     50% { transform: translateX(-50%) scale(1.2); }
     100% { opacity: 0; transform: translateX(-50%) scale(1) translateY(-50px); }
+  }
+  @keyframes comboPopIn {
+    0% { opacity: 0; transform: translateX(-50%) scale(0); }
+    50% { transform: translateX(-50%) scale(1.2); }
+    100% { opacity: 1; transform: translateX(-50%) scale(1); }
   }
 `;
 document.head.appendChild(activityStyle);
