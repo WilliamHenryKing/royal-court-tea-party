@@ -236,7 +236,15 @@ export function setupControls() {
         keyboardState.right = true;
         break;
       case 'p':
-        if (!e.repeat && !ctx.gameState.dialogOpen && ctx.gameState.started && (ctx.gameState.nearNPC || ctx.gameState.nearWanderer)) {
+        if (
+          !e.repeat
+          && !ctx.gameState.dialogOpen
+          && ctx.gameState.started
+          && (ctx.gameState.nearNPC
+            || ctx.gameState.nearWanderer
+            || ctx.gameState.nearBuildingNPC
+            || ctx.gameState.nearTroll)
+        ) {
           ctx.handleAction();
         }
         break;
