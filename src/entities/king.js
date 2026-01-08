@@ -4,6 +4,7 @@ import { scene } from '../engine/renderer.js';
 import { checkCollision } from '../entities/world.js';
 import { npcs } from './npcs.js';
 import { collisionManager, COLLISION_LAYERS } from '../systems/CollisionManager.js';
+import { playGuardClank } from '../audio/audioManager.js';
 
 // King Ben configuration
 export const KING_BEN = {
@@ -828,6 +829,7 @@ function showGuardReaction(guards, camera) {
 
   const reactingGuard = guards[Math.floor(Math.random() * guards.length)];
   const reaction = KING_BEN.guardReactions[Math.floor(Math.random() * KING_BEN.guardReactions.length)];
+  playGuardClank();
 
   const vec = reactingGuard.position.clone().project(camera);
   if (vec.z > 1) return;

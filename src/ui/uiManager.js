@@ -7,7 +7,11 @@ import {
   musicAudio,
   playCurrentTrack,
   toggleMusicMute,
-  playNextTrack
+  playNextTrack,
+  initializeAmbientAudio,
+  playNpcGreeting,
+  playNpcLaugh,
+  playNpcSigh
 } from '../audio/audioManager.js';
 import { LOCATIONS } from '../assets/data.js';
 import { AUDIO_CONFIG } from '../config.js';
@@ -103,6 +107,7 @@ export function startAdventure() {
   document.getElementById('intro-modal').classList.remove('visible');
   ctx.gameState.dialogOpen = false;
   ctx.gameState.started = true;
+  initializeAmbientAudio();
   if (!musicState.initialized) {
     musicState.initialized = true;
     playCurrentTrack();
@@ -477,6 +482,7 @@ export function openDialog(locationId) {
 
     // Play voice when dialog appears
     playVoice(locationId);
+    playNpcGreeting();
 
     // Update dialog UI
     document.getElementById('dialog-avatar').textContent = dialog.avatar;
@@ -508,6 +514,7 @@ export function openWandererDialog(npc) {
 
   // Play random voice
   playRandomWandererVoice();
+  playNpcLaugh();
 
   ctx.gameState.dialogOpen = true;
 
@@ -542,6 +549,7 @@ export function openTrollDialog(troll) {
 
   // Play random voice (reusing wanderer voice for now)
   playRandomWandererVoice();
+  playNpcSigh();
 
   ctx.gameState.dialogOpen = true;
 
@@ -693,6 +701,7 @@ export function openBuildingNPCDialog(npcId) {
 
     // Play voice when dialog appears
     playRandomWandererVoice();
+    playNpcGreeting();
 
     // Generate dialog based on visit status
     const dialog = generateBuildingDialog(npcId, isNewVisit);
