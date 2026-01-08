@@ -14,6 +14,10 @@ import { checkCollision } from './interactions.js';
 import { getInputVector } from '../systems/inputSystem.js';
 import { camera } from '../engine/renderer.js';
 import { PLAYER_CONFIG } from '../config.js';
+import { collisionManager, COLLISION_LAYERS } from '../systems/CollisionManager.js';
+
+// Player collision registration
+let playerRegistered = false;
 import {
   updateActionButton,
   updateLocationDisplay,
@@ -86,6 +90,12 @@ export function update(ctx, delta, time) {
 
 // Update player movement and animation
 function updatePlayer(ctx, delta, time, now) {
+  // Register player with collision manager on first update
+  if (!playerRegistered && player) {
+    collisionManager.registerEntity('player', player, 0.5, COLLISION_LAYERS.PLAYER);
+    playerRegistered = true;
+  }
+
   const input = getInputVector();
   const combinedInputX = Math.max(-1, Math.min(1, input.x));
   const combinedInputY = Math.max(-1, Math.min(1, input.y));
@@ -100,15 +110,13 @@ function updatePlayer(ctx, delta, time, now) {
     const playerSpeed = getPlayerSpeed(now);
     const moveX = combinedInputX * playerSpeed * delta;
     const moveZ = combinedInputY * playerSpeed * delta;
-    const newX = player.position.x + moveX;
-    const newZ = player.position.z + moveZ;
+    const targetX = player.position.x + moveX;
+    const targetZ = player.position.z + moveZ;
 
-    if (!checkCollision(newX, player.position.z)) {
-      player.position.x = newX;
-    }
-    if (!checkCollision(player.position.x, newZ)) {
-      player.position.z = newZ;
-    }
+    // Use new collision system with sliding
+    const validated = collisionManager.getValidatedPosition('player', targetX, targetZ, 0.5, true);
+    player.position.x = validated.x;
+    player.position.z = validated.z;
 
     // Face movement direction
     const angle = Math.atan2(combinedInputX, combinedInputY);
