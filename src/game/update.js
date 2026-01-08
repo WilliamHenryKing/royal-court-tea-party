@@ -4,16 +4,17 @@ import { player, updateCape } from '../entities/player.js';
 import { buildings } from '../entities/buildings.js';
 import { npcs, wanderers, bernieListeners, corgis, bees, updateCorgis, updateBees, updateWanderers, updateBernieListeners, updateNPCIndicators } from '../entities/npcs.js';
 import { buildingNpcs, updateBuildingNPCs } from '../entities/buildingNpcs.js';
-import { collectibles, clouds, celebrationParticles, updateCelebrationParticles, updateAmbientParticles } from '../entities/collectibles.js';
+import { collectibles, clouds, celebrationParticles, updateCelebrationParticles, updateAmbientParticles, fireflies, updateFireflies, cherryPetals, updateCherryPetals } from '../entities/collectibles.js';
 import { waterMaterial, updateButterflies } from '../entities/world.js';
 import { updateRiverWater, updateJumpingFish, updateFoxes, updateBirds, updateBridgeTroll, bridgeTroll } from '../entities/river.js';
 import { updateKingAndGuards } from '../entities/king.js';
 import { updateDoomSayer } from '../entities/doomSayer.js';
 import { updateAllActivities } from '../entities/activities.js';
+import { updateShops } from '../entities/shops.js';
 import { updateCameraZoom, isZoomedIn, getZoomState } from '../systems/cameraZoom.js';
 import { checkCollision } from './interactions.js';
 import { getInputVector } from '../systems/inputSystem.js';
-import { camera } from '../engine/renderer.js';
+import { camera, getZoomLevel } from '../engine/renderer.js';
 import { PLAYER_CONFIG } from '../config.js';
 import { collisionManager, COLLISION_LAYERS } from '../systems/CollisionManager.js';
 
@@ -168,10 +169,14 @@ function updateCamera(ctx, delta, time, isMoving) {
   );
 
   cameraTarget.set(player.position.x, player.position.y + 1, player.position.z);
+  // Apply user zoom level from mouse wheel
+  const userZoom = getZoomLevel();
+  const zoomedOffset = cameraZoomState.currentOffset * userZoom;
+
   const idealPos = new THREE.Vector3(
     player.position.x,
-    player.position.y + cameraZoomState.currentOffset,
-    player.position.z + cameraZoomState.currentOffset
+    player.position.y + zoomedOffset,
+    player.position.z + zoomedOffset
   );
   camera.position.lerp(idealPos, 0.08);
   camera.lookAt(cameraTarget);
@@ -255,8 +260,17 @@ function updateCollectibles(ctx, delta, time, now) {
     if (player.position.distanceTo(col.position) < 1.2) {
       col.userData.collected = true;
       col.visible = false;
-      ctx.gameState.collected++;
+
+      // Get collectible value (1 for normal, 5 for golden)
+      const value = col.userData.value || 1;
+      const isGolden = col.userData.isGolden || false;
+
+      ctx.gameState.collected += value;
       updateCollectibleCount(ctx.gameState.collected);
+
+      // Show floating +X number
+      showFloatingPoints(col.position, value, isGolden);
+
       showCollectPopup();
       // spawnCelebrationBurst();
       player.userData.boostEndTime = now + PLAYER_CONFIG.BOOST_DURATION;
@@ -268,6 +282,37 @@ function updateCollectibles(ctx, delta, time, now) {
       }
     }
   });
+}
+
+/**
+ * Show floating +X points number at collection position
+ */
+function showFloatingPoints(position, value, isGolden) {
+  const vec = position.clone().project(camera);
+  if (vec.z > 1) return;
+
+  const x = (vec.x * 0.5 + 0.5) * window.innerWidth;
+  const y = (-vec.y * 0.5 + 0.5) * window.innerHeight;
+
+  const pointsDiv = document.createElement('div');
+  pointsDiv.style.cssText = `
+    position: fixed;
+    left: ${x}px;
+    top: ${y}px;
+    transform: translateX(-50%);
+    font-size: ${isGolden ? '2.5rem' : '2rem'};
+    font-weight: bold;
+    color: ${isGolden ? '#ffd700' : '#90EE90'};
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8), 0 0 ${isGolden ? '20px #ffd700' : '10px #90EE90'};
+    pointer-events: none;
+    z-index: 1000;
+    animation: floatUpPoints 1.5s ease-out forwards;
+  `;
+  pointsDiv.textContent = `+${value}`;
+
+  document.body.appendChild(pointsDiv);
+
+  setTimeout(() => pointsDiv.remove(), 1500);
 }
 
 // Update building proximity and location display
@@ -326,6 +371,12 @@ function updateAmbientAnimations(ctx, delta, time) {
   // Floating petals and sparkles
   updateAmbientParticles(time, delta);
 
+  // Fireflies
+  updateFireflies(time, delta);
+
+  // Cherry blossom petals
+  updateCherryPetals(time, delta);
+
   // River water animation
   updateRiverWater(time);
 
@@ -335,8 +386,8 @@ function updateAmbientAnimations(ctx, delta, time) {
   // King Ben and guards patrol
   updateKingAndGuards(time, delta, camera);
 
-  // Doom Sayer wandering and prophecies
-  updateDoomSayer(time, delta, camera);
+  // Doom Sayer wandering and prophecies (with dynamic context)
+  updateDoomSayer(time, delta, camera, ctx);
 
   // Wandering NPCs movement
   updateWanderers(ctx, delta, time, showFloatingMessage, maybePlayAmbientVoice);
@@ -346,6 +397,9 @@ function updateAmbientAnimations(ctx, delta, time) {
 
   // Austinville activities (Boxing Ring, Trampoline, Fishing NPCs, Tea vs Coffee War)
   updateAllActivities(time, delta, camera);
+
+  // Shop animations (donut rotation, sprinkles, steam)
+  updateShops(time, delta);
 
   // Forest animals
   updateFoxes(time, delta);
@@ -359,3 +413,14 @@ function updateAmbientAnimations(ctx, delta, time) {
   // Butterflies near flower beds
   updateButterflies(time);
 }
+
+// Add CSS animations for floating points
+const pointsStyle = document.createElement('style');
+pointsStyle.textContent = `
+  @keyframes floatUpPoints {
+    0% { opacity: 1; transform: translateX(-50%) translateY(0) scale(0.5); }
+    20% { transform: translateX(-50%) translateY(-10px) scale(1.2); }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-60px) scale(1); }
+  }
+`;
+document.head.appendChild(pointsStyle);

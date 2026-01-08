@@ -10,6 +10,8 @@ export const clouds = [];
 export const celebrationParticles = [];
 export const insects = [];
 export const ambientParticles = [];
+export const fireflies = [];
+export const cherryPetals = [];
 
 // Particle system state
 export let particleTexture = null;
@@ -194,17 +196,69 @@ export function spawnCelebrationBurst(playerRef) {
 
 function createCollectible() {
   const group = new THREE.Group();
-  const colors = [0xff6b6b, 0xffd93d, 0x6bcb77, 0x4d96ff, 0xff6bd6, 0xffd700];
-  const color = colors[Math.floor(Math.random() * colors.length)];
-  const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.25 });
 
-  const types = ['candy', 'crown', 'gem'];
+  // 5% chance for golden collectible (worth 5 points)
+  const isGolden = Math.random() < 0.05;
+
+  const colors = [0xff6b6b, 0xffd93d, 0x6bcb77, 0x4d96ff, 0xff6bd6, 0xffd700];
+  const color = isGolden ? 0xffd700 : colors[Math.floor(Math.random() * colors.length)];
+  const emissiveIntensity = isGolden ? 0.6 : 0.25;
+  const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity });
+
+  const types = ['candy', 'lollipop', 'cupcake', 'cookie', 'crown', 'gem'];
   const type = types[Math.floor(Math.random() * types.length)];
 
   if (type === 'candy') {
     const candy = new THREE.Mesh(new THREE.SphereGeometry(0.25, 12, 12), mat);
     candy.scale.set(1.5, 1, 1);
     group.add(candy);
+    group.userData.effect = 'speed'; // Brief speed boost
+  } else if (type === 'lollipop') {
+    // Lollipop: stick + round candy
+    const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.4, 6),
+      new THREE.MeshStandardMaterial({ color: 0xffffff }));
+    stick.position.y = -0.2;
+    group.add(stick);
+    const candy = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 12), mat);
+    candy.position.y = 0.1;
+    group.add(candy);
+    // Add spiral pattern
+    for (let i = 0; i < 8; i++) {
+      const spiral = new THREE.Mesh(new THREE.TorusGeometry(0.05 + i * 0.02, 0.015, 8, 12),
+        new THREE.MeshStandardMaterial({ color: 0xffffff }));
+      spiral.position.y = 0.1;
+      spiral.rotation.x = Math.PI / 2 + i * 0.1;
+      group.add(spiral);
+    }
+    group.userData.effect = 'sparkle'; // Sparkle trail when moving
+  } else if (type === 'cupcake') {
+    // Cupcake: wrapper + frosting
+    const wrapper = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.2, 0.25, 8),
+      new THREE.MeshStandardMaterial({ color: isGolden ? 0xffd700 : 0xff69b4 }));
+    wrapper.position.y = -0.1;
+    group.add(wrapper);
+    const frosting = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), mat);
+    frosting.position.y = 0.05;
+    group.add(frosting);
+    // Cherry on top
+    const cherry = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8),
+      new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 0.3 }));
+    cherry.position.y = 0.2;
+    group.add(cherry);
+    group.userData.effect = 'jump'; // Higher jump power
+  } else if (type === 'cookie') {
+    // Cookie: flat cylinder with chips
+    const cookie = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.08, 16), mat);
+    group.add(cookie);
+    // Chocolate chips
+    for (let i = 0; i < 6; i++) {
+      const chip = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 6),
+        new THREE.MeshStandardMaterial({ color: 0x3d2817 }));
+      const angle = (i / 6) * Math.PI * 2;
+      chip.position.set(Math.cos(angle) * 0.12, 0.05, Math.sin(angle) * 0.12);
+      group.add(chip);
+    }
+    group.userData.effect = 'size'; // Temporarily larger player
   } else if (type === 'crown') {
     const base = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.25, 0.15, 6), mat);
     group.add(base);
@@ -214,10 +268,16 @@ function createCollectible() {
       point.position.set(Math.cos(a) * 0.15, 0.12, Math.sin(a) * 0.15);
       group.add(point);
     }
+    group.userData.effect = 'crown'; // Show crown above player briefly
   } else {
     const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.25), mat);
     group.add(gem);
+    group.userData.effect = 'sparkle';
   }
+
+  group.userData.isGolden = isGolden;
+  group.userData.type = type;
+  group.userData.value = isGolden ? 5 : 1;
 
   return group;
 }
@@ -463,6 +523,260 @@ export function updateAmbientParticles(time, delta) {
       data.driftAngle = Math.random() * Math.PI * 2;
     }
   });
+}
+
+// ============================================
+// FIREFLIES
+// ============================================
+
+function createFirefly() {
+  // Create a glowing sprite for the firefly
+  const canvas = document.createElement('canvas');
+  canvas.width = 32;
+  canvas.height = 32;
+  const ctx = canvas.getContext('2d');
+
+  // Create radial gradient for glow
+  const gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+  gradient.addColorStop(0, 'rgba(255, 255, 150, 1)');
+  gradient.addColorStop(0.3, 'rgba(255, 255, 100, 0.8)');
+  gradient.addColorStop(0.6, 'rgba(200, 255, 100, 0.4)');
+  gradient.addColorStop(1, 'rgba(150, 255, 100, 0)');
+
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 32, 32);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  const material = new THREE.SpriteMaterial({
+    map: texture,
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  });
+
+  const sprite = new THREE.Sprite(material);
+  sprite.scale.set(0.3, 0.3, 0.3);
+
+  // Add subtle point light for extra glow
+  const light = new THREE.PointLight(0xffff88, 0.3, 2);
+  sprite.add(light);
+
+  // Random starting position in forest areas
+  const angle = Math.random() * Math.PI * 2;
+  const radius = 15 + Math.random() * 25;
+  sprite.position.set(
+    Math.cos(angle) * radius,
+    0.5 + Math.random() * 2.5,
+    Math.sin(angle) * radius
+  );
+
+  // Store animation data
+  sprite.userData = {
+    baseY: sprite.position.y,
+    floatSpeed: 0.3 + Math.random() * 0.4,
+    floatAmount: 0.3 + Math.random() * 0.5,
+    driftSpeed: 0.2 + Math.random() * 0.3,
+    driftAngle: Math.random() * Math.PI * 2,
+    phaseOffset: Math.random() * Math.PI * 2,
+    blinkSpeed: 2 + Math.random() * 3,
+    blinkPhase: Math.random() * Math.PI * 2,
+    light: light,
+    homePosX: sprite.position.x,
+    homePosZ: sprite.position.z,
+    wanderRadius: 3 + Math.random() * 4
+  };
+
+  scene.add(sprite);
+  return sprite;
+}
+
+export function createFireflies(count = 50) {
+  for (let i = 0; i < count; i++) {
+    const firefly = createFirefly();
+    fireflies.push(firefly);
+  }
+}
+
+export function updateFireflies(time, delta) {
+  fireflies.forEach(firefly => {
+    const data = firefly.userData;
+
+    // Floating up and down
+    const floatOffset = Math.sin(time * data.floatSpeed + data.phaseOffset) * data.floatAmount;
+    firefly.position.y = data.baseY + floatOffset;
+
+    // Gentle wandering around home position
+    const wanderX = Math.sin(time * data.driftSpeed + data.phaseOffset) * data.wanderRadius;
+    const wanderZ = Math.cos(time * data.driftSpeed * 0.7 + data.phaseOffset) * data.wanderRadius;
+    firefly.position.x = data.homePosX + wanderX;
+    firefly.position.z = data.homePosZ + wanderZ;
+
+    // Blinking effect - pulsing opacity and light intensity
+    const blink = Math.sin(time * data.blinkSpeed + data.blinkPhase);
+    const blinkValue = (blink + 1) * 0.5; // 0 to 1
+    const intensity = blinkValue * 0.5 + 0.3; // 0.3 to 0.8
+
+    firefly.material.opacity = intensity;
+    data.light.intensity = intensity * 0.5;
+
+    // Occasional bright flash
+    if (Math.random() < 0.001) {
+      data.blinkPhase = Math.random() * Math.PI * 2;
+    }
+  });
+}
+
+// ============================================
+// FALLING CHERRY BLOSSOM PETALS
+// ============================================
+
+// Cherry tree positions from world.js
+const CHERRY_TREE_POSITIONS = [
+  { x: 0, z: 28 }, { x: -15, z: 26 }, { x: 18, z: 16 },
+  { x: 30, z: 8 }, { x: 20, z: 10 }, { x: -8, z: 25 }, { x: 8, z: 25 }
+];
+
+function createCherryPetal(treePos) {
+  // Create petal texture
+  const canvas = document.createElement('canvas');
+  canvas.width = 16;
+  canvas.height = 16;
+  const ctx = canvas.getContext('2d');
+
+  // Draw petal shape
+  ctx.fillStyle = '#ffb7c5';
+  ctx.beginPath();
+  ctx.ellipse(8, 8, 6, 4, Math.random() * Math.PI, 0, Math.PI * 2);
+  ctx.fill();
+
+  const texture = new THREE.CanvasTexture(canvas);
+  const material = new THREE.SpriteMaterial({
+    map: texture,
+    transparent: true,
+    opacity: 0.8
+  });
+
+  const sprite = new THREE.Sprite(material);
+  sprite.scale.set(0.15, 0.1, 0.1);
+
+  // Start above the tree
+  const spreadX = (Math.random() - 0.5) * 8;
+  const spreadZ = (Math.random() - 0.5) * 8;
+  sprite.position.set(
+    treePos.x + spreadX,
+    5 + Math.random() * 3,
+    treePos.z + spreadZ
+  );
+
+  // Animation data
+  sprite.userData = {
+    treeX: treePos.x,
+    treeZ: treePos.z,
+    fallSpeed: 0.3 + Math.random() * 0.2,
+    swaySpeed: 1 + Math.random() * 0.5,
+    swayAmount: 0.3 + Math.random() * 0.3,
+    rotSpeed: (Math.random() - 0.5) * 2,
+    phaseOffset: Math.random() * Math.PI * 2
+  };
+
+  scene.add(sprite);
+  return sprite;
+}
+
+export function createCherryPetals(petalsPerTree = 10) {
+  CHERRY_TREE_POSITIONS.forEach(treePos => {
+    for (let i = 0; i < petalsPerTree; i++) {
+      const petal = createCherryPetal(treePos);
+      cherryPetals.push(petal);
+    }
+  });
+}
+
+export function updateCherryPetals(time, delta) {
+  cherryPetals.forEach(petal => {
+    const data = petal.userData;
+
+    // Gentle falling
+    petal.position.y -= data.fallSpeed * delta;
+
+    // Swaying motion as it falls
+    const sway = Math.sin(time * data.swaySpeed + data.phaseOffset) * data.swayAmount;
+    petal.position.x += sway * delta;
+
+    // Gentle rotation
+    petal.material.rotation += data.rotSpeed * delta;
+
+    // Respawn when hits ground
+    if (petal.position.y < 0.1) {
+      petal.position.y = 5 + Math.random() * 3;
+      const spreadX = (Math.random() - 0.5) * 8;
+      const spreadZ = (Math.random() - 0.5) * 8;
+      petal.position.x = data.treeX + spreadX;
+      petal.position.z = data.treeZ + spreadZ;
+      data.phaseOffset = Math.random() * Math.PI * 2;
+    }
+  });
+}
+
+// ============================================
+// HEARTS PARTICLE EFFECT (for petting, romance, etc.)
+// ============================================
+
+export function spawnHearts(position, count = 5) {
+  for (let i = 0; i < count; i++) {
+    // Create heart sprite
+    const canvas = document.createElement('canvas');
+    canvas.width = 32;
+    canvas.height = 32;
+    const ctx = canvas.getContext('2d');
+
+    // Draw pink heart
+    ctx.fillStyle = '#ff69b4';
+    ctx.beginPath();
+    ctx.moveTo(16, 10);
+    ctx.bezierCurveTo(16, 8, 13, 5, 10, 5);
+    ctx.bezierCurveTo(5, 5, 5, 10, 5, 10);
+    ctx.bezierCurveTo(5, 13, 7, 16, 16, 23);
+    ctx.bezierCurveTo(25, 16, 27, 13, 27, 10);
+    ctx.bezierCurveTo(27, 10, 27, 5, 22, 5);
+    ctx.bezierCurveTo(19, 5, 16, 8, 16, 10);
+    ctx.closePath();
+    ctx.fill();
+
+    const texture = new THREE.CanvasTexture(canvas);
+    const material = new THREE.SpriteMaterial({
+      map: texture,
+      transparent: true
+    });
+
+    const sprite = new THREE.Sprite(material);
+    sprite.scale.set(0.3, 0.3, 0.3);
+
+    // Position near the target with some spread
+    sprite.position.copy(position);
+    sprite.position.x += (Math.random() - 0.5) * 0.5;
+    sprite.position.y += 1 + Math.random() * 0.5;
+    sprite.position.z += (Math.random() - 0.5) * 0.5;
+
+    // Add to celebration particles with float-up behavior
+    const velocity = new THREE.Vector3(
+      (Math.random() - 0.5) * 0.5,
+      1 + Math.random() * 0.5,
+      (Math.random() - 0.5) * 0.5
+    );
+
+    addParticle({
+      position: sprite.position,
+      velocity: velocity,
+      life: 1.5,
+      size: 0.3,
+      color: 0xff69b4,
+      opacity: 1,
+      rotationSpeed: (Math.random() - 0.5) * 2,
+      fade: 0.8,
+      gravity: -0.2 // Float upward
+    });
+  }
 }
 
 // Initialize collectibles system

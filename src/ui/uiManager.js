@@ -25,6 +25,7 @@ import {
 } from './interactionHandler.js';
 import { zoomToNPC, zoomOut } from '../systems/cameraZoom.js';
 import { generateBuildingDialog } from '../assets/data.js';
+import { settingsManager } from '../systems/settingsManager.js';
 
 // Module-level context reference
 let ctx = null;
@@ -312,6 +313,19 @@ export function setupControls() {
     updateMusicUI();
   }, { preventDefault: false });
 
+  // Settings button - open settings modal
+  addClickHandler(document.getElementById('settings-btn'), () => {
+    openSettings();
+  }, { preventDefault: false });
+
+  // Fullscreen button
+  addClickHandler(document.getElementById('fullscreen-btn'), () => {
+    toggleFullscreen();
+  }, { preventDefault: false });
+
+  // Settings modal handlers
+  setupSettingsModal();
+
   // Intro modal - use consistent handlers
   addClickHandler(document.getElementById('intro-start'), () => {
     startAdventure();
@@ -468,8 +482,20 @@ export function openDialog(locationId) {
     document.getElementById('dialog-avatar').textContent = dialog.avatar;
     document.getElementById('dialog-name').textContent = dialog.name;
     document.getElementById('dialog-role').textContent = dialog.role;
-    document.getElementById('dialog-content').innerHTML = dialog.content;
+
+    // Apply typewriter effect to dialog content
+    const dialogContent = document.getElementById('dialog-content');
+    typewriterEffect(dialogContent, dialog.content);
+
     document.getElementById('dialog-overlay').classList.add('visible');
+
+    // Click anywhere on dialog to skip typewriter
+    const dialogBox = document.getElementById('dialog-box');
+    const skipHandler = () => {
+      skipTypewriter();
+      dialogBox.removeEventListener('click', skipHandler);
+    };
+    dialogBox.addEventListener('click', skipHandler, { once: true });
   };
 
   // Zoom camera to NPC, then show dialog when zoom completes
@@ -488,17 +514,31 @@ export function openWandererDialog(npc) {
   document.getElementById('dialog-avatar').textContent = '🤪';
   document.getElementById('dialog-name').textContent = data.name;
   document.getElementById('dialog-role').textContent = data.role;
-  document.getElementById('dialog-content').innerHTML = `
+
+  const content = `
     <div class="funny-quote" style="margin-top: 0;">${quote}</div>
     <p style="text-align: center; color: var(--text-light); font-size: 0.9rem; margin-top: 1rem;">*${data.name} wanders off humming*</p>
   `;
+
+  // Apply typewriter effect
+  const dialogContent = document.getElementById('dialog-content');
+  typewriterEffect(dialogContent, content);
+
   document.getElementById('dialog-overlay').classList.add('visible');
   document.getElementById('action-btn').classList.remove('visible');
+
+  // Click to skip typewriter
+  const dialogBox = document.getElementById('dialog-box');
+  const skipHandler = () => skipTypewriter();
+  dialogBox.addEventListener('click', skipHandler, { once: true });
 }
 
 export function openTrollDialog(troll) {
   const data = troll.userData;
-  const quote = data.quotes[Math.floor(Math.random() * data.quotes.length)];
+
+  // Check if we should offer a riddle
+  const unsolvedRiddles = data.riddles.filter((_, i) => !data.solvedRiddles.has(i));
+  const shouldOfferRiddle = unsolvedRiddles.length > 0 && Math.random() < 0.7; // 70% chance
 
   // Play random voice (reusing wanderer voice for now)
   playRandomWandererVoice();
@@ -508,13 +548,128 @@ export function openTrollDialog(troll) {
   document.getElementById('dialog-avatar').textContent = '🧌';
   document.getElementById('dialog-name').textContent = data.name;
   document.getElementById('dialog-role').textContent = data.role;
-  document.getElementById('dialog-content').innerHTML = `
-    <div class="funny-quote" style="margin-top: 0; font-style: italic;">"${quote}"</div>
-    <p style="text-align: center; color: var(--text-light); font-size: 0.9rem; margin-top: 1rem;">*${data.name} sighs and leans heavily on his walking stick*</p>
-  `;
+
+  let content;
+
+  if (shouldOfferRiddle) {
+    // Select a random unsolved riddle
+    const riddleIndex = data.riddles.findIndex((_, i) => !data.solvedRiddles.has(i));
+    const availableIndices = data.riddles.map((_, i) => i).filter(i => !data.solvedRiddles.has(i));
+    const selectedIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+    const riddle = data.riddles[selectedIndex];
+
+    data.currentRiddle = selectedIndex;
+    data.riddlesOffered++;
+
+    const intro = data.riddlesOffered === 1
+      ? "Ah! A visitor! *perks up slightly* You know what, I DO remember one of my old riddles! Care to test your wits?"
+      : "Back for another riddle, eh? Let me see if I can remember another one...";
+
+    content = `
+      <div style="margin-bottom: 1rem;">
+        <p style="font-style: italic;">"${intro}"</p>
+      </div>
+      <div style="background: rgba(147, 112, 219, 0.1); border-left: 3px solid var(--accent); padding: 1rem; margin: 1rem 0; border-radius: 0.5rem;">
+        <p style="font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; color: var(--accent);">${riddle.riddle}</p>
+        <div id="riddle-options" style="display: flex; flex-direction: column; gap: 0.5rem;">
+          ${riddle.options.map((option, i) => `
+            <button class="riddle-option" data-index="${i}" style="
+              background: rgba(255,255,255,0.1);
+              border: 2px solid var(--accent);
+              padding: 0.75rem;
+              border-radius: 0.5rem;
+              color: white;
+              font-size: 1rem;
+              cursor: pointer;
+              transition: all 0.2s;
+              text-align: left;
+            ">${option}</button>
+          `).join('')}
+        </div>
+        <p style="margin-top: 1rem; font-size: 0.85rem; color: var(--text-light); font-style: italic;">💡 Hint: ${riddle.hint}</p>
+      </div>
+    `;
+
+    // Don't apply typewriter to riddle content
+    document.getElementById('dialog-content').innerHTML = content;
+
+    // Add click handlers for options
+    setTimeout(() => {
+      document.querySelectorAll('.riddle-option').forEach(btn => {
+        btn.addEventListener('mouseenter', () => {
+          btn.style.background = 'rgba(147, 112, 219, 0.3)';
+          btn.style.transform = 'translateX(5px)';
+        });
+        btn.addEventListener('mouseleave', () => {
+          btn.style.background = 'rgba(255,255,255,0.1)';
+          btn.style.transform = 'translateX(0)';
+        });
+        btn.addEventListener('click', (e) => {
+          const selectedIndex = parseInt(e.target.dataset.index);
+          handleRiddleAnswer(troll, selectedIndex);
+        });
+      });
+    }, 100);
+  } else {
+    // Show regular dialogue
+    const quote = data.quotes[Math.floor(Math.random() * data.quotes.length)];
+    content = `
+      <div class="funny-quote" style="margin-top: 0; font-style: italic;">"${quote}"</div>
+      <p style="text-align: center; color: var(--text-light); font-size: 0.9rem; margin-top: 1rem;">*${data.name} sighs and leans heavily on his walking stick*</p>
+    `;
+
+    // Apply typewriter effect
+    const dialogContent = document.getElementById('dialog-content');
+    typewriterEffect(dialogContent, content);
+
+    // Click to skip typewriter
+    const dialogBox = document.getElementById('dialog-box');
+    const skipHandler = () => skipTypewriter();
+    dialogBox.addEventListener('click', skipHandler, { once: true });
+  }
+
   document.getElementById('dialog-overlay').classList.add('visible');
   document.getElementById('action-btn').classList.remove('visible');
+}
+
+function handleRiddleAnswer(troll, selectedIndex) {
+  const data = troll.userData;
+  const riddle = data.riddles[data.currentRiddle];
+  const isCorrect = selectedIndex === riddle.correct;
+
+  if (isCorrect) {
+    // Mark riddle as solved
+    data.solvedRiddles.add(data.currentRiddle);
+
+    // Show success message
+    const content = `
+      <div style="text-align: center;">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">✨</div>
+        <p style="font-size: 1.3rem; font-weight: 600; color: #90EE90; margin-bottom: 1rem;">Correct!</p>
+        <p style="font-style: italic;">"${data.quotes[3]}"</p>
+        <p style="color: var(--text-light); margin-top: 1rem;">
+          ${data.solvedRiddles.size === data.riddles.length
+            ? "You've solved all my riddles! I'm impressed... *wipes away a tear* You remind me of the old days..."
+            : `You've solved ${data.solvedRiddles.size} of ${data.riddles.length} riddles!`}
+        </p>
+      </div>
+    `;
+    document.getElementById('dialog-content').innerHTML = content;
+  } else {
+    // Show failure message
+    const content = `
+      <div style="text-align: center;">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">❌</div>
+        <p style="font-size: 1.3rem; font-weight: 600; color: #FF6B6B; margin-bottom: 1rem;">Not quite...</p>
+        <p style="font-style: italic;">"Ah well, can't get them all. The answer was: <strong>${riddle.options[riddle.correct]}</strong>"</p>
+        <p style="color: var(--text-light); margin-top: 1rem;">*${data.name} chuckles softly* "Don't worry, I forget the answers too sometimes..."</p>
+      </div>
+    `;
+    document.getElementById('dialog-content').innerHTML = content;
   }
+
+  data.currentRiddle = null;
+}
 export function openBuildingNPCDialog(npcId) {
   // Hide action button immediately
   document.getElementById('action-btn').classList.remove('visible');
@@ -546,7 +701,15 @@ export function openBuildingNPCDialog(npcId) {
       document.getElementById('dialog-avatar').textContent = dialog.avatar;
       document.getElementById('dialog-name').textContent = dialog.name;
       document.getElementById('dialog-role').textContent = dialog.role;
-      document.getElementById('dialog-content').innerHTML = dialog.content;
+
+      // Apply typewriter effect
+      const dialogContent = document.getElementById('dialog-content');
+      typewriterEffect(dialogContent, dialog.content);
+
+      // Click to skip typewriter
+      const dialogBox = document.getElementById('dialog-box');
+      const skipHandler = () => skipTypewriter();
+      dialogBox.addEventListener('click', skipHandler, { once: true });
     }
 
     document.getElementById('dialog-overlay').classList.add('visible');
@@ -724,4 +887,202 @@ export function showFloatingMessage(npc) {
   msg.style.top = (y - 80) + 'px';
   document.body.appendChild(msg);
   setTimeout(() => msg.remove(), 2500);
+}
+
+// Settings Modal Functions
+function setupSettingsModal() {
+  // Get all settings elements
+  const musicVolumeSlider = document.getElementById('music-volume-slider');
+  const musicVolumeValue = document.getElementById('music-volume-value');
+  const soundEffectsToggle = document.getElementById('sound-effects-toggle');
+  const cameraSensitivitySlider = document.getElementById('camera-sensitivity-slider');
+  const cameraSensitivityValue = document.getElementById('camera-sensitivity-value');
+  const minimapToggle = document.getElementById('minimap-toggle');
+  const joystickToggle = document.getElementById('joystick-toggle');
+  const actionButtonToggle = document.getElementById('action-button-toggle');
+  const resetBtn = document.getElementById('settings-reset');
+  const closeBtn = document.getElementById('settings-close');
+
+  // Initialize settings from saved values
+  const settings = settingsManager.getAll();
+  musicVolumeSlider.value = settings.musicVolume;
+  musicVolumeValue.textContent = settings.musicVolume + '%';
+  soundEffectsToggle.checked = settings.soundEffects;
+  cameraSensitivitySlider.value = settings.cameraSensitivity;
+  cameraSensitivityValue.textContent = settings.cameraSensitivity;
+  minimapToggle.checked = settings.showMinimap;
+  joystickToggle.checked = settings.showJoystick;
+  actionButtonToggle.checked = settings.showActionButton;
+
+  // Apply initial settings
+  applySettings();
+
+  // Music volume slider
+  musicVolumeSlider.addEventListener('input', (e) => {
+    const value = parseInt(e.target.value);
+    musicVolumeValue.textContent = value + '%';
+    settingsManager.set('musicVolume', value);
+  });
+
+  // Sound effects toggle
+  soundEffectsToggle.addEventListener('change', (e) => {
+    settingsManager.set('soundEffects', e.target.checked);
+  });
+
+  // Camera sensitivity slider
+  cameraSensitivitySlider.addEventListener('input', (e) => {
+    const value = parseInt(e.target.value);
+    cameraSensitivityValue.textContent = value;
+    settingsManager.set('cameraSensitivity', value);
+  });
+
+  // Minimap toggle
+  minimapToggle.addEventListener('change', (e) => {
+    settingsManager.set('showMinimap', e.target.checked);
+  });
+
+  // Joystick toggle
+  joystickToggle.addEventListener('change', (e) => {
+    settingsManager.set('showJoystick', e.target.checked);
+  });
+
+  // Action button toggle
+  actionButtonToggle.addEventListener('change', (e) => {
+    settingsManager.set('showActionButton', e.target.checked);
+  });
+
+  // Reset button
+  addClickHandler(resetBtn, () => {
+    settingsManager.reset();
+    // Update UI to reflect reset values
+    const newSettings = settingsManager.getAll();
+    musicVolumeSlider.value = newSettings.musicVolume;
+    musicVolumeValue.textContent = newSettings.musicVolume + '%';
+    soundEffectsToggle.checked = newSettings.soundEffects;
+    cameraSensitivitySlider.value = newSettings.cameraSensitivity;
+    cameraSensitivityValue.textContent = newSettings.cameraSensitivity;
+    minimapToggle.checked = newSettings.showMinimap;
+    joystickToggle.checked = newSettings.showJoystick;
+    actionButtonToggle.checked = newSettings.showActionButton;
+  }, { preventDefault: false });
+
+  // Close button
+  addCloseHandler(closeBtn, closeSettings);
+
+  // Click outside to close
+  const settingsModal = document.getElementById('settings-modal');
+  addClickHandler(settingsModal, (e) => {
+    if (e.target.id === 'settings-modal') {
+      closeSettings();
+    }
+  }, { preventDefault: false });
+
+  // Listen to settings changes and apply them
+  settingsManager.onChange((key, value) => {
+    applySettings();
+  });
+}
+
+function openSettings() {
+  document.getElementById('settings-modal').classList.add('visible');
+}
+
+function closeSettings() {
+  document.getElementById('settings-modal').classList.remove('visible');
+}
+
+function applySettings() {
+  const settings = settingsManager.getAll();
+
+  // Apply music volume
+  if (musicAudio) {
+    musicAudio.volume = settings.musicVolume / 100;
+  }
+
+  // Apply minimap visibility
+  const minimap = document.getElementById('minimap');
+  if (minimap) {
+    minimap.style.display = settings.showMinimap ? 'flex' : 'none';
+  }
+
+  // Apply joystick visibility
+  const joystick = document.getElementById('joystick-container');
+  if (joystick) {
+    joystick.style.display = settings.showJoystick ? 'block' : 'none';
+  }
+
+  // Apply action button visibility
+  const actionBtn = document.getElementById('action-btn');
+  if (actionBtn) {
+    // Only hide if setting is off AND it doesn't have the 'visible' class
+    if (!settings.showActionButton) {
+      actionBtn.style.opacity = '0';
+      actionBtn.style.pointerEvents = 'none';
+    } else {
+      actionBtn.style.opacity = '';
+      actionBtn.style.pointerEvents = '';
+    }
+  }
+}
+
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch((err) => {
+      console.log('Error attempting to enable fullscreen:', err);
+    });
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    }
+  }
+}
+
+// Typewriter Effect for Dialogs
+let typewriterTimeout = null;
+let typewriterSkipped = false;
+
+function typewriterEffect(element, htmlContent, speed = 15) {
+  // Clear any existing typewriter
+  if (typewriterTimeout) {
+    clearTimeout(typewriterTimeout);
+    typewriterTimeout = null;
+  }
+
+  typewriterSkipped = false;
+
+  // Create a temporary div to parse HTML
+  const temp = document.createElement('div');
+  temp.innerHTML = htmlContent;
+
+  // Extract text content while preserving structure
+  const textContent = temp.textContent;
+
+  // Start with empty content
+  element.innerHTML = '';
+  let charIndex = 0;
+
+  function typeNextChar() {
+    if (typewriterSkipped || charIndex >= textContent.length) {
+      // Animation complete or skipped, show full content
+      element.innerHTML = htmlContent;
+      typewriterTimeout = null;
+      return;
+    }
+
+    // Add next character
+    element.textContent = textContent.substring(0, charIndex + 1);
+    charIndex++;
+
+    typewriterTimeout = setTimeout(typeNextChar, speed);
+  }
+
+  typeNextChar();
+}
+
+function skipTypewriter() {
+  typewriterSkipped = true;
+  if (typewriterTimeout) {
+    clearTimeout(typewriterTimeout);
+    typewriterTimeout = null;
+  }
 }

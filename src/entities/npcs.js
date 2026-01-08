@@ -1060,6 +1060,41 @@ export function updateCorgis(time, delta, player = null) {
       collisionManager.registerEntity(data.collisionId, corgi, 0.35, COLLISION_LAYERS.NPC);
     }
 
+    // === Check if recently petted ===
+    const isPetted = data.pettedUntil && now < data.pettedUntil;
+
+    // === Behavior state management (tail-chase, sniffing) ===
+    if (!data.behaviorState) {
+      data.behaviorState = 'walking';
+      data.behaviorTimer = 0;
+      data.nextBehaviorCheck = now + 5000 + Math.random() * 10000;
+    }
+
+    // Check if it's time to start a new behavior
+    if (data.behaviorState === 'walking' && now > data.nextBehaviorCheck && !isPetted) {
+      const rand = Math.random();
+      if (rand < 0.3) {
+        // Start tail-chase behavior
+        data.behaviorState = 'tailChase';
+        data.behaviorTimer = 2000 + Math.random() * 1500; // 2-3.5 seconds
+        data.tailChaseStartTime = now;
+      } else if (rand < 0.5) {
+        // Start sniffing behavior
+        data.behaviorState = 'sniffing';
+        data.behaviorTimer = 1500 + Math.random() * 1500; // 1.5-3 seconds
+        data.sniffStartTime = now;
+      }
+      data.nextBehaviorCheck = now + 8000 + Math.random() * 12000; // Next check in 8-20 seconds
+    }
+
+    // Update behavior timer
+    if (data.behaviorState !== 'walking') {
+      data.behaviorTimer -= delta * 1000;
+      if (data.behaviorTimer <= 0) {
+        data.behaviorState = 'walking';
+      }
+    }
+
     // === Direction change timer ===
     data.timer -= delta;
     if (data.timer <= 0) {
@@ -1068,9 +1103,25 @@ export function updateCorgis(time, delta, player = null) {
     }
 
     // === Movement ===
-    const speed = data.walkSpeed * delta;
-    const targetX = corgi.position.x + Math.sin(data.walkAngle) * speed;
-    const targetZ = corgi.position.z + Math.cos(data.walkAngle) * speed;
+    let speed = data.walkSpeed * delta;
+    let targetX, targetZ;
+
+    if (data.behaviorState === 'tailChase') {
+      // Spin in circles trying to catch tail!
+      const spinSpeed = 8; // Fast spin
+      corgi.rotation.y += spinSpeed * delta;
+      // Stay roughly in place but move a tiny bit
+      targetX = corgi.position.x + Math.sin(corgi.rotation.y) * speed * 0.3;
+      targetZ = corgi.position.z + Math.cos(corgi.rotation.y) * speed * 0.3;
+    } else if (data.behaviorState === 'sniffing') {
+      // Stay still while sniffing
+      targetX = corgi.position.x;
+      targetZ = corgi.position.z;
+    } else {
+      // Normal walking behavior
+      targetX = corgi.position.x + Math.sin(data.walkAngle) * speed;
+      targetZ = corgi.position.z + Math.cos(data.walkAngle) * speed;
+    }
 
     // Use new collision system - this prevents infinite spinning
     const validated = collisionManager.getValidatedPosition(
@@ -1104,15 +1155,26 @@ export function updateCorgis(time, delta, player = null) {
       0.15
     );
 
-    // === Player awareness - Look at player when nearby ===
-    if (player) {
-      const distToPlayer = corgi.position.distanceTo(player.position);
-      if (distToPlayer < data.noticeDistance) {
-        data.lookAtPlayer = true;
-        data.isExcited = distToPlayer < 3;
+    // === Head movement (player awareness, sniffing, tail-chase) ===
+    if (data.headGroup) {
+      if (data.behaviorState === 'sniffing') {
+        // Tilt head down to sniff ground
+        const sniffProgress = (now - data.sniffStartTime) / data.behaviorTimer;
+        const sniffBob = Math.sin(time * 6) * 0.15; // Bobbing while sniffing
+        data.headGroup.rotation.x = THREE.MathUtils.lerp(data.headGroup.rotation.x, -0.6 + sniffBob, 0.1);
+        data.headGroup.rotation.y = THREE.MathUtils.lerp(data.headGroup.rotation.y, 0, 0.1);
+      } else if (data.behaviorState === 'tailChase') {
+        // Look back at tail while spinning
+        data.headGroup.rotation.y = THREE.MathUtils.lerp(data.headGroup.rotation.y, -0.8, 0.15);
+        data.headGroup.rotation.x = THREE.MathUtils.lerp(data.headGroup.rotation.x, -0.2, 0.1);
+      } else if (player) {
+        // Normal player awareness
+        const distToPlayer = corgi.position.distanceTo(player.position);
+        if (distToPlayer < data.noticeDistance) {
+          data.lookAtPlayer = true;
+          data.isExcited = distToPlayer < 3;
 
-        // Head turns toward player
-        if (data.headGroup) {
+          // Head turns toward player
           const toPlayer = new THREE.Vector3()
             .subVectors(player.position, corgi.position)
             .normalize();
@@ -1125,19 +1187,24 @@ export function updateCorgis(time, delta, player = null) {
             THREE.MathUtils.clamp(targetHeadY, -0.4, 0.4),
             0.08
           );
+          data.headGroup.rotation.x = THREE.MathUtils.lerp(data.headGroup.rotation.x, 0, 0.1);
+        } else {
+          data.lookAtPlayer = false;
+          data.isExcited = false;
+          data.headGroup.rotation.y = THREE.MathUtils.lerp(data.headGroup.rotation.y, 0, 0.05);
+          data.headGroup.rotation.x = THREE.MathUtils.lerp(data.headGroup.rotation.x, 0, 0.05);
         }
       } else {
-        data.lookAtPlayer = false;
-        data.isExcited = false;
-        if (data.headGroup) {
-          data.headGroup.rotation.y = THREE.MathUtils.lerp(data.headGroup.rotation.y, 0, 0.05);
-        }
+        // Reset head when no special behavior
+        data.headGroup.rotation.y = THREE.MathUtils.lerp(data.headGroup.rotation.y, 0, 0.05);
+        data.headGroup.rotation.x = THREE.MathUtils.lerp(data.headGroup.rotation.x, 0, 0.05);
       }
     }
 
     // === Body bob ===
-    const bobIntensity = data.isExcited ? 0.15 : (data.speedType === 'run' ? 0.12 : 0.07);
-    const bob = Math.sin(time * data.bobSpeed + data.bobOffset) * bobIntensity;
+    const bobIntensity = isPetted ? 0.2 : (data.isExcited ? 0.15 : (data.speedType === 'run' ? 0.12 : 0.07));
+    const bobSpeed = isPetted ? data.bobSpeed * 1.5 : data.bobSpeed;
+    const bob = Math.sin(time * bobSpeed + data.bobOffset) * bobIntensity;
     corgi.position.y = data.baseY + Math.abs(bob);
 
     // === Leg animation ===
@@ -1147,25 +1214,43 @@ export function updateCorgis(time, delta, player = null) {
 
     // === TAIL WAGGING - More expressive! ===
     if (data.tailGroup) {
-      const wagSpeed = data.isExcited ? 20 : (data.speedType === 'run' ? 14 : 8);
-      const wagAmount = data.isExcited ? 0.7 : (data.speedType === 'run' ? 0.5 : 0.35);
+      let wagSpeed, wagAmount;
+
+      if (data.behaviorState === 'tailChase') {
+        // Super frantic wagging during tail-chase!
+        wagSpeed = 35;
+        wagAmount = 1.1;
+      } else if (isPetted) {
+        wagSpeed = 28;
+        wagAmount = 0.9;
+      } else if (data.isExcited) {
+        wagSpeed = 20;
+        wagAmount = 0.7;
+      } else if (data.speedType === 'run') {
+        wagSpeed = 14;
+        wagAmount = 0.5;
+      } else {
+        wagSpeed = 8;
+        wagAmount = 0.35;
+      }
 
       // Side-to-side wag
       data.tailGroup.rotation.y = Math.sin(time * wagSpeed + data.bobOffset) * wagAmount;
       // Slight vertical movement
       data.tailGroup.rotation.x = Math.sin(time * wagSpeed * 0.5) * 0.2 - 0.3;
       // Excited tail goes higher
-      data.tailGroup.position.y = 0.55 + (data.isExcited ? 0.1 : 0);
+      data.tailGroup.position.y = 0.55 + (data.behaviorState === 'tailChase' ? 0.2 : (isPetted ? 0.15 : (data.isExcited ? 0.1 : 0)));
     }
 
     // === EAR WIGGLE ===
     if (data.earGroup && data.earGroup.children.length >= 2) {
-      const earWiggle = data.isExcited ? 0.15 : 0.05;
+      const earWiggle = isPetted ? 0.25 : (data.isExcited ? 0.15 : 0.05);
+      const earWiggleSpeed = isPetted ? 8 : 4;
       data.earGroup.children.forEach((ear, i) => {
         const offset = i === 0 ? 0 : Math.PI;
-        ear.rotation.z = ear.userData.baseRotationZ + Math.sin(time * 4 + offset) * earWiggle;
-        // Perk up when excited
-        ear.rotation.x = 0.15 - (data.isExcited ? 0.1 : 0);
+        ear.rotation.z = ear.userData.baseRotationZ + Math.sin(time * earWiggleSpeed + offset) * earWiggle;
+        // Perk up when excited or petted
+        ear.rotation.x = 0.15 - (isPetted ? 0.15 : (data.isExcited ? 0.1 : 0));
       });
     }
 
@@ -1195,12 +1280,13 @@ export function updateCorgis(time, delta, player = null) {
       }
     }
 
-    // === TONGUE (panting when running/excited) ===
+    // === TONGUE (panting when running/excited/petted) ===
     if (data.tongue) {
-      data.tongue.visible = data.speedType === 'run' || data.isExcited;
+      data.tongue.visible = isPetted || data.speedType === 'run' || data.isExcited;
       if (data.tongue.visible) {
-        // Panting animation
-        data.tongue.scale.y = 1 + Math.sin(time * 12) * 0.2;
+        // Panting animation (more intense when petted)
+        const pantSpeed = isPetted ? 16 : 12;
+        data.tongue.scale.y = 1 + Math.sin(time * pantSpeed) * 0.2;
       }
     }
   });

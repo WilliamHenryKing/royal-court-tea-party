@@ -1115,6 +1115,45 @@ export const BRIDGE_TROLL_DIALOGUES = [
   "I'm a fearsome bridge troll! Well, I was. Now I'm more of a... bridge-adjacent pensioner."
 ];
 
+export const BRIDGE_TROLL_RIDDLES = [
+  {
+    riddle: "I speak without a mouth and hear without ears. I have no body, but come alive with wind. What am I?",
+    options: ["A ghost", "An echo", "The wind itself", "A whisper"],
+    correct: 1,
+    hint: "Think about sound bouncing back..."
+  },
+  {
+    riddle: "What has keys but no locks, space but no room, and you can enter but can't go inside?",
+    options: ["A piano", "A keyboard", "A map", "A book"],
+    correct: 1,
+    hint: "You're probably using one right now!"
+  },
+  {
+    riddle: "The more you take, the more you leave behind. What am I?",
+    options: ["Footsteps", "Time", "Memories", "Shadows"],
+    correct: 0,
+    hint: "Every time you move, you create these..."
+  },
+  {
+    riddle: "I have cities, but no houses. I have mountains, but no trees. I have water, but no fish. What am I?",
+    options: ["A painting", "A map", "A dream", "A photograph"],
+    correct: 1,
+    hint: "You'd use this to find your way..."
+  },
+  {
+    riddle: "What can travel around the world while staying in a corner?",
+    options: ["A spider", "A stamp", "Dust", "A thought"],
+    correct: 1,
+    hint: "It helps letters reach their destination..."
+  },
+  {
+    riddle: "I'm tall when I'm young, and I'm short when I'm old. What am I?",
+    options: ["A tree", "A candle", "A person", "A pencil"],
+    correct: 1,
+    hint: "As I burn, I get shorter..."
+  }
+];
+
 /**
  * Create the bridge troll character
  */
@@ -1284,11 +1323,15 @@ export function createBridgeTroll() {
     name: 'Grumbold the Bridge Troll',
     role: 'Retired Bridge Guardian',
     quotes: BRIDGE_TROLL_DIALOGUES,
+    riddles: BRIDGE_TROLL_RIDDLES,
     isTroll: true,
     indicator,
     legs,
     dialogueIndex: 0,
-    lastInteraction: 0
+    lastInteraction: 0,
+    solvedRiddles: new Set(), // Track which riddles have been solved
+    currentRiddle: null, // Currently active riddle
+    riddlesOffered: 0 // How many times player has been offered a riddle
   };
 
   scene.add(troll);

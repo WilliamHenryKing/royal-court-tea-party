@@ -3,6 +3,7 @@ import { initRenderer, scene, camera, renderer } from './engine/renderer.js';
 import { setUpdateCallback, startLoop } from './engine/loop.js';
 import { createGameState } from './game/gameState.js';
 import { createPlayer, unlockPlayerCape } from './entities/player.js';
+import { handleAction, handleCorgiClick } from './game/interactions.js';
 import { createBuildings, buildings } from './entities/buildings.js';
 import {
   npcs,
@@ -20,11 +21,15 @@ import {
   collectibles,
   clouds,
   insects,
+  fireflies,
+  cherryPetals,
   initCollectibles,
   createCollectibles,
   createClouds,
   createInsects,
-  createAmbientParticles
+  createAmbientParticles,
+  createFireflies,
+  createCherryPetals
 } from './entities/collectibles.js';
 import { createWorld } from './entities/world.js';
 import { createAllStreets } from './entities/streets.js';
@@ -49,7 +54,6 @@ import { createDoomSayer, doomSayer } from './entities/doomSayer.js';
 import { createAllShops, teaCafe, coffeeCafe, donutShop, pinkieSchool } from './entities/shops.js';
 import { createAllActivities } from './entities/activities.js';
 import { createBuildingNPCs, buildingNpcs } from './entities/buildingNpcs.js';
-import { handleAction } from './game/interactions.js';
 import { update } from './game/update.js';
 import {
   initUI,
@@ -81,6 +85,8 @@ const ctx = {
   insects,
   collectibles,
   clouds,
+  fireflies,
+  cherryPetals,
   buildingNpcs,
 
   // Data
@@ -120,6 +126,20 @@ function init() {
 
   // Setup controls
   setupControls();
+
+  // Setup corgi petting interaction
+  const canvas = renderer.domElement;
+  canvas.addEventListener('click', (event) => {
+    // Don't interfere with UI interactions
+    if (ctx.gameState.dialogOpen) return;
+    handleCorgiClick(event, camera, corgis);
+  });
+
+  canvas.addEventListener('touchend', (event) => {
+    // Don't interfere with UI interactions
+    if (ctx.gameState.dialogOpen) return;
+    handleCorgiClick(event, camera, corgis);
+  });
 
   // Setup splash screen
   setupSplashInteractions();
@@ -213,6 +233,8 @@ function initGameWorld() {
   createClouds();
   createInsects();
   createAmbientParticles(60); // Floating petals and sparkles
+  createFireflies(50); // Glowing fireflies in forest areas
+  createCherryPetals(10); // Falling petals from cherry trees (10 per tree)
 }
 
 // Start the game when DOM is ready
