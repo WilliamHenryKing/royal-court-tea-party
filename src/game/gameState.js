@@ -12,6 +12,7 @@ export function createGameState() {
     currentLocation: 'palace',
     nearNPC: null,
     nearWanderer: null,
+    nearTroll: null,
     pendingNotification: null,
     completionShown: false,
     capeUnlocked: false,

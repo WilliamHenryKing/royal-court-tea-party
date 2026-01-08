@@ -60,14 +60,16 @@ export function updateCollectibleCount(count) {
   }
 }
 
-export function updateActionButton(nearestNPC, nearestWanderer) {
+export function updateActionButton(nearestNPC, nearestWanderer, nearestTroll = null) {
   const actionBtn = document.getElementById('action-btn');
   if (!actionBtn) return;
-  if (nearestNPC || nearestWanderer) {
+  if (nearestNPC || nearestWanderer || nearestTroll) {
     actionBtn.classList.add('visible');
     if (nearestNPC) {
       const icon = ctx.gameState.visited.has(nearestNPC) ? '💬' : '❓';
       actionBtn.innerHTML = `<span>${icon}</span><span>Tap to Chat</span>`;
+    } else if (nearestTroll) {
+      actionBtn.innerHTML = `<span>🧌</span><span>Talk to Troll</span>`;
     } else {
       actionBtn.innerHTML = `<span>🤪</span><span>Say Hi!</span>`;
     }
@@ -470,6 +472,26 @@ export function openWandererDialog(npc) {
   document.getElementById('dialog-content').innerHTML = `
     <div class="funny-quote" style="margin-top: 0;">${quote}</div>
     <p style="text-align: center; color: var(--text-light); font-size: 0.9rem; margin-top: 1rem;">*${data.name} wanders off humming*</p>
+  `;
+  document.getElementById('dialog-overlay').classList.add('visible');
+  document.getElementById('action-btn').classList.remove('visible');
+}
+
+export function openTrollDialog(troll) {
+  const data = troll.userData;
+  const quote = data.quotes[Math.floor(Math.random() * data.quotes.length)];
+
+  // Play random voice (reusing wanderer voice for now)
+  playRandomWandererVoice();
+
+  ctx.gameState.dialogOpen = true;
+
+  document.getElementById('dialog-avatar').textContent = '🧌';
+  document.getElementById('dialog-name').textContent = data.name;
+  document.getElementById('dialog-role').textContent = data.role;
+  document.getElementById('dialog-content').innerHTML = `
+    <div class="funny-quote" style="margin-top: 0; font-style: italic;">"${quote}"</div>
+    <p style="text-align: center; color: var(--text-light); font-size: 0.9rem; margin-top: 1rem;">*${data.name} sighs and leans heavily on his walking stick*</p>
   `;
   document.getElementById('dialog-overlay').classList.add('visible');
   document.getElementById('action-btn').classList.remove('visible');

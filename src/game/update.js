@@ -5,7 +5,7 @@ import { buildings } from '../entities/buildings.js';
 import { npcs, wanderers, bernieListeners, corgis, bees, updateCorgis, updateBees, updateWanderers, updateBernieListeners, updateNPCIndicators } from '../entities/npcs.js';
 import { collectibles, clouds, celebrationParticles, updateCelebrationParticles, updateAmbientParticles } from '../entities/collectibles.js';
 import { waterMaterial } from '../entities/world.js';
-import { updateRiverWater, updateJumpingFish } from '../entities/river.js';
+import { updateRiverWater, updateJumpingFish, updateFoxes, updateBirds, updateBridgeTroll, bridgeTroll } from '../entities/river.js';
 import { updateKingAndGuards } from '../entities/king.js';
 import { updateDoomSayer } from '../entities/doomSayer.js';
 import { updateAllActivities } from '../entities/activities.js';
@@ -181,6 +181,7 @@ function updateNPCs(ctx, delta, time) {
   // Check NPC proximity
   let nearestNPC = null;
   let nearestWanderer = null;
+  let nearestTroll = null;
   let nearestDist = Infinity;
 
   Object.entries(npcs).forEach(([id, npc]) => {
@@ -189,6 +190,7 @@ function updateNPCs(ctx, delta, time) {
       nearestDist = dist;
       nearestNPC = id;
       nearestWanderer = null;
+      nearestTroll = null;
     }
   });
 
@@ -198,13 +200,26 @@ function updateNPCs(ctx, delta, time) {
       nearestDist = dist;
       nearestNPC = null;
       nearestWanderer = npc;
+      nearestTroll = null;
     }
   });
 
+  // Check bridge troll proximity
+  if (bridgeTroll) {
+    const dist = player.position.distanceTo(bridgeTroll.position);
+    if (dist < 3.5 && dist < nearestDist) {
+      nearestDist = dist;
+      nearestNPC = null;
+      nearestWanderer = null;
+      nearestTroll = bridgeTroll;
+    }
+  }
+
   ctx.gameState.nearNPC = nearestNPC;
   ctx.gameState.nearWanderer = nearestWanderer;
+  ctx.gameState.nearTroll = nearestTroll;
 
-  updateActionButton(nearestNPC, nearestWanderer);
+  updateActionButton(nearestNPC, nearestWanderer, nearestTroll);
 
   // Update corgis with player awareness
   updateCorgis(time, delta, player);
@@ -311,4 +326,11 @@ function updateAmbientAnimations(ctx, delta, time) {
 
   // Austinville activities (Boxing Ring, Trampoline, Fishing NPCs, Tea vs Coffee War)
   updateAllActivities(time, delta, camera);
+
+  // Forest animals
+  updateFoxes(time, delta);
+  updateBirds(time, delta);
+
+  // Bridge troll animation
+  updateBridgeTroll(time);
 }
