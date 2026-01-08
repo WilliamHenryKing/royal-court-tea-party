@@ -1,5 +1,4 @@
 // Main entry point - initializes and starts the game
-import { inject } from '@vercel/analytics';
 import { initRenderer, scene, camera, renderer } from './engine/renderer.js';
 import { setUpdateCallback, startLoop } from './engine/loop.js';
 import { createGameState } from './game/gameState.js';
@@ -62,9 +61,6 @@ import {
 import { musicAudio, musicState, loadTrack, playNextTrack } from './audio/audioManager.js';
 import { EVENT, PLAYER_CONFIG } from './config.js';
 import { generateDialogs, SPEAKERS, GUESTS, MUSIC_TRACKS } from './assets/data.js';
-
-// Initialize Vercel Analytics
-inject();
 
 // Create the context object that will be shared across modules
 const ctx = {
