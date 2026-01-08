@@ -345,8 +345,8 @@ function updateAmbientAnimations(ctx, delta, time) {
   // King Ben and guards patrol
   updateKingAndGuards(time, delta, camera);
 
-  // Doom Sayer wandering and prophecies
-  updateDoomSayer(time, delta, camera);
+  // Doom Sayer wandering and prophecies (with dynamic context)
+  updateDoomSayer(time, delta, camera, ctx);
 
   // Wandering NPCs movement
   updateWanderers(ctx, delta, time, showFloatingMessage, maybePlayAmbientVoice);

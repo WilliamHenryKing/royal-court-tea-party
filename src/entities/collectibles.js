@@ -660,6 +660,67 @@ export function updateCherryPetals(time, delta) {
   });
 }
 
+// ============================================
+// HEARTS PARTICLE EFFECT (for petting, romance, etc.)
+// ============================================
+
+export function spawnHearts(position, count = 5) {
+  for (let i = 0; i < count; i++) {
+    // Create heart sprite
+    const canvas = document.createElement('canvas');
+    canvas.width = 32;
+    canvas.height = 32;
+    const ctx = canvas.getContext('2d');
+
+    // Draw pink heart
+    ctx.fillStyle = '#ff69b4';
+    ctx.beginPath();
+    ctx.moveTo(16, 10);
+    ctx.bezierCurveTo(16, 8, 13, 5, 10, 5);
+    ctx.bezierCurveTo(5, 5, 5, 10, 5, 10);
+    ctx.bezierCurveTo(5, 13, 7, 16, 16, 23);
+    ctx.bezierCurveTo(25, 16, 27, 13, 27, 10);
+    ctx.bezierCurveTo(27, 10, 27, 5, 22, 5);
+    ctx.bezierCurveTo(19, 5, 16, 8, 16, 10);
+    ctx.closePath();
+    ctx.fill();
+
+    const texture = new THREE.CanvasTexture(canvas);
+    const material = new THREE.SpriteMaterial({
+      map: texture,
+      transparent: true
+    });
+
+    const sprite = new THREE.Sprite(material);
+    sprite.scale.set(0.3, 0.3, 0.3);
+
+    // Position near the target with some spread
+    sprite.position.copy(position);
+    sprite.position.x += (Math.random() - 0.5) * 0.5;
+    sprite.position.y += 1 + Math.random() * 0.5;
+    sprite.position.z += (Math.random() - 0.5) * 0.5;
+
+    // Add to celebration particles with float-up behavior
+    const velocity = new THREE.Vector3(
+      (Math.random() - 0.5) * 0.5,
+      1 + Math.random() * 0.5,
+      (Math.random() - 0.5) * 0.5
+    );
+
+    addParticle({
+      position: sprite.position,
+      velocity: velocity,
+      life: 1.5,
+      size: 0.3,
+      color: 0xff69b4,
+      opacity: 1,
+      rotationSpeed: (Math.random() - 0.5) * 2,
+      fade: 0.8,
+      gravity: -0.2 // Float upward
+    });
+  }
+}
+
 // Initialize collectibles system
 export function initCollectibles() {
   createParticleTexture();

@@ -327,12 +327,74 @@ export function createKingBen() {
 export function createRoyalGuard(index) {
   const group = new THREE.Group();
 
+  // Guard varieties - each guard has unique traits
+  const guardTypes = [
+    {
+      name: 'Sir Tallsworth',
+      scale: 1.15,
+      armorColor: 0x5a5a6e, // Steel blue
+      plumeColor: 0xff0000, // Classic red
+      personality: 'Serious',
+      quotes: [
+        "*stoic silence*",
+        "*eyes forward, always vigilant*",
+        "*quietly judges your posture*",
+        "*thinks about honor*",
+        "*maintains perfect formation*"
+      ]
+    },
+    {
+      name: 'Stumpy McShort',
+      scale: 0.85,
+      armorColor: 0xb8860b, // Dark goldenrod
+      plumeColor: 0xffd700, // Gold
+      personality: 'Overcompensating',
+      quotes: [
+        "*I'M INTIMIDATING!*",
+        "*Don't underestimate short guards!*",
+        "*I can protect just as well!*",
+        "*adjusts armor to look taller*",
+        "*glares upward menacingly*"
+      ]
+    },
+    {
+      name: 'Lady Brightshine',
+      scale: 1.0,
+      armorColor: 0xc0c0c0, // Bright silver
+      plumeColor: 0xff69b4, // Hot pink
+      personality: 'Cheerful',
+      quotes: [
+        "*Beautiful day for guard duty!*",
+        "*waves enthusiastically*",
+        "*hums a happy tune*",
+        "*Guard work is so fulfilling!*",
+        "*Smile! You're being protected!*"
+      ]
+    },
+    {
+      name: 'Rusty Rodriguez',
+      scale: 1.05,
+      armorColor: 0x8b4513, // Saddle brown (rusty)
+      plumeColor: 0x800080, // Purple
+      personality: 'Veteran',
+      quotes: [
+        "*In my day, we guarded REAL threats...*",
+        "*This armor has seen better days*",
+        "*yawns* Been on duty for 20 years...*",
+        "*Kids these days don't know real guard work*",
+        "*Almost retirement time...*"
+      ]
+    }
+  ];
+
+  const guardType = guardTypes[index % guardTypes.length];
+
   const armorMat = new THREE.MeshStandardMaterial({
-    color: 0x4a4a4a,
+    color: guardType.armorColor,
     metalness: 0.8,
     roughness: 0.3
   });
-  const plumeMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+  const plumeMat = new THREE.MeshStandardMaterial({ color: guardType.plumeColor });
 
   // Body (armor)
   const body = new THREE.Mesh(
@@ -399,21 +461,19 @@ export function createRoyalGuard(index) {
     group.add(leg);
   });
 
+  // Apply scale based on guard type
+  group.scale.set(guardType.scale, guardType.scale, guardType.scale);
+
   group.userData = {
-    name: `Guard ${index + 1}`,
-    role: "Royal Protector",
-    quotes: [
-      "*stoic silence*",
-      "*more stoic silence*",
-      "*quietly wonders about lunch*",
-      "*maintains formation... mostly*",
-      "*accidentally makes eye contact* *panics*"
-    ],
+    name: guardType.name,
+    role: `Royal Protector (${guardType.personality})`,
+    quotes: guardType.quotes,
     formationOffset: index,
     spear,
     plume,
     lastQuote: Date.now(),
-    chatOffset: Math.random() * 5000
+    chatOffset: Math.random() * 5000,
+    guardType: guardType
   };
 
   return group;

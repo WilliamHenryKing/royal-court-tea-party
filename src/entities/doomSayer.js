@@ -189,9 +189,85 @@ export function createDoomSayer() {
 }
 
 /**
+ * Generate dynamic prophecy based on game state
+ */
+function getDynamicProphecy(ctx) {
+  const prophecies = [...DOOM_SAYER_CONFIG.quotes];
+
+  // Distance-based urgency
+  if (player) {
+    const dist = doomSayer.position.distanceTo(player.position);
+    if (dist < 5) {
+      prophecies.push(
+        "YOU! Yes, YOU! The tea-time apocalypse follows YOU!",
+        "I can SMELL the impending scone shortage on you!",
+        "Don't come closer! You'll doom us all with your optimism!",
+        "The prophecy foretold of your arrival! AND YOUR DOOM!"
+      );
+    } else if (dist < 10) {
+      prophecies.push(
+        "Heed my warnings before it's too late!",
+        "The signs are all around us! OPEN YOUR EYES!",
+        "Every step you take brings us closer to COLD TEA!"
+      );
+    }
+  }
+
+  // Time-based prophecies (using in-game time)
+  const timePhase = Math.floor(time / 30) % 4;
+  if (timePhase === 0) {
+    prophecies.push("THE MORNING BREW DISASTER APPROACHES!");
+  } else if (timePhase === 1) {
+    prophecies.push("MIDDAY BISCUIT CRISIS IMMINENT!");
+  } else if (timePhase === 2) {
+    prophecies.push("AFTERNOON TEA CATASTROPHE LOOMS!");
+  } else {
+    prophecies.push("EVENING CRUMPET EMERGENCY PREDICTED!");
+  }
+
+  // Collectible-based warnings (if context available)
+  if (ctx && ctx.gameState && ctx.gameState.itemsCollected !== undefined) {
+    const collected = ctx.gameState.itemsCollected;
+    if (collected === 0) {
+      prophecies.push("You've collected NOTHING! The prophecy intensifies!");
+    } else if (collected < 5) {
+      prophecies.push(`Only ${collected} items?! You're DOOMED to incompletion!`);
+    } else if (collected < 10) {
+      prophecies.push(`${collected} items won't save you from the TEATIME APOCALYPSE!`);
+    } else {
+      prophecies.push(`${collected} items! But what does it matter when THE END IS NEAR?!`);
+    }
+  }
+
+  // Bridge troll riddle warnings
+  if (ctx && ctx.bridgeTroll && ctx.bridgeTroll.userData.solvedRiddles) {
+    const solved = ctx.bridgeTroll.userData.solvedRiddles.size;
+    const total = ctx.bridgeTroll.userData.riddles.length;
+    if (solved === 0) {
+      prophecies.push("The troll's riddles remain unsolved! DISASTER!");
+    } else if (solved < total) {
+      prophecies.push(`${solved} riddles solved, ${total - solved} remain! INCOMPLETE DOOM!`);
+    } else {
+      prophecies.push("All riddles solved, yet DOOM still awaits! Nothing matters!");
+    }
+  }
+
+  // Weather prophecies (random dramatic)
+  if (Math.random() < 0.2) {
+    prophecies.push(
+      "The clouds gather! But not the rain clouds! THE DOOM CLOUDS!",
+      "The sun shines, but for how LONG?! DARKNESS APPROACHES!",
+      "The wind whispers... of LUKEWARM BEVERAGES!"
+    );
+  }
+
+  return prophecies[Math.floor(Math.random() * prophecies.length)];
+}
+
+/**
  * Update Doom Sayer behavior
  */
-export function updateDoomSayer(time, delta, camera) {
+export function updateDoomSayer(time, delta, camera, ctx = null) {
   if (!doomSayer) return;
 
   const data = doomSayer.userData;
@@ -202,14 +278,17 @@ export function updateDoomSayer(time, delta, camera) {
     collisionManager.registerEntity(data.collisionId, doomSayer, 0.4, COLLISION_LAYERS.NPC);
   }
 
-  // Wander erratically
+  // Wander erratically - more frantic when player is close
+  const playerNear = player && doomSayer.position.distanceTo(player.position) < 10;
+  const frenzyMultiplier = playerNear ? 1.5 : 1.0;
+
   data.timer -= delta;
   if (data.timer <= 0) {
-    data.walkAngle += (Math.random() - 0.5) * Math.PI * 1.5;
-    data.timer = 1 + Math.random() * 3;
+    data.walkAngle += (Math.random() - 0.5) * Math.PI * 1.5 * frenzyMultiplier;
+    data.timer = (1 + Math.random() * 3) / frenzyMultiplier;
   }
 
-  const speed = data.walkSpeed * delta;
+  const speed = data.walkSpeed * delta * frenzyMultiplier;
   const targetX = doomSayer.position.x + Math.sin(data.walkAngle) * speed;
   const targetZ = doomSayer.position.z + Math.cos(data.walkAngle) * speed;
 
@@ -243,14 +322,15 @@ export function updateDoomSayer(time, delta, camera) {
 
   doomSayer.rotation.y = THREE.MathUtils.lerp(doomSayer.rotation.y, data.walkAngle, 0.1);
 
-  // Frantic movement
-  doomSayer.rotation.z = Math.sin(time * 8) * 0.15;
-  doomSayer.position.y = Math.abs(Math.sin(time * 6)) * 0.1;
+  // Frantic movement - more intense when player is near
+  const frenzyIntensity = playerNear ? 0.25 : 0.15;
+  doomSayer.rotation.z = Math.sin(time * 8 * frenzyMultiplier) * frenzyIntensity;
+  doomSayer.position.y = Math.abs(Math.sin(time * 6 * frenzyMultiplier)) * 0.1;
 
-  // Shake sign
+  // Shake sign - more violently when player is near
   if (data.signGroup) {
-    data.signGroup.rotation.z = Math.sin(time * 5) * 0.2;
-    data.signGroup.rotation.x = Math.sin(time * 3) * 0.1;
+    data.signGroup.rotation.z = Math.sin(time * 5 * frenzyMultiplier) * (0.2 * frenzyMultiplier);
+    data.signGroup.rotation.x = Math.sin(time * 3 * frenzyMultiplier) * (0.1 * frenzyMultiplier);
   }
 
   // Cycle sign text
@@ -265,11 +345,12 @@ export function updateDoomSayer(time, delta, camera) {
   // Shout prophecies - only when player is nearby
   data.shoutTimer -= delta;
   if (data.shoutTimer <= 0) {
-    data.shoutTimer = 15 + Math.random() * 15; // Longer cooldown
+    // Shout more frequently when player is close
+    data.shoutTimer = playerNear ? 8 + Math.random() * 7 : 15 + Math.random() * 15;
 
     // Only show if player is within range
     if (player && doomSayer.position.distanceTo(player.position) < 15) {
-      const quote = data.quotes[Math.floor(Math.random() * data.quotes.length)];
+      const quote = getDynamicProphecy(ctx);
       showDoomQuote(doomSayer, quote, camera);
     }
 

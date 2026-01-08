@@ -535,7 +535,10 @@ export function openWandererDialog(npc) {
 
 export function openTrollDialog(troll) {
   const data = troll.userData;
-  const quote = data.quotes[Math.floor(Math.random() * data.quotes.length)];
+
+  // Check if we should offer a riddle
+  const unsolvedRiddles = data.riddles.filter((_, i) => !data.solvedRiddles.has(i));
+  const shouldOfferRiddle = unsolvedRiddles.length > 0 && Math.random() < 0.7; // 70% chance
 
   // Play random voice (reusing wanderer voice for now)
   playRandomWandererVoice();
@@ -546,22 +549,126 @@ export function openTrollDialog(troll) {
   document.getElementById('dialog-name').textContent = data.name;
   document.getElementById('dialog-role').textContent = data.role;
 
-  const content = `
-    <div class="funny-quote" style="margin-top: 0; font-style: italic;">"${quote}"</div>
-    <p style="text-align: center; color: var(--text-light); font-size: 0.9rem; margin-top: 1rem;">*${data.name} sighs and leans heavily on his walking stick*</p>
-  `;
+  let content;
 
-  // Apply typewriter effect
-  const dialogContent = document.getElementById('dialog-content');
-  typewriterEffect(dialogContent, content);
+  if (shouldOfferRiddle) {
+    // Select a random unsolved riddle
+    const riddleIndex = data.riddles.findIndex((_, i) => !data.solvedRiddles.has(i));
+    const availableIndices = data.riddles.map((_, i) => i).filter(i => !data.solvedRiddles.has(i));
+    const selectedIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+    const riddle = data.riddles[selectedIndex];
+
+    data.currentRiddle = selectedIndex;
+    data.riddlesOffered++;
+
+    const intro = data.riddlesOffered === 1
+      ? "Ah! A visitor! *perks up slightly* You know what, I DO remember one of my old riddles! Care to test your wits?"
+      : "Back for another riddle, eh? Let me see if I can remember another one...";
+
+    content = `
+      <div style="margin-bottom: 1rem;">
+        <p style="font-style: italic;">"${intro}"</p>
+      </div>
+      <div style="background: rgba(147, 112, 219, 0.1); border-left: 3px solid var(--accent); padding: 1rem; margin: 1rem 0; border-radius: 0.5rem;">
+        <p style="font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; color: var(--accent);">${riddle.riddle}</p>
+        <div id="riddle-options" style="display: flex; flex-direction: column; gap: 0.5rem;">
+          ${riddle.options.map((option, i) => `
+            <button class="riddle-option" data-index="${i}" style="
+              background: rgba(255,255,255,0.1);
+              border: 2px solid var(--accent);
+              padding: 0.75rem;
+              border-radius: 0.5rem;
+              color: white;
+              font-size: 1rem;
+              cursor: pointer;
+              transition: all 0.2s;
+              text-align: left;
+            ">${option}</button>
+          `).join('')}
+        </div>
+        <p style="margin-top: 1rem; font-size: 0.85rem; color: var(--text-light); font-style: italic;">💡 Hint: ${riddle.hint}</p>
+      </div>
+    `;
+
+    // Don't apply typewriter to riddle content
+    document.getElementById('dialog-content').innerHTML = content;
+
+    // Add click handlers for options
+    setTimeout(() => {
+      document.querySelectorAll('.riddle-option').forEach(btn => {
+        btn.addEventListener('mouseenter', () => {
+          btn.style.background = 'rgba(147, 112, 219, 0.3)';
+          btn.style.transform = 'translateX(5px)';
+        });
+        btn.addEventListener('mouseleave', () => {
+          btn.style.background = 'rgba(255,255,255,0.1)';
+          btn.style.transform = 'translateX(0)';
+        });
+        btn.addEventListener('click', (e) => {
+          const selectedIndex = parseInt(e.target.dataset.index);
+          handleRiddleAnswer(troll, selectedIndex);
+        });
+      });
+    }, 100);
+  } else {
+    // Show regular dialogue
+    const quote = data.quotes[Math.floor(Math.random() * data.quotes.length)];
+    content = `
+      <div class="funny-quote" style="margin-top: 0; font-style: italic;">"${quote}"</div>
+      <p style="text-align: center; color: var(--text-light); font-size: 0.9rem; margin-top: 1rem;">*${data.name} sighs and leans heavily on his walking stick*</p>
+    `;
+
+    // Apply typewriter effect
+    const dialogContent = document.getElementById('dialog-content');
+    typewriterEffect(dialogContent, content);
+
+    // Click to skip typewriter
+    const dialogBox = document.getElementById('dialog-box');
+    const skipHandler = () => skipTypewriter();
+    dialogBox.addEventListener('click', skipHandler, { once: true });
+  }
 
   document.getElementById('dialog-overlay').classList.add('visible');
   document.getElementById('action-btn').classList.remove('visible');
+}
 
-  // Click to skip typewriter
-  const dialogBox = document.getElementById('dialog-box');
-  const skipHandler = () => skipTypewriter();
-  dialogBox.addEventListener('click', skipHandler, { once: true });
+function handleRiddleAnswer(troll, selectedIndex) {
+  const data = troll.userData;
+  const riddle = data.riddles[data.currentRiddle];
+  const isCorrect = selectedIndex === riddle.correct;
+
+  if (isCorrect) {
+    // Mark riddle as solved
+    data.solvedRiddles.add(data.currentRiddle);
+
+    // Show success message
+    const content = `
+      <div style="text-align: center;">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">✨</div>
+        <p style="font-size: 1.3rem; font-weight: 600; color: #90EE90; margin-bottom: 1rem;">Correct!</p>
+        <p style="font-style: italic;">"${data.quotes[3]}"</p>
+        <p style="color: var(--text-light); margin-top: 1rem;">
+          ${data.solvedRiddles.size === data.riddles.length
+            ? "You've solved all my riddles! I'm impressed... *wipes away a tear* You remind me of the old days..."
+            : `You've solved ${data.solvedRiddles.size} of ${data.riddles.length} riddles!`}
+        </p>
+      </div>
+    `;
+    document.getElementById('dialog-content').innerHTML = content;
+  } else {
+    // Show failure message
+    const content = `
+      <div style="text-align: center;">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">❌</div>
+        <p style="font-size: 1.3rem; font-weight: 600; color: #FF6B6B; margin-bottom: 1rem;">Not quite...</p>
+        <p style="font-style: italic;">"Ah well, can't get them all. The answer was: <strong>${riddle.options[riddle.correct]}</strong>"</p>
+        <p style="color: var(--text-light); margin-top: 1rem;">*${data.name} chuckles softly* "Don't worry, I forget the answers too sometimes..."</p>
+      </div>
+    `;
+    document.getElementById('dialog-content').innerHTML = content;
+  }
+
+  data.currentRiddle = null;
 }
 export function openBuildingNPCDialog(npcId) {
   // Hide action button immediately

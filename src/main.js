@@ -3,6 +3,7 @@ import { initRenderer, scene, camera, renderer } from './engine/renderer.js';
 import { setUpdateCallback, startLoop } from './engine/loop.js';
 import { createGameState } from './game/gameState.js';
 import { createPlayer, unlockPlayerCape } from './entities/player.js';
+import { handleAction, handleCorgiClick } from './game/interactions.js';
 import { createBuildings, buildings } from './entities/buildings.js';
 import {
   npcs,
@@ -53,7 +54,6 @@ import { createDoomSayer, doomSayer } from './entities/doomSayer.js';
 import { createAllShops, teaCafe, coffeeCafe, donutShop, pinkieSchool } from './entities/shops.js';
 import { createAllActivities } from './entities/activities.js';
 import { createBuildingNPCs, buildingNpcs } from './entities/buildingNpcs.js';
-import { handleAction } from './game/interactions.js';
 import { update } from './game/update.js';
 import {
   initUI,
@@ -126,6 +126,20 @@ function init() {
 
   // Setup controls
   setupControls();
+
+  // Setup corgi petting interaction
+  const canvas = renderer.domElement;
+  canvas.addEventListener('click', (event) => {
+    // Don't interfere with UI interactions
+    if (ctx.gameState.dialogOpen) return;
+    handleCorgiClick(event, camera, corgis);
+  });
+
+  canvas.addEventListener('touchend', (event) => {
+    // Don't interfere with UI interactions
+    if (ctx.gameState.dialogOpen) return;
+    handleCorgiClick(event, camera, corgis);
+  });
 
   // Setup splash screen
   setupSplashInteractions();
