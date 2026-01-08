@@ -12,7 +12,7 @@ import {
 import { npcs, wanderers, bernieListeners, corgis, bees, updateCorgis, updateBees, updateWanderers, updateBernieListeners, updateNPCIndicators } from '../entities/npcs.js';
 import { buildingNpcs, updateBuildingNPCs } from '../entities/buildingNpcs.js';
 import { collectibles, clouds, celebrationParticles, updateCelebrationParticles, updateAmbientParticles, fireflies, updateFireflies, cherryPetals, updateCherryPetals } from '../entities/collectibles.js';
-import { waterMaterial, updateButterflies, isNearPath } from '../entities/world.js';
+import { waterMaterial, updateButterflies } from '../entities/world.js';
 import { updateRiverWater, updateJumpingFish, updateFoxes, updateBirds, updateBridgeTroll, bridgeTroll } from '../entities/river.js';
 import { updateKingAndGuards } from '../entities/king.js';
 import { updateDoomSayer } from '../entities/doomSayer.js';
@@ -24,9 +24,9 @@ import { getInputVector } from '../systems/inputSystem.js';
 import { camera, getZoomLevel } from '../engine/renderer.js';
 import { PLAYER_CONFIG } from '../config.js';
 import { collisionManager, COLLISION_LAYERS } from '../systems/CollisionManager.js';
-import { updateAmbientAudio, playFootstep, playBridgeCreak } from '../audio/audioManager.js';
+import { updateAmbientAudio } from '../audio/audioManager.js';
 import { BOXING_RING_DATA } from '../entities/activities.js';
-import { FISHING_DOCK_POS, forestBounds, isOnBridge, RIVER_CONFIG } from '../entities/river.js';
+import { forestBounds } from '../entities/river.js';
 import { LOCATIONS } from '../assets/data.js';
 
 // Player collision registration
@@ -78,13 +78,6 @@ function getForestCenter() {
     x: (forestBounds.minX + forestBounds.maxX) * 0.5,
     z: (forestBounds.minZ + forestBounds.maxZ) * 0.5
   };
-}
-
-function getSurfaceType(x, z) {
-  if (isOnBridge(x, z)) return 'wood';
-  if (isNearPath(x, z, 1.2)) return 'cobble';
-  if (z < -20 && z > -35) return 'sand';
-  return 'grass';
 }
 
 function getPalaceCarpetHeight(x, z) {
@@ -184,7 +177,7 @@ function updatePlayer(ctx, delta, time, now) {
     // Waddle animation
     player.rotation.z = Math.sin(time * 15) * 0.12;
     player.position.y = player.userData.baseY + Math.abs(Math.sin(time * 18)) * 0.12;
-    updateFootsteps(now, getPlayerSpeed(now), player.position);
+    updateFootsteps(now, getPlayerSpeed(now));
   } else {
     player.userData.baseY = getPalaceCarpetHeight(player.position.x, player.position.z);
     // Idle animation
@@ -240,19 +233,11 @@ function updateCamera(ctx, delta, time, isMoving) {
   camera.lookAt(cameraTarget);
 }
 
-function updateFootsteps(now, speed, position) {
+function updateFootsteps(now, speed) {
   if (now < footstepState.nextStepTime) return;
 
   const interval = speed > PLAYER_CONFIG.BASE_SPEED ? 220 : 320;
-  const surface = getSurfaceType(position.x, position.z);
-
-  playFootstep(surface);
   footstepState.nextStepTime = now + interval;
-
-  if (surface === 'wood' && now >= footstepState.nextBridgeCreakTime) {
-    playBridgeCreak();
-    footstepState.nextBridgeCreakTime = now + 900;
-  }
 }
 
 // Update NPCs
@@ -487,19 +472,15 @@ function updateAmbientAnimations(ctx, delta, time) {
   // Ambient soundscapes
   if (player) {
     const forestCenter = getForestCenter();
-    const riverCenter = { x: 0, z: RIVER_CONFIG.path[2].z };
     const zones = [
       { key: 'birds', position: forestCenter, minDistance: 6, maxDistance: 35 },
       { key: 'wind', position: forestCenter, minDistance: 8, maxDistance: 40 },
-      { key: 'river', position: riverCenter, minDistance: 4, maxDistance: 30 },
       { key: 'crowd', position: BOXING_RING_DATA.position, minDistance: 6, maxDistance: 24 }
     ];
 
     if (cafeLocation) {
       zones.push({ key: 'cafe', position: cafeLocation, minDistance: 4, maxDistance: 18 });
     }
-
-    zones.push({ key: 'river', position: FISHING_DOCK_POS, minDistance: 4, maxDistance: 18 });
 
     updateAmbientAudio(player.position, zones);
   }
