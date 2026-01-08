@@ -218,6 +218,51 @@
     .dialog-role { font-size: 0.85rem; color: var(--text-light); margin-top: 0.2rem; }
     .dialog-content { color: var(--text-dark); line-height: 1.7; font-size: 1rem; }
     .dialog-content h3 { font-family: 'Dancing Script', cursive; color: var(--pink-deep); margin: 1rem 0 0.5rem; font-size: 1.3rem; }
+    .riddle-card {
+      background: #f6f0ff;
+      border-left: 4px solid #7c5cd6;
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 0.75rem;
+      box-shadow: 0 10px 18px rgba(124, 92, 214, 0.08);
+    }
+    .riddle-question {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: #3c2b5c;
+    }
+    .riddle-options {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .riddle-option {
+      background: #fdfbff;
+      border: 2px solid #7c5cd6;
+      padding: 0.75rem 0.9rem;
+      border-radius: 0.6rem;
+      color: #3c2b5c;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+      text-align: left;
+      box-shadow: 0 6px 12px rgba(60, 43, 92, 0.08);
+    }
+    .riddle-option:hover,
+    .riddle-option:focus-visible {
+      background: #e7dcff;
+      transform: translateX(4px);
+      box-shadow: 0 8px 16px rgba(124, 92, 214, 0.2);
+      outline: none;
+    }
+    .riddle-hint {
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      color: #4a3f5c;
+      font-style: italic;
+    }
     .dialog-content ul { list-style: none; padding: 0; }
     .dialog-content li { padding: 0.5rem 0; padding-left: 1.5rem; position: relative; }
     .dialog-content li::before { content: '✿'; position: absolute; left: 0; color: var(--pink-main); }

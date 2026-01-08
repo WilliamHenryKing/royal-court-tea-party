@@ -591,24 +591,14 @@ export function openTrollDialog(troll) {
       <div style="margin-bottom: 1rem;">
         <p style="font-style: italic;">"${intro}"</p>
       </div>
-      <div style="background: rgba(147, 112, 219, 0.1); border-left: 3px solid var(--accent); padding: 1rem; margin: 1rem 0; border-radius: 0.5rem;">
-        <p style="font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; color: var(--accent);">${riddle.riddle}</p>
-        <div id="riddle-options" style="display: flex; flex-direction: column; gap: 0.5rem;">
+      <div class="riddle-card">
+        <p class="riddle-question">${riddle.riddle}</p>
+        <div id="riddle-options" class="riddle-options">
           ${riddle.options.map((option, i) => `
-            <button class="riddle-option" data-index="${i}" style="
-              background: rgba(255,255,255,0.1);
-              border: 2px solid var(--accent);
-              padding: 0.75rem;
-              border-radius: 0.5rem;
-              color: white;
-              font-size: 1rem;
-              cursor: pointer;
-              transition: all 0.2s;
-              text-align: left;
-            ">${option}</button>
+            <button class="riddle-option" data-index="${i}">${option}</button>
           `).join('')}
         </div>
-        <p style="margin-top: 1rem; font-size: 0.85rem; color: var(--text-light); font-style: italic;">💡 Hint: ${riddle.hint}</p>
+        <p class="riddle-hint">💡 Hint: ${riddle.hint}</p>
       </div>
     `;
 
@@ -618,14 +608,6 @@ export function openTrollDialog(troll) {
     // Add click handlers for options
     setTimeout(() => {
       document.querySelectorAll('.riddle-option').forEach(btn => {
-        btn.addEventListener('mouseenter', () => {
-          btn.style.background = 'rgba(147, 112, 219, 0.3)';
-          btn.style.transform = 'translateX(5px)';
-        });
-        btn.addEventListener('mouseleave', () => {
-          btn.style.background = 'rgba(255,255,255,0.1)';
-          btn.style.transform = 'translateX(0)';
-        });
         btn.addEventListener('click', (e) => {
           const selectedIndex = parseInt(e.target.dataset.index);
           handleRiddleAnswer(troll, selectedIndex);
