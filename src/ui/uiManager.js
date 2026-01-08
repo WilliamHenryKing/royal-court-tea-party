@@ -689,9 +689,11 @@ export function openBuildingNPCDialog(npcId) {
   const showDialogUI = () => {
     ctx.gameState.dialogOpen = true;
 
-    // Play voice when dialog appears
-    playRandomWandererVoice();
-    playNpcGreeting();
+    // Play voice when dialog appears (skip donut shop audio)
+    if (npcId !== 'donutShop') {
+      playRandomWandererVoice();
+      playNpcGreeting();
+    }
 
     // Generate dialog based on visit status
     const dialog = generateBuildingDialog(npcId, isNewVisit);
