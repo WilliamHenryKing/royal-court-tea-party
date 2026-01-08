@@ -1,7 +1,14 @@
 // Game Update - main game loop update logic
 import * as THREE from 'three';
 import { player, updateCape } from '../entities/player.js';
-import { buildings } from '../entities/buildings.js';
+import {
+  PALACE_CARPET_FRONT_OFFSET,
+  PALACE_CARPET_TOP_OFFSET,
+  PALACE_CARPET_WIDTH,
+  PALACE_HILL_HEIGHT,
+  PALACE_HILL_RADIUS,
+  buildings
+} from '../entities/buildings.js';
 import { npcs, wanderers, bernieListeners, corgis, bees, updateCorgis, updateBees, updateWanderers, updateBernieListeners, updateNPCIndicators } from '../entities/npcs.js';
 import { buildingNpcs, updateBuildingNPCs } from '../entities/buildingNpcs.js';
 import { collectibles, clouds, celebrationParticles, updateCelebrationParticles, updateAmbientParticles, fireflies, updateFireflies, cherryPetals, updateCherryPetals } from '../entities/collectibles.js';
@@ -55,6 +62,15 @@ const footstepState = {
 };
 
 const cafeLocation = LOCATIONS.find(loc => loc.id === 'teashop');
+const palaceLocation = LOCATIONS.find(loc => loc.id === 'palace');
+const palaceCarpet = palaceLocation ? {
+  x: palaceLocation.x,
+  z: palaceLocation.z,
+  halfWidth: PALACE_CARPET_WIDTH / 2,
+  topZ: palaceLocation.z + PALACE_CARPET_TOP_OFFSET,
+  bottomZ: palaceLocation.z + PALACE_HILL_RADIUS + PALACE_CARPET_FRONT_OFFSET,
+  maxHeight: PALACE_HILL_HEIGHT
+} : null;
 
 function getForestCenter() {
   if (!forestBounds) return { x: 15, z: -45 };
@@ -69,6 +85,19 @@ function getSurfaceType(x, z) {
   if (isNearPath(x, z, 1.2)) return 'cobble';
   if (z < -20 && z > -35) return 'sand';
   return 'grass';
+}
+
+function getPalaceCarpetHeight(x, z) {
+  if (!palaceCarpet) return 0;
+  if (Math.abs(x - palaceCarpet.x) > palaceCarpet.halfWidth) return 0;
+  if (z >= palaceCarpet.bottomZ) return 0;
+
+  if (z >= palaceCarpet.topZ) {
+    const t = (palaceCarpet.bottomZ - z) / (palaceCarpet.bottomZ - palaceCarpet.topZ);
+    return palaceCarpet.maxHeight * THREE.MathUtils.clamp(t, 0, 1);
+  }
+
+  return palaceCarpet.maxHeight;
 }
 
 // Water animation state
@@ -146,6 +175,8 @@ function updatePlayer(ctx, delta, time, now) {
     player.position.x = validated.x;
     player.position.z = validated.z;
 
+    player.userData.baseY = getPalaceCarpetHeight(player.position.x, player.position.z);
+
     // Face movement direction
     const angle = Math.atan2(combinedInputX, combinedInputY);
     player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, angle, 0.15);
@@ -155,6 +186,7 @@ function updatePlayer(ctx, delta, time, now) {
     player.position.y = player.userData.baseY + Math.abs(Math.sin(time * 18)) * 0.12;
     updateFootsteps(now, getPlayerSpeed(now), player.position);
   } else {
+    player.userData.baseY = getPalaceCarpetHeight(player.position.x, player.position.z);
     // Idle animation
     player.rotation.z = THREE.MathUtils.lerp(player.rotation.z, 0, 0.1);
     player.position.y = player.userData.baseY + Math.sin(time * 2) * 0.03;
