@@ -547,45 +547,48 @@ export function openBuildingNPCDialog(npcId) {
 }
 
 export function closeDialog() {
-  // Zoom camera back out
-  zoomOut();
-
-  ctx.gameState.dialogOpen = false;
+  // Hide dialog overlay immediately for visual feedback
   document.getElementById('dialog-overlay').classList.remove('visible');
 
-  // Show mission notification if this was a new visit
-  if (ctx.gameState.pendingNotification) {
-    const locationId = ctx.gameState.pendingNotification;
-    showMissionNotification(locationId);
-    ctx.gameState.pendingNotification = null;
+  // Zoom camera back out, then enable controls when animation completes
+  zoomOut(() => {
+    // Only enable controls after zoom-out animation finishes
+    ctx.gameState.dialogOpen = false;
 
-    // Trigger Bernie listeners if we just talked to Princess Bernie (speakers)
-    if (locationId === 'speakers' && !ctx.gameState.bernieListenersActive) {
-      ctx.gameState.bernieListenersActive = true;
-      // Set listeners to gathering state
-      ctx.bernieListeners.forEach(listener => {
-        listener.userData.state = 'gathering';
-      });
+    // Show mission notification if this was a new visit
+    if (ctx.gameState.pendingNotification) {
+      const locationId = ctx.gameState.pendingNotification;
+      showMissionNotification(locationId);
+      ctx.gameState.pendingNotification = null;
 
-      // After 8 seconds, they get hungry and leave for cake
-      setTimeout(() => {
-        ctx.gameState.bernieListenersLeaving = true;
+      // Trigger Bernie listeners if we just talked to Princess Bernie (speakers)
+      if (locationId === 'speakers' && !ctx.gameState.bernieListenersActive) {
+        ctx.gameState.bernieListenersActive = true;
+        // Set listeners to gathering state
         ctx.bernieListeners.forEach(listener => {
-          listener.userData.state = 'leaving';
-          // Show hungry message
-          showListenerHungryMessage(listener);
+          listener.userData.state = 'gathering';
         });
-      }, 8000);
-    }
 
-    // Check if all missions complete - show completion after a delay
-    if (ctx.gameState.visited.size === 5 && !ctx.gameState.completionShown) {
-      setTimeout(() => {
-        ctx.gameState.completionShown = true;
-        document.getElementById('completion-modal').classList.add('visible');
-      }, 1500);
+        // After 8 seconds, they get hungry and leave for cake
+        setTimeout(() => {
+          ctx.gameState.bernieListenersLeaving = true;
+          ctx.bernieListeners.forEach(listener => {
+            listener.userData.state = 'leaving';
+            // Show hungry message
+            showListenerHungryMessage(listener);
+          });
+        }, 8000);
+      }
+
+      // Check if all missions complete - show completion after a delay
+      if (ctx.gameState.visited.size === 5 && !ctx.gameState.completionShown) {
+        setTimeout(() => {
+          ctx.gameState.completionShown = true;
+          document.getElementById('completion-modal').classList.add('visible');
+        }, 1500);
+      }
     }
-  }
+  });
 }
 
 export function showListenerHungryMessage(listener) {
