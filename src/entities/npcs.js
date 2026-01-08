@@ -922,6 +922,7 @@ export function createBernieListenersGroup() {
 export function updateNPCIndicators(time) {
   // Animate NPC indicators (floating golden spheres)
   Object.values(npcs).forEach(npc => {
+    if (npc.userData?.skipIndicator) return;
     npc.children.forEach(child => {
       if (child.userData.isIndicator) {
         child.position.y = 2.5 + Math.sin(time * 2) * 0.15;
