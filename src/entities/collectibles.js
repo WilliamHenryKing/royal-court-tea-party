@@ -205,7 +205,7 @@ function createCollectible() {
   const emissiveIntensity = isGolden ? 0.6 : 0.25;
   const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity });
 
-  const types = ['candy', 'lollipop', 'cupcake', 'cookie', 'crown', 'gem'];
+  const types = ['candy', 'lollipop', 'cupcake', 'cookie', 'crown', 'gem', 'teapot', 'tart'];
   const type = types[Math.floor(Math.random() * types.length)];
 
   if (type === 'candy') {
@@ -259,6 +259,42 @@ function createCollectible() {
       group.add(chip);
     }
     group.userData.effect = 'size'; // Temporarily larger player
+  } else if (type === 'teapot') {
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.2, 10, 10), mat);
+    body.scale.set(1.2, 0.9, 1.1);
+    group.add(body);
+
+    const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.05, 8),
+      new THREE.MeshStandardMaterial({ color: 0xffffff }));
+    lid.position.y = 0.16;
+    group.add(lid);
+
+    const spout = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.06, 0.18, 6), mat);
+    spout.position.set(0.2, 0.02, 0);
+    spout.rotation.z = Math.PI / 2;
+    group.add(spout);
+
+    const handle = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.03, 8, 10, Math.PI),
+      new THREE.MeshStandardMaterial({ color: 0xffffff }));
+    handle.position.set(-0.2, 0.02, 0);
+    handle.rotation.y = Math.PI / 2;
+    group.add(handle);
+    group.userData.effect = 'sparkle';
+  } else if (type === 'tart') {
+    const crust = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.22, 0.08, 10),
+      new THREE.MeshStandardMaterial({ color: 0xd9a441 }));
+    group.add(crust);
+
+    const filling = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.18, 0.05, 10),
+      new THREE.MeshStandardMaterial({ color: 0xfff176, emissive: 0xfff176, emissiveIntensity: 0.2 }));
+    filling.position.y = 0.06;
+    group.add(filling);
+
+    const zest = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8),
+      new THREE.MeshStandardMaterial({ color: 0xffc107 }));
+    zest.position.set(0.05, 0.12, 0.04);
+    group.add(zest);
+    group.userData.effect = 'jump';
   } else if (type === 'crown') {
     const base = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.25, 0.15, 6), mat);
     group.add(base);
