@@ -5,6 +5,7 @@ import { LOCATIONS, WANDERING_NPCS } from '../assets/data.js';
 import { AUDIO_CONFIG } from '../config.js';
 import { isSafeOffPathPlacement, checkCollision } from './world.js';
 import { collisionManager, COLLISION_LAYERS } from '../systems/CollisionManager.js';
+import { PALACE_HILL_HEIGHT } from './buildings.js';
 import { npcPathfinder } from '../systems/NPCPathfinding.js';
 
 // Entity registration counter for unique IDs
@@ -843,8 +844,18 @@ export function createNPCs() {
   // Create NPCs at each building location
   LOCATIONS.forEach((loc) => {
     const npc = createNPC(loc.id);
-    npc.position.set(loc.x, 0, loc.z + 4);
+    const npcY = loc.id === 'palace' ? PALACE_HILL_HEIGHT : 0;
+    npc.position.set(loc.x, npcY, loc.z + 4);
     npc.userData = { locationId: loc.id };
+    if (loc.id === 'palace') {
+      npc.userData.collisionId = 'queen_bee';
+      collisionManager.registerEntity(
+        npc.userData.collisionId,
+        npc,
+        0.5,
+        COLLISION_LAYERS.NPC
+      );
+    }
     scene.add(npc);
     npcs[loc.id] = npc;
   });
