@@ -2,8 +2,6 @@
 import * as THREE from 'three';
 import { scene } from '../engine/renderer.js';
 import { LOCATIONS } from '../assets/data.js';
-import { collisionManager } from '../systems/CollisionManager.js';
-import { collisionBoxes } from './world.js';
 
 // Buildings storage
 export const buildings = {};
@@ -554,20 +552,6 @@ export function createBuildings() {
       const stepMat = new THREE.MeshStandardMaterial({ color: 0xf2d4b8, roughness: 0.85 });
       const railMat = new THREE.MeshStandardMaterial({ color: 0xd5b46f, metalness: 0.4, roughness: 0.4 });
 
-      const hillCollider = {
-        minX: loc.x - hillRadius,
-        maxX: loc.x + hillRadius,
-        minZ: loc.z - hillRadius,
-        maxZ: loc.z + hillRadius
-      };
-      collisionBoxes.push(hillCollider);
-      collisionManager.addStaticBoxMinMax(
-        hillCollider.minX,
-        hillCollider.maxX,
-        hillCollider.minZ,
-        hillCollider.maxZ
-      );
-
       for (let i = 0; i < stepCount; i++) {
         const step = new THREE.Mesh(
           new THREE.BoxGeometry(stepWidth, stepHeight, stepDepth),
@@ -583,19 +567,6 @@ export function createBuildings() {
         step.receiveShadow = true;
         stairGroup.add(step);
 
-        const stepCollider = {
-          minX: loc.x - stepWidth / 2,
-          maxX: loc.x + stepWidth / 2,
-          minZ: stepZ - stepDepth / 2,
-          maxZ: stepZ + stepDepth / 2
-        };
-        collisionBoxes.push(stepCollider);
-        collisionManager.addStaticBoxMinMax(
-          stepCollider.minX,
-          stepCollider.maxX,
-          stepCollider.minZ,
-          stepCollider.maxZ
-        );
       }
 
       const postHeight = 0.8;
