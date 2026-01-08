@@ -48,6 +48,7 @@ import { createKingEntourage, kingBen, royalGuards } from './entities/king.js';
 import { createDoomSayer, doomSayer } from './entities/doomSayer.js';
 import { createAllShops, teaCafe, coffeeCafe, donutShop, pinkieSchool } from './entities/shops.js';
 import { createAllActivities } from './entities/activities.js';
+import { createBuildingNPCs, buildingNpcs } from './entities/buildingNpcs.js';
 import { handleAction } from './game/interactions.js';
 import { update } from './game/update.js';
 import {
@@ -80,6 +81,7 @@ const ctx = {
   insects,
   collectibles,
   clouds,
+  buildingNpcs,
 
   // Data
   EVENT,
@@ -124,7 +126,10 @@ function init() {
 
   // Setup audio
   musicAudio.volume = 0.5;
-  musicAudio.addEventListener('ended', playNextTrack);
+  musicAudio.addEventListener('ended', () => {
+    playNextTrack();
+    updateMusicUI();
+  });
   loadTrack(musicState.currentIndex);
 
   // Update UI
@@ -199,6 +204,9 @@ function initGameWorld() {
 
   // Create Austinville activities (Boxing Ring, Trampoline, Fishing NPCs, Tea vs Coffee War)
   createAllActivities();
+
+  // Create building NPCs (for shops and activities lore)
+  createBuildingNPCs();
 
   // Create collectibles, clouds, insects, and ambient particles
   createCollectibles();

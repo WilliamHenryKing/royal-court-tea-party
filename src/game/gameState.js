@@ -8,11 +8,13 @@ export function createGameState() {
     timeScale: 1,
     firstSweetShown: false,
     visited: new Set(),
+    visitedBuildings: new Set(), // Track building NPC visits for intro vs remarks
     collected: 0,
     currentLocation: 'palace',
     nearNPC: null,
     nearWanderer: null,
     nearTroll: null,
+    nearBuildingNPC: null, // Track proximity to building NPCs
     pendingNotification: null,
     completionShown: false,
     capeUnlocked: false,

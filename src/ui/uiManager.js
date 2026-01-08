@@ -24,6 +24,7 @@ import {
   addCloseHandler
 } from './interactionHandler.js';
 import { zoomToNPC, zoomOut } from '../systems/cameraZoom.js';
+import { generateBuildingDialog } from '../assets/data.js';
 
 // Module-level context reference
 let ctx = null;
@@ -60,12 +61,17 @@ export function updateCollectibleCount(count) {
   }
 }
 
-export function updateActionButton(nearestNPC, nearestWanderer, nearestTroll = null) {
+export function updateActionButton(nearestNPC, nearestWanderer, nearestBuildingNPC = null, nearestTroll = null) {
   const actionBtn = document.getElementById('action-btn');
   if (!actionBtn) return;
-  if (nearestNPC || nearestWanderer || nearestTroll) {
+  if (nearestNPC || nearestWanderer || nearestBuildingNPC || nearestTroll) {
     actionBtn.classList.add('visible');
-    if (nearestNPC) {
+    if (nearestBuildingNPC) {
+      // Building NPC - check if visited for icon
+      const visited = ctx.gameState.visitedBuildings && ctx.gameState.visitedBuildings.has(nearestBuildingNPC);
+      const icon = visited ? '💬' : '❓';
+      actionBtn.innerHTML = `<span>${icon}</span><span>Tap to Talk</span>`;
+    } else if (nearestNPC) {
       const icon = ctx.gameState.visited.has(nearestNPC) ? '💬' : '❓';
       actionBtn.innerHTML = `<span>${icon}</span><span>Tap to Chat</span>`;
     } else if (nearestTroll) {
@@ -99,6 +105,7 @@ export function startAdventure() {
   if (!musicState.initialized) {
     musicState.initialized = true;
     playCurrentTrack();
+    updateMusicUI();
   }
 }
 
@@ -296,11 +303,13 @@ export function setupControls() {
       musicState.initialized = true;
       playCurrentTrack();
     }
+    updateMusicUI();
   }, { preventDefault: false });
 
   addClickHandler(document.getElementById('music-next'), () => {
     musicState.initialized = true;
     playNextTrack();
+    updateMusicUI();
   }, { preventDefault: false });
 
   // Intro modal - use consistent handlers
@@ -495,6 +504,46 @@ export function openTrollDialog(troll) {
   `;
   document.getElementById('dialog-overlay').classList.add('visible');
   document.getElementById('action-btn').classList.remove('visible');
+  }
+export function openBuildingNPCDialog(npcId) {
+  // Hide action button immediately
+  document.getElementById('action-btn').classList.remove('visible');
+
+  // Check if first visit (tracked separately from main locations)
+  const visitKey = `building_${npcId}`;
+  const isNewVisit = !ctx.gameState.visitedBuildings || !ctx.gameState.visitedBuildings.has(npcId);
+
+  // Initialize visitedBuildings set if needed
+  if (!ctx.gameState.visitedBuildings) {
+    ctx.gameState.visitedBuildings = new Set();
+  }
+
+  if (isNewVisit) {
+    ctx.gameState.visitedBuildings.add(npcId);
+  }
+
+  // Function to show the dialog UI
+  const showDialogUI = () => {
+    ctx.gameState.dialogOpen = true;
+
+    // Play voice when dialog appears
+    playRandomWandererVoice();
+
+    // Generate dialog based on visit status
+    const dialog = generateBuildingDialog(npcId, isNewVisit);
+
+    if (dialog) {
+      document.getElementById('dialog-avatar').textContent = dialog.avatar;
+      document.getElementById('dialog-name').textContent = dialog.name;
+      document.getElementById('dialog-role').textContent = dialog.role;
+      document.getElementById('dialog-content').innerHTML = dialog.content;
+    }
+
+    document.getElementById('dialog-overlay').classList.add('visible');
+  };
+
+  // Zoom camera to building NPC, then show dialog when zoom completes
+  zoomToNPC(npcId, showDialogUI);
 }
 
 export function closeDialog() {

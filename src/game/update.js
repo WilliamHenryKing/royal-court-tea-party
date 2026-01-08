@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { player, updateCape } from '../entities/player.js';
 import { buildings } from '../entities/buildings.js';
 import { npcs, wanderers, bernieListeners, corgis, bees, updateCorgis, updateBees, updateWanderers, updateBernieListeners, updateNPCIndicators } from '../entities/npcs.js';
+import { buildingNpcs, updateBuildingNPCs } from '../entities/buildingNpcs.js';
 import { collectibles, clouds, celebrationParticles, updateCelebrationParticles, updateAmbientParticles } from '../entities/collectibles.js';
 import { waterMaterial } from '../entities/world.js';
 import { updateRiverWater, updateJumpingFish, updateFoxes, updateBirds, updateBridgeTroll, bridgeTroll } from '../entities/river.js';
@@ -182,23 +183,39 @@ function updateNPCs(ctx, delta, time) {
   let nearestNPC = null;
   let nearestWanderer = null;
   let nearestTroll = null;
+  let nearestBuildingNPC = null;
   let nearestDist = Infinity;
 
+  // Check building NPCs first (they take priority for building lore)
+  Object.entries(buildingNpcs).forEach(([id, npc]) => {
+    const dist = player.position.distanceTo(npc.position);
+    if (dist < 3.5 && dist < nearestDist) {
+      nearestDist = dist;
+      nearestBuildingNPC = id;
+      nearestNPC = null;
+      nearestWanderer = null;
+    }
+  });
+
+  // Check main NPCs
   Object.entries(npcs).forEach(([id, npc]) => {
     const dist = player.position.distanceTo(npc.position);
     if (dist < 3.5 && dist < nearestDist) {
       nearestDist = dist;
       nearestNPC = id;
+      nearestBuildingNPC = null;
       nearestWanderer = null;
       nearestTroll = null;
     }
   });
 
+  // Check wanderers
   wanderers.forEach(npc => {
     const dist = player.position.distanceTo(npc.position);
     if (dist < 3.5 && dist < nearestDist) {
       nearestDist = dist;
       nearestNPC = null;
+      nearestBuildingNPC = null;
       nearestWanderer = npc;
       nearestTroll = null;
     }
@@ -220,6 +237,9 @@ function updateNPCs(ctx, delta, time) {
   ctx.gameState.nearTroll = nearestTroll;
 
   updateActionButton(nearestNPC, nearestWanderer, nearestTroll);
+  ctx.gameState.nearBuildingNPC = nearestBuildingNPC;
+
+  updateActionButton(nearestNPC, nearestWanderer, nearestBuildingNPC);
 
   // Update corgis with player awareness
   updateCorgis(time, delta, player);
@@ -333,4 +353,6 @@ function updateAmbientAnimations(ctx, delta, time) {
 
   // Bridge troll animation
   updateBridgeTroll(time);
+  // Building NPCs animations
+  updateBuildingNPCs(time, delta);
 }

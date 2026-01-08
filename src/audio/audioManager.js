@@ -85,11 +85,7 @@ export function playCurrentTrack() {
   musicAudio.loop = false;
   musicAudio.volume = 0.3;
 
-  musicAudio.onended = () => {
-    musicState.currentIndex = (musicState.currentIndex + 1) % MUSIC_TRACKS.length;
-    playCurrentTrack();
-  };
-
+  // Note: ended event is handled externally in main.js to allow UI updates
   musicAudio.play().catch(err => console.log('Music playback prevented:', err));
 }
 
