@@ -5,6 +5,11 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 
 export let scene, camera, renderer, composer;
 
+const MOBILE_MAX_PIXEL_RATIO = 1.5;
+const DESKTOP_MAX_PIXEL_RATIO = 2;
+const MOBILE_SHADOW_MAP_SIZE = 1024;
+const DESKTOP_SHADOW_MAP_SIZE = 2048;
+
 // Initialize the Three.js renderer, scene, and camera
 export function initRenderer() {
   // Scene - Natural sky background
@@ -19,7 +24,7 @@ export function initRenderer() {
   // Renderer
   renderer = new THREE.WebGLRenderer({ antialias: window.devicePixelRatio < 2 });
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(getRenderPixelRatio());
   renderer.toneMapping = THREE.NoToneMapping;
   renderer.toneMappingExposure = 1.0;
   renderer.shadowMap.enabled = true;
@@ -89,7 +94,8 @@ function setupLighting() {
   const sun = new THREE.DirectionalLight(0xfffef0, 0.7);
   sun.position.set(20, 30, 15);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
+  const shadowMapSize = getShadowMapSize();
+  sun.shadow.mapSize.set(shadowMapSize, shadowMapSize);
   sun.shadow.camera.near = 0.5;
   sun.shadow.camera.far = 120;
   sun.shadow.camera.left = -60;
@@ -105,7 +111,22 @@ function onResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(getRenderPixelRatio());
   if (composer) {
     composer.setSize(window.innerWidth, window.innerHeight);
   }
+}
+
+function isMobileDisplay() {
+  return window.matchMedia('(max-width: 768px)').matches ||
+    window.matchMedia('(pointer: coarse)').matches;
+}
+
+function getRenderPixelRatio() {
+  const maxRatio = isMobileDisplay() ? MOBILE_MAX_PIXEL_RATIO : DESKTOP_MAX_PIXEL_RATIO;
+  return Math.min(window.devicePixelRatio, maxRatio);
+}
+
+function getShadowMapSize() {
+  return isMobileDisplay() ? MOBILE_SHADOW_MAP_SIZE : DESKTOP_SHADOW_MAP_SIZE;
 }
