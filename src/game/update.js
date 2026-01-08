@@ -5,7 +5,7 @@ import { buildings } from '../entities/buildings.js';
 import { npcs, wanderers, bernieListeners, corgis, bees, updateCorgis, updateBees, updateWanderers, updateBernieListeners, updateNPCIndicators } from '../entities/npcs.js';
 import { buildingNpcs, updateBuildingNPCs } from '../entities/buildingNpcs.js';
 import { collectibles, clouds, celebrationParticles, updateCelebrationParticles, updateAmbientParticles } from '../entities/collectibles.js';
-import { waterMaterial } from '../entities/world.js';
+import { waterMaterial, updateButterflies } from '../entities/world.js';
 import { updateRiverWater, updateJumpingFish, updateFoxes, updateBirds, updateBridgeTroll, bridgeTroll } from '../entities/river.js';
 import { updateKingAndGuards } from '../entities/king.js';
 import { updateDoomSayer } from '../entities/doomSayer.js';
@@ -355,4 +355,7 @@ function updateAmbientAnimations(ctx, delta, time) {
   updateBridgeTroll(time);
   // Building NPCs animations
   updateBuildingNPCs(time, delta);
+
+  // Butterflies near flower beds
+  updateButterflies(time);
 }

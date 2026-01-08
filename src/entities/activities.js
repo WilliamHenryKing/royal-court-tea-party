@@ -488,7 +488,19 @@ export const TRAMPOLINE_DATA = {
     "THE CLOUDS! I'm touching the CLOUDS!",
     "I immediately regret this!",
     "MY CROWN!",
-    "This is UNDIGNIFIED! ...do it again!"
+    "This is UNDIGNIFIED! ...do it again!",
+    "TO INFINITY AND— *lands*",
+    "I believe I can fly! ...briefly.",
+    "Is this how birds feel?!",
+    "THE VIEW UP HERE! *spins*",
+    "I'm a MAJESTIC EAGLE! *flails*",
+    "Higher! HIGHER! ...okay that's enough.",
+    "My royal bottom is AIRBORNE!",
+    "BOING! BOING! BOING!",
+    "This is better than the throne!",
+    "I CAN SEE THE WHOLE KINGDOM!",
+    "Gravity is just a suggestion!",
+    "Someone catch my dignity!"
   ]
 };
 

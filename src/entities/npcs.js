@@ -1096,9 +1096,11 @@ export function updateCorgis(time, delta, player = null) {
     }
 
     // Face movement direction smoothly
+    // The corgi model faces +X locally, so we offset by -PI/2 to align with movement direction
+    const targetRotation = data.walkAngle - Math.PI / 2;
     corgi.rotation.y = THREE.MathUtils.lerp(
       corgi.rotation.y,
-      data.walkAngle,
+      targetRotation,
       0.15
     );
 
