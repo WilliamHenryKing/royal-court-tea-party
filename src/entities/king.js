@@ -579,6 +579,7 @@ export function updateKingAndGuards(time, delta, camera) {
   if (!kingBen) return;
 
   const data = kingBen.userData;
+  const isTalking = data.isTalking;
 
   // Register King with collision system
   if (!data.collisionId) {
@@ -587,6 +588,14 @@ export function updateKingAndGuards(time, delta, camera) {
   }
 
   // === ROAD-CONSTRAINED MOVEMENT ===
+  if (isTalking) {
+    data.guards.forEach(guard => {
+      guard.position.y = 0;
+      guard.rotation.z = 0;
+      guard.rotation.x = THREE.MathUtils.lerp(guard.rotation.x, 0, 0.2);
+    });
+    return;
+  }
   // Pick a new target if we don't have one
   if (!data.currentTarget) {
     data.currentTarget = pickNextRoadWaypoint(kingBen.position.x, kingBen.position.z, data.roadWaypoints);
