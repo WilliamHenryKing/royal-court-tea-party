@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { scene } from '../engine/renderer.js';
 import { checkCollision } from '../entities/world.js';
 import { collisionManager, COLLISION_LAYERS } from '../systems/CollisionManager.js';
+import { player } from './player.js';
 
 // AUSTINVILLE GRID LAYOUT - Doom Sayer in north-west area near river, between Fishing Dock and Donut Shop
 export const DOOM_SAYER_CONFIG = {
@@ -261,13 +262,16 @@ export function updateDoomSayer(time, delta, camera) {
     data.signGroup.userData.updateText(DOOM_SAYER_CONFIG.signTexts[nextIndex]);
   }
 
-  // Shout prophecies
+  // Shout prophecies - only when player is nearby
   data.shoutTimer -= delta;
   if (data.shoutTimer <= 0) {
-    data.shoutTimer = 6 + Math.random() * 8;
+    data.shoutTimer = 15 + Math.random() * 15; // Longer cooldown
 
-    const quote = data.quotes[Math.floor(Math.random() * data.quotes.length)];
-    showDoomQuote(doomSayer, quote, camera);
+    // Only show if player is within range
+    if (player && doomSayer.position.distanceTo(player.position) < 15) {
+      const quote = data.quotes[Math.floor(Math.random() * data.quotes.length)];
+      showDoomQuote(doomSayer, quote, camera);
+    }
 
     // Brief rant animation
     data.isRanting = true;
@@ -297,23 +301,20 @@ function showDoomQuote(npc, quote, camera) {
   const y = (-vec.y * 0.5 + 0.5) * window.innerHeight;
 
   const msg = document.createElement('div');
-  msg.className = 'floating-message doom-quote';
+  msg.className = 'floating-message';
   msg.textContent = quote;
   msg.style.cssText = `
     position: fixed;
     left: ${x}px;
     top: ${y - 100}px;
     transform: translateX(-50%);
-    font-size: 1.2rem;
-    font-weight: bold;
+    font-size: 0.85rem;
     color: #8b0000;
-    text-shadow: 1px 1px 2px #000;
     pointer-events: none;
-    z-index: 1000;
-    animation: doomShake 0.5s ease-in-out infinite, floatUp 4s ease-out forwards;
+    z-index: 100;
   `;
   document.body.appendChild(msg);
-  setTimeout(() => msg.remove(), 4000);
+  setTimeout(() => msg.remove(), 2500);
 }
 
 // Add CSS for doom shake animation
