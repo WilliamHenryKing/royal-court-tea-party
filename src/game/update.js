@@ -282,10 +282,8 @@ function updateNPCs(ctx, delta, time) {
   ctx.gameState.nearWanderer = nearestWanderer;
   ctx.gameState.nearTroll = nearestTroll;
 
-  updateActionButton(nearestNPC, nearestWanderer, nearestTroll);
   ctx.gameState.nearBuildingNPC = nearestBuildingNPC;
-
-  updateActionButton(nearestNPC, nearestWanderer, nearestBuildingNPC);
+  updateActionButton(nearestNPC, nearestWanderer, nearestBuildingNPC, nearestTroll);
 
   // Update corgis with player awareness
   updateCorgis(time, delta, player);
