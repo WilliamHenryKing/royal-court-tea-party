@@ -20,11 +20,15 @@ import {
   collectibles,
   clouds,
   insects,
+  fireflies,
+  cherryPetals,
   initCollectibles,
   createCollectibles,
   createClouds,
   createInsects,
-  createAmbientParticles
+  createAmbientParticles,
+  createFireflies,
+  createCherryPetals
 } from './entities/collectibles.js';
 import { createWorld } from './entities/world.js';
 import { createAllStreets } from './entities/streets.js';
@@ -81,6 +85,8 @@ const ctx = {
   insects,
   collectibles,
   clouds,
+  fireflies,
+  cherryPetals,
   buildingNpcs,
 
   // Data
@@ -213,6 +219,8 @@ function initGameWorld() {
   createClouds();
   createInsects();
   createAmbientParticles(60); // Floating petals and sparkles
+  createFireflies(50); // Glowing fireflies in forest areas
+  createCherryPetals(10); // Falling petals from cherry trees (10 per tree)
 }
 
 // Start the game when DOM is ready

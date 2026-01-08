@@ -10,6 +10,8 @@ export const clouds = [];
 export const celebrationParticles = [];
 export const insects = [];
 export const ambientParticles = [];
+export const fireflies = [];
+export const cherryPetals = [];
 
 // Particle system state
 export let particleTexture = null;
@@ -461,6 +463,199 @@ export function updateAmbientParticles(time, delta) {
       particle.position.x = (Math.random() - 0.5) * 80;
       particle.position.z = (Math.random() - 0.5) * 80;
       data.driftAngle = Math.random() * Math.PI * 2;
+    }
+  });
+}
+
+// ============================================
+// FIREFLIES
+// ============================================
+
+function createFirefly() {
+  // Create a glowing sprite for the firefly
+  const canvas = document.createElement('canvas');
+  canvas.width = 32;
+  canvas.height = 32;
+  const ctx = canvas.getContext('2d');
+
+  // Create radial gradient for glow
+  const gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+  gradient.addColorStop(0, 'rgba(255, 255, 150, 1)');
+  gradient.addColorStop(0.3, 'rgba(255, 255, 100, 0.8)');
+  gradient.addColorStop(0.6, 'rgba(200, 255, 100, 0.4)');
+  gradient.addColorStop(1, 'rgba(150, 255, 100, 0)');
+
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 32, 32);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  const material = new THREE.SpriteMaterial({
+    map: texture,
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  });
+
+  const sprite = new THREE.Sprite(material);
+  sprite.scale.set(0.3, 0.3, 0.3);
+
+  // Add subtle point light for extra glow
+  const light = new THREE.PointLight(0xffff88, 0.3, 2);
+  sprite.add(light);
+
+  // Random starting position in forest areas
+  const angle = Math.random() * Math.PI * 2;
+  const radius = 15 + Math.random() * 25;
+  sprite.position.set(
+    Math.cos(angle) * radius,
+    0.5 + Math.random() * 2.5,
+    Math.sin(angle) * radius
+  );
+
+  // Store animation data
+  sprite.userData = {
+    baseY: sprite.position.y,
+    floatSpeed: 0.3 + Math.random() * 0.4,
+    floatAmount: 0.3 + Math.random() * 0.5,
+    driftSpeed: 0.2 + Math.random() * 0.3,
+    driftAngle: Math.random() * Math.PI * 2,
+    phaseOffset: Math.random() * Math.PI * 2,
+    blinkSpeed: 2 + Math.random() * 3,
+    blinkPhase: Math.random() * Math.PI * 2,
+    light: light,
+    homePosX: sprite.position.x,
+    homePosZ: sprite.position.z,
+    wanderRadius: 3 + Math.random() * 4
+  };
+
+  scene.add(sprite);
+  return sprite;
+}
+
+export function createFireflies(count = 50) {
+  for (let i = 0; i < count; i++) {
+    const firefly = createFirefly();
+    fireflies.push(firefly);
+  }
+}
+
+export function updateFireflies(time, delta) {
+  fireflies.forEach(firefly => {
+    const data = firefly.userData;
+
+    // Floating up and down
+    const floatOffset = Math.sin(time * data.floatSpeed + data.phaseOffset) * data.floatAmount;
+    firefly.position.y = data.baseY + floatOffset;
+
+    // Gentle wandering around home position
+    const wanderX = Math.sin(time * data.driftSpeed + data.phaseOffset) * data.wanderRadius;
+    const wanderZ = Math.cos(time * data.driftSpeed * 0.7 + data.phaseOffset) * data.wanderRadius;
+    firefly.position.x = data.homePosX + wanderX;
+    firefly.position.z = data.homePosZ + wanderZ;
+
+    // Blinking effect - pulsing opacity and light intensity
+    const blink = Math.sin(time * data.blinkSpeed + data.blinkPhase);
+    const blinkValue = (blink + 1) * 0.5; // 0 to 1
+    const intensity = blinkValue * 0.5 + 0.3; // 0.3 to 0.8
+
+    firefly.material.opacity = intensity;
+    data.light.intensity = intensity * 0.5;
+
+    // Occasional bright flash
+    if (Math.random() < 0.001) {
+      data.blinkPhase = Math.random() * Math.PI * 2;
+    }
+  });
+}
+
+// ============================================
+// FALLING CHERRY BLOSSOM PETALS
+// ============================================
+
+// Cherry tree positions from world.js
+const CHERRY_TREE_POSITIONS = [
+  { x: 0, z: 28 }, { x: -15, z: 26 }, { x: 18, z: 16 },
+  { x: 30, z: 8 }, { x: 20, z: 10 }, { x: -8, z: 25 }, { x: 8, z: 25 }
+];
+
+function createCherryPetal(treePos) {
+  // Create petal texture
+  const canvas = document.createElement('canvas');
+  canvas.width = 16;
+  canvas.height = 16;
+  const ctx = canvas.getContext('2d');
+
+  // Draw petal shape
+  ctx.fillStyle = '#ffb7c5';
+  ctx.beginPath();
+  ctx.ellipse(8, 8, 6, 4, Math.random() * Math.PI, 0, Math.PI * 2);
+  ctx.fill();
+
+  const texture = new THREE.CanvasTexture(canvas);
+  const material = new THREE.SpriteMaterial({
+    map: texture,
+    transparent: true,
+    opacity: 0.8
+  });
+
+  const sprite = new THREE.Sprite(material);
+  sprite.scale.set(0.15, 0.1, 0.1);
+
+  // Start above the tree
+  const spreadX = (Math.random() - 0.5) * 8;
+  const spreadZ = (Math.random() - 0.5) * 8;
+  sprite.position.set(
+    treePos.x + spreadX,
+    5 + Math.random() * 3,
+    treePos.z + spreadZ
+  );
+
+  // Animation data
+  sprite.userData = {
+    treeX: treePos.x,
+    treeZ: treePos.z,
+    fallSpeed: 0.3 + Math.random() * 0.2,
+    swaySpeed: 1 + Math.random() * 0.5,
+    swayAmount: 0.3 + Math.random() * 0.3,
+    rotSpeed: (Math.random() - 0.5) * 2,
+    phaseOffset: Math.random() * Math.PI * 2
+  };
+
+  scene.add(sprite);
+  return sprite;
+}
+
+export function createCherryPetals(petalsPerTree = 10) {
+  CHERRY_TREE_POSITIONS.forEach(treePos => {
+    for (let i = 0; i < petalsPerTree; i++) {
+      const petal = createCherryPetal(treePos);
+      cherryPetals.push(petal);
+    }
+  });
+}
+
+export function updateCherryPetals(time, delta) {
+  cherryPetals.forEach(petal => {
+    const data = petal.userData;
+
+    // Gentle falling
+    petal.position.y -= data.fallSpeed * delta;
+
+    // Swaying motion as it falls
+    const sway = Math.sin(time * data.swaySpeed + data.phaseOffset) * data.swayAmount;
+    petal.position.x += sway * delta;
+
+    // Gentle rotation
+    petal.material.rotation += data.rotSpeed * delta;
+
+    // Respawn when hits ground
+    if (petal.position.y < 0.1) {
+      petal.position.y = 5 + Math.random() * 3;
+      const spreadX = (Math.random() - 0.5) * 8;
+      const spreadZ = (Math.random() - 0.5) * 8;
+      petal.position.x = data.treeX + spreadX;
+      petal.position.z = data.treeZ + spreadZ;
+      data.phaseOffset = Math.random() * Math.PI * 2;
     }
   });
 }

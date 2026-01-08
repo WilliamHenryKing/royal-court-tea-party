@@ -4,7 +4,7 @@ import { player, updateCape } from '../entities/player.js';
 import { buildings } from '../entities/buildings.js';
 import { npcs, wanderers, bernieListeners, corgis, bees, updateCorgis, updateBees, updateWanderers, updateBernieListeners, updateNPCIndicators } from '../entities/npcs.js';
 import { buildingNpcs, updateBuildingNPCs } from '../entities/buildingNpcs.js';
-import { collectibles, clouds, celebrationParticles, updateCelebrationParticles, updateAmbientParticles } from '../entities/collectibles.js';
+import { collectibles, clouds, celebrationParticles, updateCelebrationParticles, updateAmbientParticles, fireflies, updateFireflies, cherryPetals, updateCherryPetals } from '../entities/collectibles.js';
 import { waterMaterial, updateButterflies } from '../entities/world.js';
 import { updateRiverWater, updateJumpingFish, updateFoxes, updateBirds, updateBridgeTroll, bridgeTroll } from '../entities/river.js';
 import { updateKingAndGuards } from '../entities/king.js';
@@ -329,6 +329,12 @@ function updateAmbientAnimations(ctx, delta, time) {
 
   // Floating petals and sparkles
   updateAmbientParticles(time, delta);
+
+  // Fireflies
+  updateFireflies(time, delta);
+
+  // Cherry blossom petals
+  updateCherryPetals(time, delta);
 
   // River water animation
   updateRiverWater(time);
