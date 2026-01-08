@@ -1,10 +1,14 @@
 // Building NPCs - NPCs that stand in front of buildings and give lore/info
 import * as THREE from 'three';
 import { scene } from '../engine/renderer.js';
+import { collisionManager, COLLISION_LAYERS } from '../systems/CollisionManager.js';
 import { BUILDING_NPCS } from '../assets/data.js';
 import { SHOP_POSITIONS } from './shops.js';
 import { BOXING_RING_DATA } from './activities.js';
 import { FISHING_DOCK_POS } from './river.js';
+
+const ANNOUNCER_BOOTH_TOP_Y = 1.5;
+const NPC_FOOT_OFFSET = 0.2;
 
 // Store building NPCs
 export const buildingNpcs = {};
@@ -364,6 +368,10 @@ export function createBuildingNPCs() {
       npcData.position.z
     );
 
+    if (id === 'boxingRing') {
+      npc.position.y = ANNOUNCER_BOOTH_TOP_Y - NPC_FOOT_OFFSET;
+    }
+
     // Face forward (toward where player would approach)
     npc.rotation.y = Math.PI; // Face south by default
 
@@ -375,8 +383,14 @@ export function createBuildingNPCs() {
       isBuildingNPC: true,
       walkSpeed: 0, // Stationary
       lastQuote: Date.now(),
-      chatOffset: Math.random() * 5000
+      chatOffset: Math.random() * 5000,
+      baseY: npc.position.y
     };
+
+    if (!npc.userData.collisionId) {
+      npc.userData.collisionId = `building_npc_${id}`;
+      collisionManager.registerEntity(npc.userData.collisionId, npc, 0.4, COLLISION_LAYERS.NPC);
+    }
 
     scene.add(npc);
     buildingNpcs[id] = npc;
@@ -399,6 +413,10 @@ export function createBuildingNPCs() {
     buildingNpcs.teaCoffeeBattle.rotation.y = 0; // Face north toward cafes
   }
 
+  Object.values(buildingNpcs).forEach(npc => {
+    npc.userData.baseRotationY = npc.rotation.y;
+  });
+
   return buildingNpcs;
 }
 
@@ -408,7 +426,7 @@ export function createBuildingNPCs() {
 export function updateBuildingNPCs(time, delta) {
   Object.values(buildingNpcs).forEach(npc => {
     // Gentle idle animation
-    npc.position.y = Math.sin(time * 2 + npc.userData.chatOffset * 0.001) * 0.02;
+    npc.position.y = npc.userData.baseY + Math.sin(time * 2 + npc.userData.chatOffset * 0.001) * 0.02;
 
     // Indicator float animation
     const indicator = npc.children.find(child => child.userData?.isIndicator);
@@ -432,6 +450,28 @@ export function updateBuildingNPCs(time, delta) {
       case 'boxingRing':
         // Excited commentary bounce
         npc.rotation.z = Math.sin(time * 4) * 0.05;
+        if (!npc.userData.spinState) {
+          npc.userData.spinState = {
+            nextSpinTime: time + THREE.MathUtils.randFloat(2, 6),
+            spinEndTime: 0,
+            spinSpeed: 0,
+            spinOffset: 0
+          };
+        }
+
+        if (time >= npc.userData.spinState.nextSpinTime) {
+          npc.userData.spinState.spinEndTime = time + THREE.MathUtils.randFloat(0.6, 1.4);
+          npc.userData.spinState.spinSpeed = THREE.MathUtils.randFloat(4, 8) * (Math.random() < 0.5 ? -1 : 1);
+          npc.userData.spinState.nextSpinTime = npc.userData.spinState.spinEndTime + THREE.MathUtils.randFloat(2.5, 6.5);
+        }
+
+        if (time <= npc.userData.spinState.spinEndTime) {
+          npc.userData.spinState.spinOffset += npc.userData.spinState.spinSpeed * delta;
+        } else {
+          npc.userData.spinState.spinOffset = THREE.MathUtils.lerp(npc.userData.spinState.spinOffset, 0, 0.08);
+        }
+
+        npc.rotation.y = npc.userData.baseRotationY + npc.userData.spinState.spinOffset;
         break;
 
       case 'fishingDock':
@@ -446,7 +486,7 @@ export function updateBuildingNPCs(time, delta) {
 
       case 'donutShop':
         // Cheerful bounce
-        npc.position.y = Math.abs(Math.sin(time * 3)) * 0.05;
+        npc.position.y = npc.userData.baseY + Math.abs(Math.sin(time * 3)) * 0.05;
         break;
 
       case 'teaCoffeeBattle':
