@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { camera } from '../engine/renderer.js';
 import { player } from '../entities/player.js';
 import { npcs } from '../entities/npcs.js';
+import { buildingNpcs, BUILDING_CAMERA_TARGETS } from '../entities/buildingNpcs.js';
 
 // Camera zoom configuration
 export const cameraZoomConfig = {
@@ -18,11 +19,19 @@ export const cameraZoomConfig = {
     height: 2.5,
     lookAtY: 1.5
   },
+  // Building NPC camera settings (shows building and sign)
+  buildingInteraction: {
+    offset: 6,
+    height: 3.5,
+    lookAtY: 2
+  },
   // Current state
   current: 'normal',
   transitionSpeed: 3,
   isTransitioning: false,
   targetNPC: null,
+  isBuildingNPC: false,
+  buildingCameraTarget: null,
   // Store original player position for smooth return
   playerPosAtZoom: null,
   // Callback when zoom-in completes
@@ -39,6 +48,13 @@ const targetLookAt = new THREE.Vector3();
  * @param {Function} onComplete - Optional callback when zoom-in completes
  */
 export function zoomToNPC(npcId, onComplete = null) {
+  // Check if it's a building NPC first
+  const buildingNpc = buildingNpcs[npcId];
+  if (buildingNpc) {
+    zoomToBuildingNPC(npcId, onComplete);
+    return;
+  }
+
   const npc = npcs[npcId];
   if (!npc) {
     // NPC not found, still call callback so dialog shows
@@ -49,6 +65,8 @@ export function zoomToNPC(npcId, onComplete = null) {
   cameraZoomConfig.current = 'interaction';
   cameraZoomConfig.isTransitioning = true;
   cameraZoomConfig.targetNPC = npc;
+  cameraZoomConfig.isBuildingNPC = false;
+  cameraZoomConfig.buildingCameraTarget = null;
   cameraZoomConfig.playerPosAtZoom = player.position.clone();
   cameraZoomConfig.onZoomInComplete = onComplete;
 
@@ -63,6 +81,42 @@ export function zoomToNPC(npcId, onComplete = null) {
     .subVectors(player.position, npc.position)
     .normalize();
   npc.userData.targetRotationY = Math.atan2(toPlayer.x, toPlayer.z);
+}
+
+/**
+ * Zoom camera to a building NPC, framing both NPC and building with sign
+ * @param {string} npcId - The ID of the building NPC
+ * @param {Function} onComplete - Optional callback when zoom-in completes
+ */
+export function zoomToBuildingNPC(npcId, onComplete = null) {
+  const npc = buildingNpcs[npcId];
+  const cameraTarget = BUILDING_CAMERA_TARGETS[npcId];
+
+  if (!npc) {
+    if (onComplete) onComplete();
+    return;
+  }
+
+  cameraZoomConfig.current = 'interaction';
+  cameraZoomConfig.isTransitioning = true;
+  cameraZoomConfig.targetNPC = npc;
+  cameraZoomConfig.isBuildingNPC = true;
+  cameraZoomConfig.buildingCameraTarget = cameraTarget;
+  cameraZoomConfig.playerPosAtZoom = player.position.clone();
+  cameraZoomConfig.onZoomInComplete = onComplete;
+
+  // Start NPC talking animation
+  npc.userData.isTalking = true;
+  npc.userData.talkStartTime = performance.now();
+  npc.userData.originalRotationY = npc.rotation.y;
+  npc.userData.originalPositionY = npc.position.y;
+
+  // Make NPC face the camera/player (but at an angle to show building)
+  const toPlayer = new THREE.Vector3()
+    .subVectors(player.position, npc.position)
+    .normalize();
+  // Slightly angle toward building
+  npc.userData.targetRotationY = Math.atan2(toPlayer.x, toPlayer.z) * 0.5;
 }
 
 /**
@@ -87,6 +141,8 @@ export function zoomOut() {
     npc.rotation.x = 0;
   }
   cameraZoomConfig.targetNPC = null;
+  cameraZoomConfig.isBuildingNPC = false;
+  cameraZoomConfig.buildingCameraTarget = null;
   cameraZoomConfig.playerPosAtZoom = null;
 }
 
@@ -106,7 +162,7 @@ export function updateCameraZoom(delta) {
   }
 
   const config = cameraZoomConfig.current === 'interaction'
-    ? cameraZoomConfig.interaction
+    ? (cameraZoomConfig.isBuildingNPC ? cameraZoomConfig.buildingInteraction : cameraZoomConfig.interaction)
     : cameraZoomConfig.normal;
 
   let targetPos;
@@ -114,30 +170,49 @@ export function updateCameraZoom(delta) {
   if (cameraZoomConfig.current === 'interaction' && cameraZoomConfig.targetNPC) {
     const npc = cameraZoomConfig.targetNPC;
 
-    // Position camera between player and NPC, looking at NPC
-    const playerPos = cameraZoomConfig.playerPosAtZoom || player.position;
-    const midPoint = new THREE.Vector3()
-      .addVectors(playerPos, npc.position)
-      .multiplyScalar(0.5);
+    // Check if this is a building NPC with custom camera target
+    if (cameraZoomConfig.isBuildingNPC && cameraZoomConfig.buildingCameraTarget) {
+      const camTarget = cameraZoomConfig.buildingCameraTarget;
 
-    // Camera positioned to see both player and NPC
-    const toNPC = new THREE.Vector3()
-      .subVectors(npc.position, playerPos)
-      .normalize();
+      // Position camera to see both NPC and building with sign
+      targetPos = new THREE.Vector3(
+        npc.position.x + camTarget.cameraOffset.x,
+        camTarget.cameraOffset.y,
+        npc.position.z + camTarget.cameraOffset.z
+      );
 
-    // Get perpendicular direction for camera offset
-    const perpendicular = new THREE.Vector3(-toNPC.z, 0, toNPC.x);
+      // Look at a point between NPC and building (shifted toward building)
+      targetLookAt.set(
+        npc.position.x + camTarget.lookAtOffset.x,
+        camTarget.lookAtOffset.y,
+        npc.position.z + camTarget.lookAtOffset.z
+      );
+    } else {
+      // Standard NPC camera positioning
+      const playerPos = cameraZoomConfig.playerPosAtZoom || player.position;
+      const midPoint = new THREE.Vector3()
+        .addVectors(playerPos, npc.position)
+        .multiplyScalar(0.5);
 
-    targetPos = new THREE.Vector3()
-      .copy(midPoint)
-      .add(perpendicular.multiplyScalar(config.offset * 0.5))
-      .add(new THREE.Vector3(0, config.height, 0));
+      // Camera positioned to see both player and NPC
+      const toNPC = new THREE.Vector3()
+        .subVectors(npc.position, playerPos)
+        .normalize();
 
-    targetLookAt.set(
-      npc.position.x,
-      npc.position.y + config.lookAtY,
-      npc.position.z
-    );
+      // Get perpendicular direction for camera offset
+      const perpendicular = new THREE.Vector3(-toNPC.z, 0, toNPC.x);
+
+      targetPos = new THREE.Vector3()
+        .copy(midPoint)
+        .add(perpendicular.multiplyScalar(config.offset * 0.5))
+        .add(new THREE.Vector3(0, config.height, 0));
+
+      targetLookAt.set(
+        npc.position.x,
+        npc.position.y + config.lookAtY,
+        npc.position.z
+      );
+    }
 
     // Update NPC talking animation
     updateNPCTalkingAnimation(npc);
