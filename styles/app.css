@@ -454,6 +454,25 @@
     .mission-notif-icon { font-size: 1.5rem; display: block; margin-bottom: 0.3rem; }
     @keyframes slideInRight { 0% { transform: translateX(120%); opacity: 0; } 10% { transform: translateX(0); opacity: 1; } 85% { transform: translateX(0); opacity: 1; } 100% { transform: translateX(120%); opacity: 0; } }
 
+    @media (hover: none) and (pointer: coarse) {
+      .desktop-only { display: none !important; }
+      .location-badge,
+      .progress-container,
+      .collectibles-badge,
+      .music-controls,
+      .icon-btn,
+      #minimap {
+        backdrop-filter: none;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      }
+      .music-btn {
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      }
+      .joystick-ripple {
+        display: none;
+      }
+    }
+
     @media (max-width: 380px) {
       .splash-title { font-size: 2.2rem; }
       .splash-crown { font-size: 4.5rem; }
