@@ -525,7 +525,84 @@ export function createBuilding(color, type) {
 export function createBuildings() {
   LOCATIONS.forEach((loc) => {
     const building = createBuilding(loc.color, loc.id);
-    building.position.set(loc.x, 0, loc.z);
+
+    if (loc.id === 'palace') {
+      const hillHeight = 1.2;
+      const hillRadius = 6.2;
+      const hillMat = new THREE.MeshStandardMaterial({ color: 0x7bc96f, roughness: 0.95 });
+      const hill = new THREE.Mesh(
+        new THREE.CylinderGeometry(hillRadius * 0.78, hillRadius, hillHeight, 32),
+        hillMat
+      );
+      hill.position.set(loc.x, hillHeight / 2, loc.z);
+      hill.receiveShadow = true;
+      scene.add(hill);
+
+      const stairGroup = new THREE.Group();
+      const stepCount = 5;
+      const stepHeight = hillHeight / stepCount;
+      const stepDepth = 0.7;
+      const stepWidth = 3;
+      const stepMat = new THREE.MeshStandardMaterial({ color: 0xf2d4b8, roughness: 0.85 });
+      const railMat = new THREE.MeshStandardMaterial({ color: 0xd5b46f, metalness: 0.4, roughness: 0.4 });
+
+      for (let i = 0; i < stepCount; i++) {
+        const step = new THREE.Mesh(
+          new THREE.BoxGeometry(stepWidth, stepHeight, stepDepth),
+          stepMat
+        );
+        step.position.set(
+          loc.x,
+          hillHeight - stepHeight / 2 - i * stepHeight,
+          loc.z + hillRadius - stepDepth / 2 + i * stepDepth
+        );
+        step.castShadow = true;
+        step.receiveShadow = true;
+        stairGroup.add(step);
+      }
+
+      const postHeight = 0.8;
+      const railOffset = stepWidth / 2 + 0.25;
+      for (let i = 0; i <= stepCount; i++) {
+        const postY = hillHeight - i * stepHeight + postHeight / 2;
+        const postZ = loc.z + hillRadius - stepDepth + i * stepDepth;
+        [-railOffset, railOffset].forEach((xOffset) => {
+          const post = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.05, 0.05, postHeight, 8),
+            railMat
+          );
+          post.position.set(loc.x + xOffset, postY, postZ);
+          post.castShadow = true;
+          stairGroup.add(post);
+        });
+      }
+
+      for (let i = 0; i < stepCount; i++) {
+        const startLeft = new THREE.Vector3(loc.x - railOffset, hillHeight - i * stepHeight + postHeight / 2, loc.z + hillRadius - stepDepth + i * stepDepth);
+        const endLeft = new THREE.Vector3(loc.x - railOffset, hillHeight - (i + 1) * stepHeight + postHeight / 2, loc.z + hillRadius - stepDepth + (i + 1) * stepDepth);
+        const startRight = new THREE.Vector3(loc.x + railOffset, startLeft.y, startLeft.z);
+        const endRight = new THREE.Vector3(loc.x + railOffset, endLeft.y, endLeft.z);
+
+        const addRailSegment = (start, end) => {
+          const railLength = start.distanceTo(end);
+          const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, railLength, 8), railMat);
+          rail.position.copy(start.clone().add(end).multiplyScalar(0.5));
+          rail.lookAt(end);
+          rail.rotateX(Math.PI / 2);
+          rail.castShadow = true;
+          stairGroup.add(rail);
+        };
+
+        addRailSegment(startLeft, endLeft);
+        addRailSegment(startRight, endRight);
+      }
+
+      scene.add(stairGroup);
+      building.position.set(loc.x, hillHeight, loc.z);
+    } else {
+      building.position.set(loc.x, 0, loc.z);
+    }
+
     building.userData = { id: loc.id, icon: loc.icon, name: loc.name };
     scene.add(building);
     buildings[loc.id] = building;
