@@ -4,6 +4,7 @@ import { player, updateCape } from '../entities/player.js';
 import { buildings } from '../entities/buildings.js';
 import { npcs, wanderers, bernieListeners, corgis, bees, updateCorgis, updateBees, updateWanderers, updateBernieListeners, updateNPCIndicators } from '../entities/npcs.js';
 import { buildingNpcs, updateBuildingNPCs } from '../entities/buildingNpcs.js';
+import { updateShopAnimations } from '../entities/shops.js';
 import { collectibles, clouds, celebrationParticles, updateCelebrationParticles, updateAmbientParticles } from '../entities/collectibles.js';
 import { waterMaterial, updateButterflies } from '../entities/world.js';
 import { updateRiverWater, updateJumpingFish, updateFoxes, updateBirds, updateBridgeTroll, updateBridgeLanterns, bridgeTroll } from '../entities/river.js';
@@ -361,4 +362,7 @@ function updateAmbientAnimations(ctx, delta, time) {
 
   // Butterflies near flower beds
   updateButterflies(time);
+
+  // Shop animations (steam, rotating donut, sparkles)
+  updateShopAnimations(time, delta);
 }

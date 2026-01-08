@@ -108,6 +108,102 @@ export function createBuilding(color, type) {
       group.add(flag);
     });
 
+    // RED CARPET at entrance
+    const carpetMat = new THREE.MeshStandardMaterial({ color: 0x8b0000, roughness: 0.8 });
+    const carpet = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.02, 4), carpetMat);
+    carpet.position.set(0, 0.01, 3.5);
+    carpet.receiveShadow = true;
+    group.add(carpet);
+
+    // Carpet gold trim
+    const trimGoldMat = new THREE.MeshStandardMaterial({ color: 0xffd700 });
+    [-0.72, 0.72].forEach(x => {
+      const trim = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.025, 4), trimGoldMat);
+      trim.position.set(x, 0.015, 3.5);
+      group.add(trim);
+    });
+
+    // KING BEN STATUE in front of palace
+    const statueGroup = new THREE.Group();
+
+    // Pedestal
+    const pedestalMat = new THREE.MeshStandardMaterial({ color: 0x808080 });
+    const pedestal = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.8, 1.2), pedestalMat);
+    pedestal.position.y = 0.4;
+    pedestal.castShadow = true;
+    statueGroup.add(pedestal);
+
+    // Plaque
+    const plaqueMat = new THREE.MeshStandardMaterial({ color: 0xffd700 });
+    const plaque = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.3, 0.05), plaqueMat);
+    plaque.position.set(0, 0.4, 0.63);
+    statueGroup.add(plaque);
+
+    // Statue body (heroic pose)
+    const statueMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.6, roughness: 0.3 });
+
+    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.7, 0.4), statueMat);
+    torso.position.y = 1.2;
+    statueGroup.add(torso);
+
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 12), statueMat);
+    head.position.y = 1.75;
+    statueGroup.add(head);
+
+    // Crown on statue
+    const statueCrown = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.18, 0.15, 8), statueMat);
+    statueCrown.position.y = 1.95;
+    statueGroup.add(statueCrown);
+
+    // Arms (one raised heroically)
+    const armGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.5, 6);
+    const leftArm = new THREE.Mesh(armGeo, statueMat);
+    leftArm.position.set(-0.35, 1.2, 0);
+    leftArm.rotation.z = Math.PI / 4;
+    statueGroup.add(leftArm);
+
+    const rightArm = new THREE.Mesh(armGeo, statueMat);
+    rightArm.position.set(0.35, 1.5, 0);
+    rightArm.rotation.z = -Math.PI / 3;
+    statueGroup.add(rightArm);
+
+    // Scepter in raised hand
+    const scepter = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.6, 6), statueMat);
+    scepter.position.set(0.5, 1.8, 0);
+    scepter.rotation.z = -Math.PI / 6;
+    statueGroup.add(scepter);
+
+    const scepterOrb = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 8), statueMat);
+    scepterOrb.position.set(0.6, 2.05, 0);
+    statueGroup.add(scepterOrb);
+
+    // Legs
+    [-0.12, 0.12].forEach(x => {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.5, 6), statueMat);
+      leg.position.set(x, 0.95, 0);
+      statueGroup.add(leg);
+    });
+
+    statueGroup.position.set(3, 0, 3);
+    group.add(statueGroup);
+
+    // Royal banner poles at entrance
+    [-2.5, 2.5].forEach(x => {
+      const bannerPole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 3.5, 6), goldMat);
+      bannerPole.position.set(x, 1.75, 2);
+      bannerPole.castShadow = true;
+      group.add(bannerPole);
+
+      // Banner
+      const bannerMat = new THREE.MeshStandardMaterial({
+        color: 0xff1493,
+        side: THREE.DoubleSide
+      });
+      const banner = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 1.5), bannerMat);
+      banner.position.set(x + 0.45, 2.5, 2);
+      group.add(banner);
+    });
+
   } else if (type === 'teashop') {
     // Main building
     const base = new THREE.Mesh(new THREE.BoxGeometry(3.2, 2.2, 2.8), mat);

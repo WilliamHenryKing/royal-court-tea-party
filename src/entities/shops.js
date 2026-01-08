@@ -9,6 +9,12 @@ export let coffeeCafe = null;
 export let donutShop = null;
 export let pinkieSchool = null;
 
+// Animated elements for updates
+export const teaSteamParticles = [];
+export const fallingSprinkles = [];
+export let donutRoof = null;
+export let pinkieSparkles = [];
+
 // Building configurations - AUSTINVILLE GRID LAYOUT
 // Shops placed in proper blocks between streets:
 // - Tea Café: East block between Royal Road (z=0) and Crumpet Court (z=10)
@@ -118,6 +124,88 @@ function createGiantTeacup() {
   group.add(saucer);
 
   return group;
+}
+
+/**
+ * Create a striped umbrella for café tables
+ */
+function createUmbrella(color1 = 0xff9eb5, color2 = 0xffffff) {
+  const group = new THREE.Group();
+
+  // Umbrella pole
+  const poleMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
+  const pole = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.03, 0.04, 1.8, 6),
+    poleMat
+  );
+  pole.position.y = 0.9;
+  group.add(pole);
+
+  // Umbrella canopy (octagonal cone)
+  const canopyGeo = new THREE.ConeGeometry(0.9, 0.4, 8);
+
+  // Create striped texture via canvas
+  const stripeCanvas = document.createElement('canvas');
+  stripeCanvas.width = 64;
+  stripeCanvas.height = 64;
+  const ctx = stripeCanvas.getContext('2d');
+  for (let i = 0; i < 8; i++) {
+    ctx.fillStyle = i % 2 === 0 ? `#${color1.toString(16).padStart(6, '0')}` : `#${color2.toString(16).padStart(6, '0')}`;
+    ctx.beginPath();
+    ctx.moveTo(32, 32);
+    ctx.arc(32, 32, 32, (i * Math.PI) / 4, ((i + 1) * Math.PI) / 4);
+    ctx.closePath();
+    ctx.fill();
+  }
+  const stripeTexture = new THREE.CanvasTexture(stripeCanvas);
+
+  const canopyMat = new THREE.MeshStandardMaterial({
+    map: stripeTexture,
+    side: THREE.DoubleSide
+  });
+  const canopy = new THREE.Mesh(canopyGeo, canopyMat);
+  canopy.position.y = 1.8;
+  canopy.castShadow = true;
+  group.add(canopy);
+
+  // Decorative top
+  const topMat = new THREE.MeshStandardMaterial({ color: 0xffd700 });
+  const top = new THREE.Mesh(
+    new THREE.SphereGeometry(0.05, 8, 8),
+    topMat
+  );
+  top.position.y = 2.05;
+  group.add(top);
+
+  return group;
+}
+
+/**
+ * Create steam particles for teacup
+ */
+function createSteamParticle(basePosition) {
+  const steamMat = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.6
+  });
+  const steam = new THREE.Mesh(
+    new THREE.SphereGeometry(0.08, 6, 6),
+    steamMat
+  );
+  steam.position.copy(basePosition);
+  steam.position.y += Math.random() * 0.3;
+  steam.position.x += (Math.random() - 0.5) * 0.2;
+  steam.position.z += (Math.random() - 0.5) * 0.2;
+
+  steam.userData = {
+    baseY: steam.position.y,
+    speed: 0.3 + Math.random() * 0.2,
+    maxHeight: 1.5 + Math.random() * 0.5,
+    wobble: Math.random() * Math.PI * 2
+  };
+
+  return steam;
 }
 
 /**
@@ -428,6 +516,11 @@ export function createTeaCafe() {
     table.position.set(tPos.x, 0, tPos.z);
     group.add(table);
 
+    // Add umbrella over each table
+    const umbrella = createUmbrella();
+    umbrella.position.set(tPos.x, 0.75, tPos.z);
+    group.add(umbrella);
+
     // Add chairs around table
     const chairOffsets = [
       { x: 0.8, z: 0, rot: -Math.PI / 2 },
@@ -461,6 +554,57 @@ export function createTeaCafe() {
   giantCup.position.set(0, 5.5, 0);
   giantCup.scale.setScalar(0.8);
   group.add(giantCup);
+
+  // Create steam particles rising from giant teacup
+  const steamBasePos = new THREE.Vector3(pos.x, 6.5, pos.z);
+  for (let i = 0; i < 8; i++) {
+    const steam = createSteamParticle(steamBasePos);
+    scene.add(steam);
+    teaSteamParticles.push(steam);
+  }
+
+  // Add chalkboard sign with daily specials
+  const chalkboardGroup = new THREE.Group();
+  const boardStand = new THREE.Mesh(
+    new THREE.BoxGeometry(0.08, 1.2, 0.08),
+    new THREE.MeshStandardMaterial({ color: 0x4a3728 })
+  );
+  boardStand.position.y = 0.6;
+  chalkboardGroup.add(boardStand);
+
+  const chalkboard = new THREE.Mesh(
+    new THREE.BoxGeometry(1.2, 0.9, 0.05),
+    new THREE.MeshStandardMaterial({ color: 0x2d4a2d })
+  );
+  chalkboard.position.y = 1.15;
+  chalkboardGroup.add(chalkboard);
+
+  // Chalkboard text
+  const chalkCanvas = document.createElement('canvas');
+  chalkCanvas.width = 200;
+  chalkCanvas.height = 150;
+  const chalkCtx = chalkCanvas.getContext('2d');
+  chalkCtx.fillStyle = '#2d4a2d';
+  chalkCtx.fillRect(0, 0, 200, 150);
+  chalkCtx.fillStyle = '#ffffff';
+  chalkCtx.font = 'bold 18px Georgia';
+  chalkCtx.textAlign = 'center';
+  chalkCtx.fillText("Today's Specials", 100, 30);
+  chalkCtx.font = '14px Georgia';
+  chalkCtx.fillText('Earl Grey Bliss', 100, 60);
+  chalkCtx.fillText('Royal Raspberry', 100, 85);
+  chalkCtx.fillText('Honey Chamomile', 100, 110);
+  chalkCtx.fillText('~ Fresh Scones! ~', 100, 140);
+
+  const chalkTexture = new THREE.CanvasTexture(chalkCanvas);
+  const chalkSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: chalkTexture }));
+  chalkSprite.scale.set(1.1, 0.85, 1);
+  chalkSprite.position.set(0, 1.15, 0.03);
+  chalkboardGroup.add(chalkSprite);
+
+  chalkboardGroup.position.set(3.5, 0, 3);
+  chalkboardGroup.rotation.y = -Math.PI / 6;
+  group.add(chalkboardGroup);
 
   group.position.set(pos.x, 0, pos.z);
   group.userData = {
@@ -690,26 +834,31 @@ export function createDonutShop() {
     roughness: 0.3
   });
 
-  // Donut torus
-  const donutRoof = new THREE.Mesh(
+  // Donut torus (animated - rotates slowly)
+  const donutTorusGroup = new THREE.Group();
+  donutTorusGroup.position.y = 5;
+
+  const donutTorusMesh = new THREE.Mesh(
     new THREE.TorusGeometry(3, 1.2, 16, 32),
     roofMat
   );
-  donutRoof.rotation.x = Math.PI / 2;
-  donutRoof.position.y = 5;
-  donutRoof.castShadow = true;
-  group.add(donutRoof);
+  donutTorusMesh.rotation.x = Math.PI / 2;
+  donutTorusMesh.castShadow = true;
+  donutTorusGroup.add(donutTorusMesh);
 
-  // Glaze on top
+  group.add(donutTorusGroup);
+  donutRoof = donutTorusGroup;
+
+  // Glaze on top (add to rotating group)
   const glaze = new THREE.Mesh(
     new THREE.TorusGeometry(3, 1.3, 16, 32, Math.PI),
     glazeMat
   );
   glaze.rotation.x = Math.PI / 2;
-  glaze.position.y = 5.3;
-  group.add(glaze);
+  glaze.position.y = 0.3;
+  donutTorusGroup.add(glaze);
 
-  // Sprinkles!
+  // Static sprinkles on donut (add to rotating group)
   const sprinkleColors = [0xff0000, 0xffff00, 0x00ff00, 0x0000ff, 0xff00ff];
   for (let i = 0; i < 30; i++) {
     const angle = Math.random() * Math.PI * 2;
@@ -720,13 +869,73 @@ export function createDonutShop() {
     );
     sprinkle.position.set(
       Math.cos(angle) * radius,
-      5.8,
+      0.8,
       Math.sin(angle) * radius
     );
     sprinkle.rotation.x = Math.random() * Math.PI;
     sprinkle.rotation.z = Math.random() * Math.PI;
-    group.add(sprinkle);
+    donutTorusGroup.add(sprinkle);
   }
+
+  // Create falling sprinkle particles
+  for (let i = 0; i < 10; i++) {
+    const sprinkleMat = new THREE.MeshStandardMaterial({
+      color: sprinkleColors[Math.floor(Math.random() * 5)]
+    });
+    const fallingSprinkle = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.03, 0.03, 0.12, 4),
+      sprinkleMat
+    );
+    const startAngle = Math.random() * Math.PI * 2;
+    const startRadius = 2 + Math.random() * 1.5;
+    fallingSprinkle.position.set(
+      pos.x + Math.cos(startAngle) * startRadius,
+      6 + Math.random() * 2,
+      pos.z + Math.sin(startAngle) * startRadius
+    );
+    fallingSprinkle.rotation.x = Math.random() * Math.PI;
+    fallingSprinkle.rotation.z = Math.random() * Math.PI;
+    fallingSprinkle.userData = {
+      baseX: pos.x,
+      baseZ: pos.z,
+      fallSpeed: 0.5 + Math.random() * 0.3,
+      rotSpeed: Math.random() * 2,
+      radius: startRadius,
+      angle: startAngle
+    };
+    scene.add(fallingSprinkle);
+    fallingSprinkles.push(fallingSprinkle);
+  }
+
+  // "Fresh Donuts!" blinking sign
+  const freshSignMat = new THREE.MeshStandardMaterial({
+    color: 0xff69b4,
+    emissive: 0xff69b4,
+    emissiveIntensity: 0.6
+  });
+  const freshSign = new THREE.Mesh(
+    new THREE.BoxGeometry(2.5, 0.6, 0.1),
+    freshSignMat
+  );
+  freshSign.position.set(0, 2.5, 4.6);
+  freshSign.userData.isBlinkingSign = true;
+  group.add(freshSign);
+
+  const freshCanvas = document.createElement('canvas');
+  freshCanvas.width = 250;
+  freshCanvas.height = 60;
+  const freshCtx = freshCanvas.getContext('2d');
+  freshCtx.fillStyle = '#ff69b4';
+  freshCtx.fillRect(0, 0, 250, 60);
+  freshCtx.fillStyle = '#ffffff';
+  freshCtx.font = 'bold 32px Impact';
+  freshCtx.textAlign = 'center';
+  freshCtx.fillText('FRESH DONUTS!', 125, 42);
+  const freshTexture = new THREE.CanvasTexture(freshCanvas);
+  const freshSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: freshTexture }));
+  freshSprite.scale.set(2.4, 0.55, 1);
+  freshSprite.position.set(0, 2.5, 4.66);
+  group.add(freshSprite);
 
   // Sign
   const signCanvas = document.createElement('canvas');
@@ -884,6 +1093,69 @@ export function createPinkieSchool() {
   pinkieGroup.scale.setScalar(1.5);
   group.add(pinkieGroup);
 
+  // Add sparkle particles around pinkie statue
+  for (let i = 0; i < 8; i++) {
+    const sparkleMat = new THREE.MeshStandardMaterial({
+      color: 0xffd700,
+      emissive: 0xffd700,
+      emissiveIntensity: 0.8,
+      transparent: true,
+      opacity: 0.9
+    });
+    const sparkle = new THREE.Mesh(
+      new THREE.OctahedronGeometry(0.08, 0),
+      sparkleMat
+    );
+    const angle = (i / 8) * Math.PI * 2;
+    sparkle.position.set(
+      pos.x + Math.cos(angle) * 1.2,
+      7 + Math.random() * 0.5,
+      pos.z + Math.sin(angle) * 1.2
+    );
+    sparkle.userData = {
+      baseY: sparkle.position.y,
+      angle: angle,
+      speed: 1 + Math.random() * 0.5,
+      offset: Math.random() * Math.PI * 2
+    };
+    scene.add(sparkle);
+    pinkieSparkles.push(sparkle);
+  }
+
+  // Bell tower enhancement
+  const bellTower = new THREE.Group();
+  const towerBase = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.4, 0.5, 1.5, 6),
+    new THREE.MeshStandardMaterial({ color: 0x4b0082 })
+  );
+  towerBase.position.y = 0.75;
+  bellTower.add(towerBase);
+
+  const bellHousing = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.5, 0.4, 0.5, 6),
+    new THREE.MeshStandardMaterial({ color: 0xffd700 })
+  );
+  bellHousing.position.y = 1.6;
+  bellTower.add(bellHousing);
+
+  const bell = new THREE.Mesh(
+    new THREE.SphereGeometry(0.25, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2),
+    new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.8, roughness: 0.2 })
+  );
+  bell.rotation.x = Math.PI;
+  bell.position.y = 1.5;
+  bellTower.add(bell);
+
+  const bellTop = new THREE.Mesh(
+    new THREE.ConeGeometry(0.55, 0.4, 6),
+    new THREE.MeshStandardMaterial({ color: 0x4b0082 })
+  );
+  bellTop.position.y = 1.9;
+  bellTower.add(bellTop);
+
+  bellTower.position.set(-2.5, 4, 0);
+  group.add(bellTower);
+
   // Sign with fancy font
   const signCanvas = document.createElement('canvas');
   signCanvas.width = 512;
@@ -996,4 +1268,88 @@ export function createAllShops() {
   createPinkieSchool();
 
   return { teaCafe, coffeeCafe, donutShop, pinkieSchool };
+}
+
+// ============================================
+// UPDATE FUNCTIONS FOR ANIMATED SHOP ELEMENTS
+// ============================================
+
+/**
+ * Update all animated shop elements
+ */
+export function updateShopAnimations(time, delta) {
+  // Update tea steam particles
+  teaSteamParticles.forEach(steam => {
+    const data = steam.userData;
+
+    // Rise upward
+    steam.position.y += data.speed * delta;
+
+    // Gentle wobble
+    steam.position.x += Math.sin(time * 2 + data.wobble) * 0.002;
+    steam.position.z += Math.cos(time * 2 + data.wobble) * 0.002;
+
+    // Fade out as it rises
+    const heightProgress = (steam.position.y - data.baseY) / data.maxHeight;
+    steam.material.opacity = 0.6 * (1 - heightProgress);
+    steam.scale.setScalar(1 + heightProgress * 0.5);
+
+    // Reset when too high
+    if (steam.position.y > data.baseY + data.maxHeight) {
+      steam.position.y = data.baseY;
+      steam.material.opacity = 0.6;
+      steam.scale.setScalar(1);
+    }
+  });
+
+  // Rotate donut roof slowly
+  if (donutRoof) {
+    donutRoof.rotation.y += 0.1 * delta;
+  }
+
+  // Update falling sprinkles
+  const donutPos = SHOP_POSITIONS.donutShop;
+  fallingSprinkles.forEach(sprinkle => {
+    const data = sprinkle.userData;
+
+    // Fall down
+    sprinkle.position.y -= data.fallSpeed * delta;
+
+    // Rotate while falling
+    sprinkle.rotation.x += data.rotSpeed * delta;
+    sprinkle.rotation.z += data.rotSpeed * 0.5 * delta;
+
+    // Slight drift
+    sprinkle.position.x += Math.sin(time + data.angle) * 0.01;
+
+    // Reset when below ground
+    if (sprinkle.position.y < 0) {
+      sprinkle.position.y = 6 + Math.random() * 2;
+      const newAngle = Math.random() * Math.PI * 2;
+      const newRadius = 2 + Math.random() * 1.5;
+      sprinkle.position.x = data.baseX + Math.cos(newAngle) * newRadius;
+      sprinkle.position.z = data.baseZ + Math.sin(newAngle) * newRadius;
+      data.angle = newAngle;
+    }
+  });
+
+  // Update pinkie sparkles
+  const pinkiePos = SHOP_POSITIONS.pinkieSchool;
+  pinkieSparkles.forEach((sparkle, i) => {
+    const data = sparkle.userData;
+
+    // Bob up and down
+    sparkle.position.y = data.baseY + Math.sin(time * data.speed + data.offset) * 0.3;
+
+    // Orbit slowly around pinkie
+    const orbitAngle = data.angle + time * 0.3;
+    sparkle.position.x = pinkiePos.x + Math.cos(orbitAngle) * 1.2;
+    sparkle.position.z = pinkiePos.z + Math.sin(orbitAngle) * 1.2;
+
+    // Pulse brightness
+    sparkle.material.emissiveIntensity = 0.5 + Math.sin(time * 3 + i) * 0.3;
+
+    // Spin
+    sparkle.rotation.y += delta * 2;
+  });
 }
