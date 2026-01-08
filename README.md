@@ -1,13 +1,8 @@
 # The Royal Court Tea
 
 ## Technologies of the Realm
-| Sigil | Technology | Purpose |
-| --- | --- | --- |
-| ◆ | HTML | Lays out the royal halls, dialogs, and interface structure. |
-| ■ | CSS | Styles the kingdom with ornate typography, layouts, and atmosphere. |
-| ▲ | JavaScript | Powers movement, interactions, dialog flow, and game logic. |
-| ● | Three.js (CDN) | Renders the 3D village, characters, and camera effects. |
-| ✦ | Web Audio | Drives the royal playlist and in-world sound cues. |
+- Three.js (CDN) for the 3D village, characters, and camera effects.
+- Web Audio for the royal playlist and in-world sound cues.
 
 ## Crowned Purpose
 The Royal Court Tea is a playful, story-led web experience that doubles as an invitation to a themed tea gathering. Guests wander a whimsical royal village, collect sweet treats, and meet the court to learn the event details, guest list, and feast expectations.
