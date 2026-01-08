@@ -13,7 +13,7 @@ import { updateAllActivities } from '../entities/activities.js';
 import { updateCameraZoom, isZoomedIn, getZoomState } from '../systems/cameraZoom.js';
 import { checkCollision } from './interactions.js';
 import { getInputVector } from '../systems/inputSystem.js';
-import { camera } from '../engine/renderer.js';
+import { camera, getZoomLevel } from '../engine/renderer.js';
 import { PLAYER_CONFIG } from '../config.js';
 import { collisionManager, COLLISION_LAYERS } from '../systems/CollisionManager.js';
 
@@ -168,10 +168,14 @@ function updateCamera(ctx, delta, time, isMoving) {
   );
 
   cameraTarget.set(player.position.x, player.position.y + 1, player.position.z);
+  // Apply user zoom level from mouse wheel
+  const userZoom = getZoomLevel();
+  const zoomedOffset = cameraZoomState.currentOffset * userZoom;
+
   const idealPos = new THREE.Vector3(
     player.position.x,
-    player.position.y + cameraZoomState.currentOffset,
-    player.position.z + cameraZoomState.currentOffset
+    player.position.y + zoomedOffset,
+    player.position.z + zoomedOffset
   );
   camera.position.lerp(idealPos, 0.08);
   camera.lookAt(cameraTarget);

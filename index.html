@@ -168,6 +168,8 @@
           <button class="music-btn" id="music-next">⏭️ Next</button>
         </div>
       </div>
+      <button class="icon-btn" id="settings-btn" title="Settings">⚙️</button>
+      <button class="icon-btn" id="fullscreen-btn" title="Fullscreen">⛶</button>
     </div>
   </div>
 
@@ -221,6 +223,59 @@
         <div style="font-size: 0.85rem; margin-top: 0.5rem; opacity: 0.9;">146 Heather Rd, Austinville, Blackheath</div>
       </div>
       <button class="splash-btn" id="continue-btn" style="margin-top: 1.5rem; padding: 0.8rem 2rem; font-size: 1rem;">Keep Exploring 👑</button>
+    </div>
+  </div>
+
+  <div id="settings-modal">
+    <div class="settings-content">
+      <button class="dialog-close" id="settings-close">✕</button>
+      <div class="settings-title">⚙️ Settings</div>
+
+      <div class="settings-section">
+        <div class="settings-label">🎵 Music Volume</div>
+        <input type="range" id="music-volume-slider" min="0" max="100" value="70" class="settings-slider">
+        <div class="settings-value" id="music-volume-value">70%</div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-label">🔊 Sound Effects</div>
+        <label class="settings-toggle">
+          <input type="checkbox" id="sound-effects-toggle" checked>
+          <span class="settings-toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-label">📷 Camera Sensitivity</div>
+        <input type="range" id="camera-sensitivity-slider" min="1" max="10" value="5" class="settings-slider">
+        <div class="settings-value" id="camera-sensitivity-value">5</div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-label">🗺️ Show Mini-map</div>
+        <label class="settings-toggle">
+          <input type="checkbox" id="minimap-toggle" checked>
+          <span class="settings-toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-label">🎮 Show Joystick</div>
+        <label class="settings-toggle">
+          <input type="checkbox" id="joystick-toggle" checked>
+          <span class="settings-toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-label">💬 Show Action Button</div>
+        <label class="settings-toggle">
+          <input type="checkbox" id="action-button-toggle" checked>
+          <span class="settings-toggle-slider"></span>
+        </label>
+      </div>
+
+      <button class="settings-reset-btn" id="settings-reset">Reset to Defaults</button>
     </div>
   </div>
 

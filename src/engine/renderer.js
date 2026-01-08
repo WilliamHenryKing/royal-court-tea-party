@@ -35,7 +35,33 @@ export function initRenderer() {
   // Handle window resize
   window.addEventListener('resize', onResize);
 
+  // Handle mouse wheel zoom (desktop only)
+  setupMouseWheelZoom();
+
   return { scene, camera, renderer, composer };
+}
+
+// Mouse wheel zoom for desktop
+let zoomLevel = 1.0;
+const MIN_ZOOM = 0.5;
+const MAX_ZOOM = 2.0;
+
+function setupMouseWheelZoom() {
+  window.addEventListener('wheel', (e) => {
+    // Prevent default scroll behavior
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+    }
+
+    // Adjust zoom level
+    const delta = e.deltaY > 0 ? 0.05 : -0.05;
+    zoomLevel = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoomLevel + delta));
+  }, { passive: false });
+}
+
+// Export zoom level for camera system to use
+export function getZoomLevel() {
+  return zoomLevel;
 }
 
 // Setup post-processing for basic render pass
