@@ -28,7 +28,7 @@ import {
   showSweetIntro,
   showFloatingMessage
 } from '../ui/uiManager.js';
-import { maybePlayAmbientVoice } from '../audio/audioManager.js';
+import { maybePlayAmbientVoice, updateAmbientSounds, playFootstep, getSurfaceType, playCollectSound } from '../audio/audioManager.js';
 
 // Camera state
 const cameraTarget = new THREE.Vector3();
@@ -128,6 +128,10 @@ function updatePlayer(ctx, delta, time, now) {
     // Waddle animation
     player.rotation.z = Math.sin(time * 15) * 0.12;
     player.position.y = player.userData.baseY + Math.abs(Math.sin(time * 18)) * 0.12;
+
+    // Play footstep sound based on surface
+    const surfaceType = getSurfaceType(player.position.x, player.position.z);
+    playFootstep(surfaceType);
   } else {
     // Idle animation
     player.rotation.z = THREE.MathUtils.lerp(player.rotation.z, 0, 0.1);
@@ -259,6 +263,7 @@ function updateCollectibles(ctx, delta, time, now) {
       ctx.gameState.collected++;
       updateCollectibleCount(ctx.gameState.collected);
       showCollectPopup();
+      playCollectSound();
       // spawnCelebrationBurst();
       player.userData.boostEndTime = now + PLAYER_CONFIG.BOOST_DURATION;
       if (!ctx.gameState.firstSweetShown) {
@@ -365,4 +370,7 @@ function updateAmbientAnimations(ctx, delta, time) {
 
   // Shop animations (steam, rotating donut, sparkles)
   updateShopAnimations(time, delta);
+
+  // Ambient location-based sounds
+  updateAmbientSounds(player.position.x, player.position.z);
 }

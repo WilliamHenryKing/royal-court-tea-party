@@ -60,7 +60,7 @@ import {
   updateMusicUI,
   setCollectibleTotal
 } from './ui/uiManager.js';
-import { musicAudio, musicState, loadTrack, playNextTrack } from './audio/audioManager.js';
+import { musicAudio, musicState, loadTrack, playNextTrack, initAudioContext } from './audio/audioManager.js';
 import { EVENT, PLAYER_CONFIG } from './config.js';
 import { generateDialogs, SPEAKERS, GUESTS, MUSIC_TRACKS } from './assets/data.js';
 
@@ -133,6 +133,15 @@ function init() {
     updateMusicUI();
   });
   loadTrack(musicState.currentIndex);
+
+  // Initialize Web Audio context on first user interaction
+  const initAudioOnInteraction = () => {
+    initAudioContext();
+    document.removeEventListener('click', initAudioOnInteraction);
+    document.removeEventListener('touchstart', initAudioOnInteraction);
+  };
+  document.addEventListener('click', initAudioOnInteraction);
+  document.addEventListener('touchstart', initAudioOnInteraction);
 
   // Update UI
   updateMusicUI();
