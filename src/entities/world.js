@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { scene } from '../engine/renderer.js';
 import { PATH_CONFIG } from '../config.js';
 import { LOCATIONS } from '../assets/data.js';
+import { PALACE_CARPET_TOP_OFFSET, PALACE_CARPET_WIDTH, PALACE_HILL_RADIUS } from './buildings.js';
 import { collisionManager, COLLISION_LAYERS } from '../systems/CollisionManager.js';
 
 // Legacy collision boxes for world boundaries and objects
@@ -1164,6 +1165,43 @@ export function createWorld() {
 
     // Add to new collision manager
     collisionManager.addStaticBox(loc.x, loc.z, loc.sx, loc.sz, 0.5);
+
+    if (loc.id === 'palace') {
+      const hillRadius = PALACE_HILL_RADIUS;
+      const hillMinX = loc.x - hillRadius;
+      const hillMaxX = loc.x + hillRadius;
+      const hillMinZ = loc.z - hillRadius;
+      const hillMaxZ = loc.z + hillRadius;
+      const corridorHalf = PALACE_CARPET_WIDTH / 2 + 0.15;
+      const carpetTopZ = loc.z + PALACE_CARPET_TOP_OFFSET;
+      const carpetAccessMinZ = carpetTopZ - 0.4;
+
+      const hillBlocks = [
+        {
+          minX: hillMinX,
+          maxX: loc.x - corridorHalf,
+          minZ: hillMinZ,
+          maxZ: hillMaxZ
+        },
+        {
+          minX: loc.x + corridorHalf,
+          maxX: hillMaxX,
+          minZ: hillMinZ,
+          maxZ: hillMaxZ
+        },
+        {
+          minX: loc.x - corridorHalf,
+          maxX: loc.x + corridorHalf,
+          minZ: hillMinZ,
+          maxZ: carpetAccessMinZ
+        }
+      ];
+
+      hillBlocks.forEach(block => {
+        collisionBoxes.push(block);
+        collisionManager.addStaticBoxMinMax(block.minX, block.maxX, block.minZ, block.maxZ);
+      });
+    }
   });
 
   // Ground (expanded for Austinville town)

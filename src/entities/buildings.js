@@ -8,9 +8,10 @@ export const buildings = {};
 
 export const PALACE_HILL_HEIGHT = 1.2;
 export const PALACE_HILL_RADIUS = 6.2;
-const PALACE_STEP_COUNT = 5;
-const PALACE_STEP_DEPTH = 0.7;
-const PALACE_STEP_WIDTH = 3;
+export const PALACE_HILL_TOP_RATIO = 0.78;
+export const PALACE_CARPET_WIDTH = 3.2;
+export const PALACE_CARPET_FRONT_OFFSET = 1.6;
+export const PALACE_CARPET_TOP_OFFSET = 3.8;
 
 // Create a building based on type
 export function createBuilding(color, type) {
@@ -535,77 +536,51 @@ export function createBuildings() {
     if (loc.id === 'palace') {
       const hillHeight = PALACE_HILL_HEIGHT;
       const hillRadius = PALACE_HILL_RADIUS;
+      const hillTopRadius = hillRadius * PALACE_HILL_TOP_RATIO;
       const hillMat = new THREE.MeshStandardMaterial({ color: 0x7bc96f, roughness: 0.95 });
       const hill = new THREE.Mesh(
-        new THREE.CylinderGeometry(hillRadius * 0.78, hillRadius, hillHeight, 32),
+        new THREE.CylinderGeometry(hillTopRadius, hillRadius, hillHeight, 32),
         hillMat
       );
       hill.position.set(loc.x, hillHeight / 2, loc.z);
       hill.receiveShadow = true;
       scene.add(hill);
 
-      const stairGroup = new THREE.Group();
-      const stepCount = PALACE_STEP_COUNT;
-      const stepHeight = hillHeight / stepCount;
-      const stepDepth = PALACE_STEP_DEPTH;
-      const stepWidth = PALACE_STEP_WIDTH;
-      const stepMat = new THREE.MeshStandardMaterial({ color: 0xf2d4b8, roughness: 0.85 });
-      const railMat = new THREE.MeshStandardMaterial({ color: 0xd5b46f, metalness: 0.4, roughness: 0.4 });
+      const carpetBottomZ = loc.z + hillRadius + PALACE_CARPET_FRONT_OFFSET;
+      const carpetTopZ = loc.z + PALACE_CARPET_TOP_OFFSET;
+      const carpetLength = carpetBottomZ - carpetTopZ;
+      const carpetThickness = 0.08;
+      const carpetSlope = Math.atan2(hillHeight, carpetLength);
 
-      for (let i = 0; i < stepCount; i++) {
-        const step = new THREE.Mesh(
-          new THREE.BoxGeometry(stepWidth, stepHeight, stepDepth),
-          stepMat
-        );
-        const stepZ = loc.z + hillRadius - stepDepth / 2 + i * stepDepth;
-        step.position.set(
-          loc.x,
-          hillHeight - stepHeight / 2 - i * stepHeight,
-          stepZ
-        );
-        step.castShadow = true;
-        step.receiveShadow = true;
-        stairGroup.add(step);
+      const carpetGroup = new THREE.Group();
+      const carpetMat = new THREE.MeshStandardMaterial({ color: 0xb5142a, roughness: 0.8 });
+      const carpet = new THREE.Mesh(
+        new THREE.BoxGeometry(PALACE_CARPET_WIDTH, carpetThickness, carpetLength),
+        carpetMat
+      );
+      carpet.castShadow = true;
+      carpet.receiveShadow = true;
+      carpetGroup.add(carpet);
 
-      }
+      const threadMat = new THREE.MeshStandardMaterial({ color: 0xffd24a, roughness: 0.6, metalness: 0.2 });
+      const threadHeight = 0.02;
+      const threadWidth = 0.12;
+      const threadGeo = new THREE.BoxGeometry(threadWidth, threadHeight, carpetLength * 0.98);
+      [-PALACE_CARPET_WIDTH * 0.25, 0, PALACE_CARPET_WIDTH * 0.25].forEach(offset => {
+        const thread = new THREE.Mesh(threadGeo, threadMat);
+        thread.position.set(offset, carpetThickness / 2 + threadHeight / 2 + 0.01, 0);
+        thread.castShadow = true;
+        thread.receiveShadow = true;
+        carpetGroup.add(thread);
+      });
 
-      const postHeight = 0.8;
-      const railOffset = stepWidth / 2 + 0.25;
-      for (let i = 0; i <= stepCount; i++) {
-        const postY = hillHeight - i * stepHeight + postHeight / 2;
-        const postZ = loc.z + hillRadius - stepDepth + i * stepDepth;
-        [-railOffset, railOffset].forEach((xOffset) => {
-          const post = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.05, 0.05, postHeight, 8),
-            railMat
-          );
-          post.position.set(loc.x + xOffset, postY, postZ);
-          post.castShadow = true;
-          stairGroup.add(post);
-        });
-      }
-
-      for (let i = 0; i < stepCount; i++) {
-        const startLeft = new THREE.Vector3(loc.x - railOffset, hillHeight - i * stepHeight + postHeight / 2, loc.z + hillRadius - stepDepth + i * stepDepth);
-        const endLeft = new THREE.Vector3(loc.x - railOffset, hillHeight - (i + 1) * stepHeight + postHeight / 2, loc.z + hillRadius - stepDepth + (i + 1) * stepDepth);
-        const startRight = new THREE.Vector3(loc.x + railOffset, startLeft.y, startLeft.z);
-        const endRight = new THREE.Vector3(loc.x + railOffset, endLeft.y, endLeft.z);
-
-        const addRailSegment = (start, end) => {
-          const railLength = start.distanceTo(end);
-          const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, railLength, 8), railMat);
-          rail.position.copy(start.clone().add(end).multiplyScalar(0.5));
-          rail.lookAt(end);
-          rail.rotateX(Math.PI / 2);
-          rail.castShadow = true;
-          stairGroup.add(rail);
-        };
-
-        addRailSegment(startLeft, endLeft);
-        addRailSegment(startRight, endRight);
-      }
-
-      scene.add(stairGroup);
+      carpetGroup.position.set(
+        loc.x,
+        hillHeight / 2 + carpetThickness / 2,
+        (carpetTopZ + carpetBottomZ) / 2
+      );
+      carpetGroup.rotation.x = -carpetSlope;
+      scene.add(carpetGroup);
       building.position.set(loc.x, hillHeight, loc.z);
     } else {
       building.position.set(loc.x, 0, loc.z);
