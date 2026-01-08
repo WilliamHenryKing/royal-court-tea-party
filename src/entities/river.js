@@ -707,6 +707,8 @@ export function createForest() {
   // Forest area bounds (south of the river, past the bridge)
   const forestCenter = { x: 15, z: -45 };
   const forestSize = { width: 30, depth: 20 };
+  const pathWidth = 2.4;
+  const clearingRadius = 3.6;
 
   // Store bounds for collision
   forestBounds = {
@@ -725,6 +727,87 @@ export function createForest() {
   ground.receiveShadow = true;
   forestGroup.add(ground);
 
+  // Subtle dirt path leading from bridge area to forest center
+  const pathStart = {
+    x: forestCenter.x - 6,
+    z: forestBounds.maxZ - 1.2
+  };
+  const pathEnd = {
+    x: forestCenter.x + 1,
+    z: forestCenter.z + 0.5
+  };
+  const pathLength = Math.hypot(pathEnd.x - pathStart.x, pathEnd.z - pathStart.z);
+  const pathGeo = new THREE.PlaneGeometry(pathLength, pathWidth);
+  const pathMat = new THREE.MeshStandardMaterial({ color: 0x7a6345, roughness: 0.95 });
+  const path = new THREE.Mesh(pathGeo, pathMat);
+  path.rotation.x = -Math.PI / 2;
+  path.position.set(
+    (pathStart.x + pathEnd.x) / 2,
+    0.03,
+    (pathStart.z + pathEnd.z) / 2
+  );
+  path.rotation.y = -Math.atan2(pathEnd.z - pathStart.z, pathEnd.x - pathStart.x);
+  path.receiveShadow = true;
+  forestGroup.add(path);
+
+  // Clearing area with a small log ring and mushrooms
+  const clearingCenter = {
+    x: forestCenter.x + 2,
+    z: forestCenter.z + 1.5
+  };
+  const clearingGeo = new THREE.CircleGeometry(clearingRadius, 24);
+  const clearingMat = new THREE.MeshStandardMaterial({ color: 0x4d6a3f, roughness: 0.9 });
+  const clearing = new THREE.Mesh(clearingGeo, clearingMat);
+  clearing.rotation.x = -Math.PI / 2;
+  clearing.position.set(clearingCenter.x, 0.025, clearingCenter.z);
+  clearing.receiveShadow = true;
+  forestGroup.add(clearing);
+
+  const logMat = new THREE.MeshStandardMaterial({ color: 0x7a5a3a, roughness: 0.8 });
+  const logGeo = new THREE.CylinderGeometry(0.18, 0.18, 1.4, 8);
+  for (let i = 0; i < 6; i++) {
+    const angle = (i / 6) * Math.PI * 2;
+    const log = new THREE.Mesh(logGeo, logMat);
+    log.rotation.z = Math.PI / 2;
+    log.rotation.y = angle;
+    log.position.set(
+      clearingCenter.x + Math.cos(angle) * 1.6,
+      0.2,
+      clearingCenter.z + Math.sin(angle) * 1.6
+    );
+    log.castShadow = true;
+    forestGroup.add(log);
+  }
+
+  const mushroomColors = [0xff6b6b, 0xffa07a, 0x9370db];
+  for (let i = 0; i < 4; i++) {
+    const mushroomGroup = new THREE.Group();
+    const stem = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.08, 0.1, 0.25, 6),
+      new THREE.MeshStandardMaterial({ color: 0xfff8dc })
+    );
+    stem.position.y = 0.12;
+    mushroomGroup.add(stem);
+
+    const cap = new THREE.Mesh(
+      new THREE.SphereGeometry(0.2, 10, 8, 0, Math.PI * 2, 0, Math.PI / 2),
+      new THREE.MeshStandardMaterial({
+        color: mushroomColors[Math.floor(Math.random() * mushroomColors.length)]
+      })
+    );
+    cap.position.y = 0.25;
+    mushroomGroup.add(cap);
+
+    const offsetAngle = Math.random() * Math.PI * 2;
+    const offsetRadius = 1 + Math.random() * 0.9;
+    mushroomGroup.position.set(
+      clearingCenter.x + Math.cos(offsetAngle) * offsetRadius,
+      0,
+      clearingCenter.z + Math.sin(offsetAngle) * offsetRadius
+    );
+    forestGroup.add(mushroomGroup);
+  }
+
   // Tree materials
   const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: 0.9 });
   const leafMat = new THREE.MeshStandardMaterial({ color: 0x228b22, roughness: 0.8 });
@@ -732,10 +815,61 @@ export function createForest() {
 
   // Create trees in a natural pattern
   const treePositions = [];
+  const minTreeSpacing = 2.2;
+  const maxAttempts = 200;
+
+  const distanceToSegment = (point, start, end) => {
+    const dx = end.x - start.x;
+    const dz = end.z - start.z;
+    const lengthSq = dx * dx + dz * dz;
+    if (lengthSq === 0) {
+      return Math.hypot(point.x - start.x, point.z - start.z);
+    }
+    let t = ((point.x - start.x) * dx + (point.z - start.z) * dz) / lengthSq;
+    t = Math.max(0, Math.min(1, t));
+    const projX = start.x + t * dx;
+    const projZ = start.z + t * dz;
+    return Math.hypot(point.x - projX, point.z - projZ);
+  };
+
+  const isInsideBounds = pos =>
+    pos.x > forestBounds.minX + 1 &&
+    pos.x < forestBounds.maxX - 1 &&
+    pos.z > forestBounds.minZ + 1 &&
+    pos.z < forestBounds.maxZ - 1;
+
+  const isClearOfPathAndClearing = pos => {
+    const pathDistance = distanceToSegment(pos, pathStart, pathEnd);
+    if (pathDistance < pathWidth * 0.6) {
+      return false;
+    }
+    const clearingDistance = Math.hypot(pos.x - clearingCenter.x, pos.z - clearingCenter.z);
+    return clearingDistance > clearingRadius + 0.8;
+  };
+
   for (let i = 0; i < 25; i++) {
-    const x = forestCenter.x + (Math.random() - 0.5) * (forestSize.width - 4);
-    const z = forestCenter.z + (Math.random() - 0.5) * (forestSize.depth - 4);
-    treePositions.push({ x, z });
+    let placed = false;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const candidate = {
+        x: forestCenter.x + (Math.random() - 0.5) * (forestSize.width - 4),
+        z: forestCenter.z + (Math.random() - 0.5) * (forestSize.depth - 4)
+      };
+      if (!isInsideBounds(candidate) || !isClearOfPathAndClearing(candidate)) {
+        continue;
+      }
+      const isTooClose = treePositions.some(existing =>
+        Math.hypot(existing.x - candidate.x, existing.z - candidate.z) < minTreeSpacing
+      );
+      if (isTooClose) {
+        continue;
+      }
+      treePositions.push(candidate);
+      placed = true;
+      break;
+    }
+    if (!placed) {
+      continue;
+    }
   }
 
   treePositions.forEach((pos, index) => {
