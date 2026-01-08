@@ -1,6 +1,10 @@
 // Interactions - collision detection, NPC interactions, and dialog triggers
-import { openDialog, openWandererDialog, openTrollDialog } from '../ui/uiManager.js';
-import { openDialog, openWandererDialog, openBuildingNPCDialog } from '../ui/uiManager.js';
+import {
+  openBuildingNPCDialog,
+  openDialog,
+  openTrollDialog,
+  openWandererDialog,
+} from '../ui/uiManager.js';
 
 // Collision boxes storage
 export const collisionBoxes = [];
