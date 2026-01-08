@@ -5,6 +5,7 @@ import { checkCollision, collisionBoxes } from './world.js';
 import { player } from './player.js';
 import { SHOP_POSITIONS } from './shops.js';
 import { FISHING_DOCK_POS } from './river.js';
+import { playBoxingBell, playFishingReel, playTrampolineBounce } from '../audio/audioManager.js';
 
 // ============================================
 // BOXING RING - "The Royal Rumble"
@@ -52,6 +53,9 @@ export const BOXING_RING_DATA = {
 
 export let boxingRing = null;
 export let boxingFighters = [];
+const boxingAudioState = {
+  nextBellTime: 0
+};
 
 export function createBoxingRing() {
   const group = new THREE.Group();
@@ -349,6 +353,17 @@ export function updateBoxingRing(time, delta, camera) {
 
   const ringCenter = BOXING_RING_DATA.position;
 
+  if (player) {
+    const distToRing = Math.hypot(
+      player.position.x - ringCenter.x,
+      player.position.z - ringCenter.z
+    );
+    if (distToRing < 14 && time > boxingAudioState.nextBellTime) {
+      playBoxingBell();
+      boxingAudioState.nextBellTime = time + 12 + Math.random() * 8;
+    }
+  }
+
   boxingFighters.filter(f => f.userData.isFighter).forEach(knight => {
     const data = knight.userData;
     const opponent = data.opponent;
@@ -645,6 +660,7 @@ export function updatePlayerBounce(delta) {
     bounceState.isBouncing = true;
     bounceState.comboCount++;
     bounceState.lastBounceTime = now;
+    playTrampolineBounce();
 
     // Higher bounces based on combo
     const comboBonus = Math.min(bounceState.comboCount * 0.5, 4);
@@ -875,6 +891,9 @@ export function updateFishermen(time, delta, camera) {
     data.catchTimer -= delta;
     if (data.catchTimer <= 0) {
       data.catchTimer = 8 + Math.random() * 15;
+      if (player && npc.position.distanceTo(player.position) < 12) {
+        playFishingReel();
+      }
 
       if (data.name === "Old Timer Pete") {
         showFishermanQuote(npc, camera);
