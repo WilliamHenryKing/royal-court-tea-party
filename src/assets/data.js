@@ -18,7 +18,7 @@ export const GUESTS = [
 // Cross streets: Sugar Lane (x=-20), Honey Way (x=0), Biscuit Boulevard (x=20)
 // Buildings placed in proper blocks between streets
 export const LOCATIONS = [
-  { id: 'palace', x: 10, z: 5, color: 0xf5a1c0, icon: '🏰', name: 'Royal Palace', sx: 5, sz: 4 },
+  { id: 'palace', x: 0, z: -10, color: 0xf5a1c0, icon: '🏰', name: 'Royal Palace', sx: 5, sz: 4 },
   { id: 'teashop', x: 12, z: -5, color: 0xa9c7ff, icon: '🍵', name: 'Tea Garden', sx: 4, sz: 3.5 },
   { id: 'speakers', x: 0, z: 15, color: 0xd4b8ff, icon: '🎤', name: "Speaker's Grove", sx: 5, sz: 5 },
   { id: 'guests', x: -10, z: 5, color: 0xffd4a8, icon: '📜', name: 'Guest Registry', sx: 4, sz: 4 },
