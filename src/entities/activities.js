@@ -394,7 +394,10 @@ export function updateBoxingRing(time, delta, camera) {
             data.fightState = 'recovering';
           }
           data.fallTimer = 0;
-          showFighterQuote(knight, camera);
+          // Only show quote if player is nearby
+          if (player && knight.position.distanceTo(player.position) < 12) {
+            showFighterQuote(knight, camera);
+          }
         }
         break;
 
@@ -428,13 +431,16 @@ export function updateBoxingRing(time, delta, camera) {
     }
   });
 
-  // Announcer commentary
+  // Announcer commentary - only when player is nearby
   const announcer = boxingFighters.find(f => f.userData.isAnnouncer);
   if (announcer) {
     announcer.userData.commentTimer -= delta;
     if (announcer.userData.commentTimer <= 0) {
-      announcer.userData.commentTimer = 5 + Math.random() * 8;
-      showFighterQuote(announcer, camera);
+      announcer.userData.commentTimer = 12 + Math.random() * 12; // Longer cooldown
+      // Only show if player is nearby
+      if (player && announcer.position.distanceTo(player.position) < 12) {
+        showFighterQuote(announcer, camera);
+      }
     }
     announcer.rotation.x = Math.sin(time * 0.5) * 0.1;
   }
@@ -451,23 +457,19 @@ function showFighterQuote(npc, camera) {
   const quote = quotes[Math.floor(Math.random() * quotes.length)];
 
   const msg = document.createElement('div');
-  msg.className = 'floating-message fighter-quote';
+  msg.className = 'floating-message';
   msg.textContent = quote;
   msg.style.cssText = `
     position: fixed;
     left: ${x}px;
     top: ${y - 80}px;
     transform: translateX(-50%);
-    font-size: 1rem;
-    font-weight: bold;
-    color: #ffd700;
-    text-shadow: 1px 1px 2px #000;
+    font-size: 0.8rem;
     pointer-events: none;
-    z-index: 1000;
-    animation: floatUp 3s ease-out forwards;
+    z-index: 100;
   `;
   document.body.appendChild(msg);
-  setTimeout(() => msg.remove(), 3000);
+  setTimeout(() => msg.remove(), 2500);
 }
 
 // ============================================
@@ -655,23 +657,20 @@ export function updatePlayerBounce(delta) {
 
 function showBounceQuote(quote) {
   const popup = document.createElement('div');
-  popup.className = 'bounce-quote';
+  popup.className = 'floating-message';
   popup.textContent = quote;
   popup.style.cssText = `
     position: fixed;
     top: 30%;
     left: 50%;
     transform: translateX(-50%);
-    font-size: 2rem;
-    font-weight: bold;
+    font-size: 1rem;
     color: #4169e1;
-    text-shadow: 2px 2px 4px white;
-    animation: bounceQuote 1.5s ease-out forwards;
-    z-index: 1000;
     pointer-events: none;
+    z-index: 100;
   `;
   document.body.appendChild(popup);
-  setTimeout(() => popup.remove(), 1500);
+  setTimeout(() => popup.remove(), 2000);
 }
 
 // ============================================
@@ -1072,13 +1071,16 @@ export function updateWarriors(time, delta, camera) {
         teaWarrior.rotation.y = Math.atan2(toEnemy.x, toEnemy.z);
         coffeeWarrior.rotation.y = Math.atan2(-toEnemy.x, -toEnemy.z);
 
-        // Shout war cries
+        // Shout war cries - only when player is nearby
         const now = Date.now();
-        if (now - teaWarrior.userData.lastWarCry > 5000) {
+        if (now - teaWarrior.userData.lastWarCry > 15000) { // Longer cooldown
           teaWarrior.userData.lastWarCry = now;
           coffeeWarrior.userData.lastWarCry = now;
-          showWarCry(teaWarrior, 'tea', camera);
-          showWarCry(coffeeWarrior, 'coffee', camera);
+          // Only show if player is nearby
+          if (player && teaWarrior.position.distanceTo(player.position) < 12) {
+            showWarCry(teaWarrior, 'tea', camera);
+            showWarCry(coffeeWarrior, 'coffee', camera);
+          }
         }
 
         teaWarrior.rotation.z = Math.sin(time * 20) * 0.1;
@@ -1138,23 +1140,20 @@ function showWarCry(npc, faction, camera) {
   const y = (-vec.y * 0.5 + 0.5) * window.innerHeight;
 
   const msg = document.createElement('div');
-  msg.className = 'floating-message war-cry';
+  msg.className = 'floating-message';
   msg.textContent = cry;
   msg.style.cssText = `
     position: fixed;
     left: ${x}px;
     top: ${y - 100}px;
     transform: translateX(-50%);
-    font-size: 1.2rem;
-    font-weight: bold;
+    font-size: 0.8rem;
     color: ${faction === 'tea' ? '#ff69b4' : '#ff4500'};
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
     pointer-events: none;
-    z-index: 1000;
-    animation: floatUp 3.5s ease-out forwards;
+    z-index: 100;
   `;
   document.body.appendChild(msg);
-  setTimeout(() => msg.remove(), 3500);
+  setTimeout(() => msg.remove(), 2500);
 }
 
 // ============================================

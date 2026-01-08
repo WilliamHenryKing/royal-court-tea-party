@@ -518,6 +518,11 @@ export function closeDialog() {
 }
 
 export function showListenerHungryMessage(listener) {
+  // Only show if player is nearby
+  if (!ctx.player) return;
+  const distanceToPlayer = listener.position.distanceTo(ctx.player.position);
+  if (distanceToPlayer > 12) return;
+
   const vec = listener.position.clone().project(ctx.camera);
   if (vec.z > 1) return;
 
@@ -525,11 +530,9 @@ export function showListenerHungryMessage(listener) {
   const y = (-vec.y * 0.5 + 0.5) * window.innerHeight;
 
   const messages = [
-    "I smell CAKE! 🍰",
-    "Did someone say dessert?",
-    "My tummy is rumbling!",
-    "Time for snacks!",
-    "Cake break! 🧁"
+    "Cake time!",
+    "Snack break!",
+    "*hungry*"
   ];
 
   const msg = document.createElement('div');
@@ -538,16 +541,7 @@ export function showListenerHungryMessage(listener) {
   msg.style.left = x + 'px';
   msg.style.top = (y - 80) + 'px';
   document.body.appendChild(msg);
-  setTimeout(() => msg.remove(), 3000);
-
-  // Occasionally play voice (15% chance)
-  if (Math.random() < 0.15) {
-    const now = Date.now();
-    if (now - (listener.userData.lastVoice || 0) > AUDIO_CONFIG.WANDERER_VOICE_COOLDOWN) {
-      listener.userData.lastVoice = now;
-      playRandomWandererVoice();
-    }
-  }
+  setTimeout(() => msg.remove(), 2500);
 }
 
 export function closeCompletion() {
@@ -615,12 +609,17 @@ export function dismissSweetIntro() {
 }
 
 export function showFloatingMessage(npc) {
+  // Only show speech bubbles when player is nearby
+  if (!ctx.player) return;
+  const distanceToPlayer = npc.position.distanceTo(ctx.player.position);
+  if (distanceToPlayer > 12) return; // Must be within 12 units of player
+
   const now = Date.now();
-  // 7 second base cooldown + random 0-4 seconds to prevent all talking at once
-  const cooldown = 7000 + (npc.userData.chatOffset || 0);
+  // 20 second base cooldown + random 0-10 seconds to prevent frequent bubbles
+  const cooldown = 20000 + (npc.userData.chatOffset || 0);
   if (now - npc.userData.lastQuote < cooldown) return;
   npc.userData.lastQuote = now;
-  npc.userData.chatOffset = Math.random() * 4000; // Randomize next cooldown
+  npc.userData.chatOffset = Math.random() * 10000; // Randomize next cooldown
 
   const vec = npc.position.clone().project(ctx.camera);
   if (vec.z > 1) return; // Behind camera
@@ -632,7 +631,7 @@ export function showFloatingMessage(npc) {
   const y = (-vec.y * 0.5 + 0.5) * window.innerHeight;
 
   // Use NPC's own quotes
-  const quotes = npc.userData.quotes || ["La la la~ 🎵", "Nice day!", "*hums*"];
+  const quotes = npc.userData.quotes || ["Nice day!", "*hums*", "..."];
 
   const msg = document.createElement('div');
   msg.className = 'floating-message';
@@ -640,5 +639,5 @@ export function showFloatingMessage(npc) {
   msg.style.left = x + 'px';
   msg.style.top = (y - 80) + 'px';
   document.body.appendChild(msg);
-  setTimeout(() => msg.remove(), 3000);
+  setTimeout(() => msg.remove(), 2500);
 }
