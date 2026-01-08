@@ -44,27 +44,30 @@ export const KING_BEN = {
     "Eyes forward! ...wait, which way is forward?"
   ],
 
-  // Enhanced route around town - visits more locations
-  patrolRoute: [
-    { x: 5, z: 5 },       // Start near palace
-    { x: 12, z: -5 },     // Tea Shop visit
-    { x: 20, z: 0 },      // East street
-    { x: 25, z: 10 },     // East park area
-    { x: 20, z: 20 },     // Northeast
-    { x: 0, z: 25 },      // North plaza
-    { x: 0, z: 15 },      // Speakers area
-    { x: -10, z: 15 },    // Near speakers
-    { x: -20, z: 20 },    // Northwest
-    { x: -25, z: 10 },    // West park
-    { x: -20, z: 0 },     // West street
-    { x: -10, z: 5 },     // Guests hall
-    { x: -10, z: -5 },    // Feast hall
-    { x: -15, z: -15 },   // Southwest
-    { x: 0, z: -15 },     // South street
-    { x: 10, z: -10 },    // Southeast
-    { x: 0, z: 0 },       // Central plaza
-    { x: 5, z: 5 }        // Return to palace
-  ]
+  // Road network waypoints - King Ben ONLY walks on roads
+  // Main streets (E-W): Royal Road (z=0), Milk Lane (z=-10), Crumpet Court (z=10), Peppermint Ave (z=-20), Scone Street (z=20)
+  // Cross streets (N-S): Sugar Lane (x=-20), Honey Way (x=0), Biscuit Boulevard (x=20)
+  roadWaypoints: [
+    // Royal Road (z=0) - main road intersections and points
+    { x: -35, z: 0 }, { x: -20, z: 0 }, { x: -10, z: 0 }, { x: 0, z: 0 }, { x: 10, z: 0 }, { x: 20, z: 0 }, { x: 35, z: 0 },
+    // Milk Lane (z=-10)
+    { x: -35, z: -10 }, { x: -20, z: -10 }, { x: -10, z: -10 }, { x: 0, z: -10 }, { x: 10, z: -10 }, { x: 20, z: -10 }, { x: 35, z: -10 },
+    // Crumpet Court (z=10)
+    { x: -35, z: 10 }, { x: -20, z: 10 }, { x: -10, z: 10 }, { x: 0, z: 10 }, { x: 10, z: 10 }, { x: 20, z: 10 }, { x: 35, z: 10 },
+    // Peppermint Ave (z=-20)
+    { x: -35, z: -20 }, { x: -20, z: -20 }, { x: 0, z: -20 }, { x: 20, z: -20 }, { x: 35, z: -20 },
+    // Scone Street (z=20)
+    { x: -35, z: 20 }, { x: -20, z: 20 }, { x: 0, z: 20 }, { x: 20, z: 20 }, { x: 35, z: 20 },
+    // Sugar Lane (x=-20) - additional points between main streets
+    { x: -20, z: -15 }, { x: -20, z: -5 }, { x: -20, z: 5 }, { x: -20, z: 15 },
+    // Honey Way (x=0) - additional points
+    { x: 0, z: -15 }, { x: 0, z: -5 }, { x: 0, z: 5 }, { x: 0, z: 15 },
+    // Biscuit Boulevard (x=20) - additional points
+    { x: 20, z: -15 }, { x: 20, z: -5 }, { x: 20, z: 5 }, { x: 20, z: 15 }
+  ],
+
+  // Starting position on Royal Road
+  startingWaypoint: { x: 0, z: 0 }
 };
 
 // Store references
@@ -266,14 +269,16 @@ export function createKingBen() {
   indicator.userData.isIndicator = true;
   group.add(indicator);
 
-  group.position.set(KING_BEN.position.x, 0, KING_BEN.position.z);
+  // Start on the road at center of Royal Road
+  group.position.set(KING_BEN.startingWaypoint.x, 0, KING_BEN.startingWaypoint.z);
 
   group.userData = {
     ...KING_BEN,
-    currentWaypoint: 0,
-    walkSpeed: 0.6, // Stately pace
-    waitTimer: 0,
-    isWaiting: false,
+    currentTarget: null,          // Current destination waypoint
+    walkSpeed: 0.8,               // Slightly faster for continuous movement
+    commentTimer: 0,              // Timer for occasional comments
+    commentInterval: 8 + Math.random() * 7, // 8-15 seconds between comments
+    isCommenting: false,          // Whether currently stopped for a comment
     nearQueenBee: false,
     lastQueenComment: 0,
     guards: [],
@@ -405,6 +410,76 @@ export function createKingEntourage() {
 }
 
 /**
+ * Pick the next road waypoint that is connected via a road segment
+ * Roads are either horizontal (same z) or vertical (same x)
+ * This ensures King Ben only walks on actual roads
+ */
+function pickNextRoadWaypoint(currentX, currentZ, waypoints, lastTarget = null) {
+  // Find waypoints that are connected via road (same x OR same z)
+  // Allow small tolerance for floating point
+  const tolerance = 1;
+
+  const connectedWaypoints = waypoints.filter(wp => {
+    // Skip if this is the last target (don't go back immediately)
+    if (lastTarget && Math.abs(wp.x - lastTarget.x) < tolerance && Math.abs(wp.z - lastTarget.z) < tolerance) {
+      return false;
+    }
+
+    // Skip if too close to current position
+    const dist = Math.sqrt(Math.pow(wp.x - currentX, 2) + Math.pow(wp.z - currentZ, 2));
+    if (dist < 2) return false;
+
+    // Check if connected via road (same row or same column)
+    const sameRow = Math.abs(wp.z - currentZ) < tolerance; // Same horizontal road
+    const sameCol = Math.abs(wp.x - currentX) < tolerance; // Same vertical road
+
+    // Also check if we're at an intersection (cross street positions)
+    const crossStreetX = [-20, 0, 20];
+    const mainStreetZ = [0, -10, 10, -20, 20];
+
+    const atCrossStreet = crossStreetX.some(x => Math.abs(currentX - x) < tolerance);
+    const atMainStreet = mainStreetZ.some(z => Math.abs(currentZ - z) < tolerance);
+    const wpAtCrossStreet = crossStreetX.some(x => Math.abs(wp.x - x) < tolerance);
+    const wpAtMainStreet = mainStreetZ.some(z => Math.abs(wp.z - z) < tolerance);
+
+    // If at intersection, can go to waypoints on either connecting road
+    if (atCrossStreet && atMainStreet) {
+      // At intersection - can go to any connected waypoint on same row or column
+      return sameRow || sameCol;
+    }
+
+    // On a main street (horizontal), can continue on same street or turn at cross street
+    if (atMainStreet && !atCrossStreet) {
+      return sameRow; // Stay on same horizontal road
+    }
+
+    // On a cross street (vertical), can continue or turn at main street
+    if (atCrossStreet && !atMainStreet) {
+      return sameCol; // Stay on same vertical road
+    }
+
+    // Default: only move along connected roads
+    return sameRow || sameCol;
+  });
+
+  // If no valid waypoints found, pick any connected waypoint
+  if (connectedWaypoints.length === 0) {
+    const anyConnected = waypoints.filter(wp => {
+      const dist = Math.sqrt(Math.pow(wp.x - currentX, 2) + Math.pow(wp.z - currentZ, 2));
+      return dist > 2;
+    });
+    if (anyConnected.length > 0) {
+      return anyConnected[Math.floor(Math.random() * anyConnected.length)];
+    }
+    // Fallback to center of Royal Road
+    return { x: 0, z: 0 };
+  }
+
+  // Randomly pick from connected waypoints
+  return connectedWaypoints[Math.floor(Math.random() * connectedWaypoints.length)];
+}
+
+/**
  * Update King Ben and his guards
  */
 export function updateKingAndGuards(time, delta, camera) {
@@ -418,64 +493,80 @@ export function updateKingAndGuards(time, delta, camera) {
     collisionManager.registerEntity(data.collisionId, kingBen, 0.5, COLLISION_LAYERS.NPC);
   }
 
-  // === PATROL ROUTE ===
-  if (!data.isWaiting) {
-    const target = data.patrolRoute[data.currentWaypoint];
-    const dx = target.x - kingBen.position.x;
-    const dz = target.z - kingBen.position.z;
-    const dist = Math.sqrt(dx * dx + dz * dz);
+  // === ROAD-CONSTRAINED MOVEMENT ===
+  // Pick a new target if we don't have one
+  if (!data.currentTarget) {
+    data.currentTarget = pickNextRoadWaypoint(kingBen.position.x, kingBen.position.z, data.roadWaypoints);
+  }
 
-    if (dist < 1) {
-      // Reached waypoint
-      data.isWaiting = true;
-      data.waitTimer = 3 + Math.random() * 4; // Pause regally
-      data.currentWaypoint = (data.currentWaypoint + 1) % data.patrolRoute.length;
-    } else {
-      // Move toward waypoint
-      const moveX = (dx / dist) * data.walkSpeed * delta;
-      const moveZ = (dz / dist) * data.walkSpeed * delta;
-
-      const targetX = kingBen.position.x + moveX;
-      const targetZ = kingBen.position.z + moveZ;
-
-      // Use new collision system with sliding
-      const validated = collisionManager.getValidatedPosition(
-        data.collisionId,
-        targetX,
-        targetZ,
-        0.5,
-        true
-      );
-
-      kingBen.position.x = validated.x;
-      kingBen.position.z = validated.z;
-
-      // Face movement direction
-      kingBen.rotation.y = Math.atan2(dx, dz);
-
-      // Stately walk animation
-      kingBen.position.y = Math.abs(Math.sin(time * 4)) * 0.05;
-      kingBen.rotation.z = Math.sin(time * 4) * 0.03;
-
-      // Scepter sway
-      if (data.scepterGroup) {
-        data.scepterGroup.rotation.z = 0.2 + Math.sin(time * 2) * 0.1;
-      }
+  // Handle commenting (brief 2-second stops)
+  data.commentTimer += delta;
+  if (data.isCommenting) {
+    data.commentTimer -= delta; // Count down during comment
+    if (data.commentTimer <= 0) {
+      data.isCommenting = false;
+      data.commentTimer = 0;
+      data.commentInterval = 8 + Math.random() * 7; // Reset interval
     }
+    // Idle animation while commenting
+    kingBen.position.y = Math.sin(time * 1.5) * 0.02;
   } else {
-    data.waitTimer -= delta;
-    if (data.waitTimer <= 0) {
-      data.isWaiting = false;
+    // Check if it's time for a comment
+    if (data.commentTimer >= data.commentInterval) {
+      data.isCommenting = true;
+      data.commentTimer = 2; // 2 second comment pause
 
-      // Occasionally give a guard command
-      if (Math.random() < 0.3) {
+      // Show a random quote or guard command
+      if (Math.random() < 0.4) {
         const command = data.guardCommands[Math.floor(Math.random() * data.guardCommands.length)];
         showKingMessage(kingBen, command, camera);
+      } else {
+        const quote = data.quotes[Math.floor(Math.random() * data.quotes.length)];
+        showKingMessage(kingBen, quote, camera);
+      }
+    } else {
+      // Move toward current target
+      const target = data.currentTarget;
+      const dx = target.x - kingBen.position.x;
+      const dz = target.z - kingBen.position.z;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+
+      if (dist < 0.5) {
+        // Reached waypoint - immediately pick next one (no stopping)
+        data.currentTarget = pickNextRoadWaypoint(kingBen.position.x, kingBen.position.z, data.roadWaypoints, target);
+      } else {
+        // Move toward waypoint
+        const moveX = (dx / dist) * data.walkSpeed * delta;
+        const moveZ = (dz / dist) * data.walkSpeed * delta;
+
+        const targetX = kingBen.position.x + moveX;
+        const targetZ = kingBen.position.z + moveZ;
+
+        // Use collision system with sliding
+        const validated = collisionManager.getValidatedPosition(
+          data.collisionId,
+          targetX,
+          targetZ,
+          0.5,
+          true
+        );
+
+        kingBen.position.x = validated.x;
+        kingBen.position.z = validated.z;
+
+        // Face movement direction
+        kingBen.rotation.y = Math.atan2(dx, dz);
+
+        // Stately walk animation
+        kingBen.position.y = Math.abs(Math.sin(time * 4)) * 0.05;
+        kingBen.rotation.z = Math.sin(time * 4) * 0.03;
+
+        // Scepter sway
+        if (data.scepterGroup) {
+          data.scepterGroup.rotation.z = 0.2 + Math.sin(time * 2) * 0.1;
+        }
       }
     }
-
-    // Idle animation
-    kingBen.position.y = Math.sin(time * 1.5) * 0.02;
   }
 
   // === CHECK IF NEAR QUEEN BEE ===
