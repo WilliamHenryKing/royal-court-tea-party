@@ -37,57 +37,57 @@
         <!-- Background -->
         <ellipse cx="150" cy="115" rx="140" ry="100" fill="#c8f7c5" stroke="#7cb77c" stroke-width="2"/>
 
-        <!-- Paths from fountain to buildings -->
-        <path d="M150 115 L150 50" stroke="#f5deb3" stroke-width="6" stroke-linecap="round"/>
-        <path d="M150 115 L210 85" stroke="#f5deb3" stroke-width="6" stroke-linecap="round"/>
-        <path d="M150 115 L210 145" stroke="#f5deb3" stroke-width="6" stroke-linecap="round"/>
-        <path d="M150 115 L90 85" stroke="#f5deb3" stroke-width="6" stroke-linecap="round"/>
-        <path d="M150 115 L90 145" stroke="#f5deb3" stroke-width="6" stroke-linecap="round"/>
+        <!-- River + forest at the top edge -->
+        <path d="M35 42 C70 22, 120 26, 155 36 C185 44, 215 40, 250 24" fill="none" stroke="#7ac7f5" stroke-width="6" stroke-linecap="round"/>
+        <path d="M35 48 C75 30, 120 34, 155 42 C190 50, 218 48, 250 34" fill="none" stroke="#b2e4ff" stroke-width="3" stroke-linecap="round"/>
+        <g transform="translate(65, 58)">
+          <circle cx="0" cy="0" r="8" fill="#3d8b5a"/>
+          <circle cx="12" cy="-2" r="7" fill="#4fa96d"/>
+          <circle cx="26" cy="1" r="8" fill="#3d8b5a"/>
+          <rect x="-2" y="6" width="4" height="8" rx="2" fill="#7a5a3a"/>
+          <rect x="10" y="5" width="4" height="8" rx="2" fill="#7a5a3a"/>
+          <rect x="24" y="6" width="4" height="8" rx="2" fill="#7a5a3a"/>
+        </g>
 
-        <!-- Center fountain -->
-        <circle cx="150" cy="115" r="12" fill="#87ceeb" stroke="#5cacee" stroke-width="2"/>
-        <text x="150" y="120" text-anchor="middle" font-size="14">⛲</text>
+        <!-- Grid roads -->
+        <rect x="70" y="70" width="160" height="8" rx="4" fill="#f5deb3"/>
+        <rect x="70" y="125" width="160" height="8" rx="4" fill="#f5deb3"/>
+        <rect x="110" y="70" width="8" height="88" rx="4" fill="#f5deb3"/>
+        <rect x="182" y="70" width="8" height="88" rx="4" fill="#f5deb3"/>
 
-        <!-- Speaker's Grove - Top Center (0, 15) -->
-        <g transform="translate(150, 45)">
+        <!-- Speaker's Grove - Top Center -->
+        <g transform="translate(150, 70)">
           <rect x="-22" y="-16" width="44" height="28" rx="5" fill="#d4b8ff" stroke="#b89fe6" stroke-width="2"/>
           <text x="0" y="3" text-anchor="middle" font-size="16">🎤</text>
           <text x="0" y="22" text-anchor="middle" font-size="7" fill="#4a3f5c" font-weight="bold">Princess Bernie</text>
         </g>
 
-        <!-- Palace - Right Top (10, 5) -->
-        <g transform="translate(215, 80)">
-          <rect x="-22" y="-16" width="44" height="28" rx="5" fill="#f5a1c0" stroke="#e87aa0" stroke-width="2"/>
-          <text x="0" y="3" text-anchor="middle" font-size="16">🏰</text>
-          <text x="0" y="22" text-anchor="middle" font-size="7" fill="#4a3f5c" font-weight="bold">Queen Bee</text>
-        </g>
-
-        <!-- Tea Garden - Right Bottom (12, -5) -->
-        <g transform="translate(215, 150)">
-          <rect x="-22" y="-16" width="44" height="28" rx="5" fill="#a9c7ff" stroke="#7aa8e6" stroke-width="2"/>
-          <text x="0" y="3" text-anchor="middle" font-size="16">🍵</text>
-          <text x="0" y="22" text-anchor="middle" font-size="7" fill="#4a3f5c" font-weight="bold">Lady Phebe</text>
-        </g>
-
-        <!-- Guest Registry - Left Top (-10, 5) -->
-        <g transform="translate(85, 80)">
+        <!-- Guest Registry - Top Left -->
+        <g transform="translate(95, 70)">
           <rect x="-22" y="-16" width="44" height="28" rx="5" fill="#ffd4a8" stroke="#e6b88a" stroke-width="2"/>
           <text x="0" y="3" text-anchor="middle" font-size="16">📜</text>
           <text x="0" y="22" text-anchor="middle" font-size="7" fill="#4a3f5c" font-weight="bold">Lord Scribe</text>
         </g>
 
-        <!-- Feast Hall - Left Bottom (-10, -5) -->
-        <g transform="translate(85, 150)">
+        <!-- Palace - Top Right -->
+        <g transform="translate(205, 70)">
+          <rect x="-22" y="-16" width="44" height="28" rx="5" fill="#f5a1c0" stroke="#e87aa0" stroke-width="2"/>
+          <text x="0" y="3" text-anchor="middle" font-size="16">🏰</text>
+          <text x="0" y="22" text-anchor="middle" font-size="7" fill="#4a3f5c" font-weight="bold">Queen Bee</text>
+        </g>
+
+        <!-- Feast Hall - Bottom Left -->
+        <g transform="translate(95, 145)">
           <rect x="-22" y="-16" width="44" height="28" rx="5" fill="#b8e986" stroke="#9ed36a" stroke-width="2"/>
           <text x="0" y="3" text-anchor="middle" font-size="16">🍰</text>
           <text x="0" y="22" text-anchor="middle" font-size="7" fill="#4a3f5c" font-weight="bold">Chef Caron</text>
         </g>
 
-        <!-- Player start indicator -->
-        <g transform="translate(150, 145)">
-          <circle cx="0" cy="0" r="10" fill="#fff0f5" stroke="#f5a1c0" stroke-width="2" stroke-dasharray="3,2"/>
-          <text x="0" y="4" text-anchor="middle" font-size="10">👸</text>
-          <text x="0" y="20" text-anchor="middle" font-size="6" fill="#e87aa0" font-weight="bold">YOU START HERE!</text>
+        <!-- Tea Garden - Bottom Right -->
+        <g transform="translate(205, 145)">
+          <rect x="-22" y="-16" width="44" height="28" rx="5" fill="#a9c7ff" stroke="#7aa8e6" stroke-width="2"/>
+          <text x="0" y="3" text-anchor="middle" font-size="16">🍵</text>
+          <text x="0" y="22" text-anchor="middle" font-size="7" fill="#4a3f5c" font-weight="bold">Lady Phebe</text>
         </g>
       </svg>
       <div class="map-legend">
