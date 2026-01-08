@@ -296,12 +296,20 @@ function createFlowerBeds() {
     { x: -6, z: 6, rotation: -Math.PI / 6, width: 1.5, length: 2.5 },
     { x: 6, z: -6, rotation: -Math.PI / 6, width: 1.5, length: 2.5 },
     { x: -6, z: -6, rotation: Math.PI / 6, width: 1.5, length: 2.5 },
+    // Intersection accents
+    { x: 3.6, z: 3.4, rotation: Math.PI / 4, width: 1.1, length: 2.2 },
+    { x: -23.5, z: -13.5, rotation: -Math.PI / 6, width: 1.1, length: 2.6 },
+    { x: 16.5, z: 13.6, rotation: Math.PI / 8, width: 1.1, length: 2.6 },
     // Along Crumpet Court (could be crumpet-colored flowers!)
     { x: -12, z: 13, rotation: 0, width: 1.2, length: 3.5 },
     { x: 12, z: 13, rotation: 0, width: 1.2, length: 3.5 },
     // Near shop entrances
     { x: -28, z: 8, rotation: 0, width: 1.5, length: 2.5 }, // Pinkie School
+    { x: -30.5, z: 6.5, rotation: Math.PI / 8, width: 1.2, length: 2.4 }, // Pinkie School side
+    { x: 30.5, z: 6.5, rotation: -Math.PI / 10, width: 1.2, length: 2.4 }, // Tea Café side
     { x: 8, z: -21, rotation: Math.PI / 2, width: 1.2, length: 2.5 }, // Near Donut Shop
+    { x: 16.5, z: -17.5, rotation: Math.PI / 3, width: 1.3, length: 2.6 }, // Donut Shop approach
+    { x: 30.5, z: -12.5, rotation: Math.PI / 2, width: 1.2, length: 2.4 }, // Coffee Café entrance
     // At street sign posts
     { x: -33, z: 4, rotation: 0, width: 1, length: 2 },
     { x: 33, z: 4, rotation: 0, width: 1, length: 2 },

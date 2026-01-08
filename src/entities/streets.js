@@ -64,6 +64,14 @@ const ROAD_MATERIALS = {
 export const streetMeshes = [];
 export const streetSignGroups = [];
 export const intersectionTiles = [];
+export const intersectionSignGroups = [];
+
+const INTERSECTION_SIGNPOSTS = [
+  { main: "Royal Road", cross: "Honey Way", corner: "ne" },
+  { main: "Peppermint Ave", cross: "Biscuit Boulevard", corner: "se" },
+  { main: "Crumpet Court", cross: "Honey Way", corner: "nw" },
+  { main: "Milk Lane", cross: "Sugar Lane", corner: "sw" }
+];
 
 /**
  * Create beautiful Roman cobblestone texture
@@ -526,6 +534,107 @@ function createStreetSign(name, position, rotation = 0) {
   return group;
 }
 
+function createIntersectionSignpost(mainName, crossName, position) {
+  const group = new THREE.Group();
+
+  const postMat = new THREE.MeshStandardMaterial({
+    color: 0x2a2a2a,
+    metalness: 0.6,
+    roughness: 0.4
+  });
+  const trimMat = new THREE.MeshStandardMaterial({
+    color: 0xd4af37,
+    metalness: 0.7,
+    roughness: 0.3
+  });
+  const signMat = new THREE.MeshStandardMaterial({ color: 0x1a4a1a });
+
+  const post = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.05, 0.07, 1.7, 8),
+    postMat
+  );
+  post.position.y = 0.85;
+  post.castShadow = true;
+  group.add(post);
+
+  [0.35, 0.75, 1.15].forEach(y => {
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(0.08, 0.02, 6, 12),
+      postMat
+    );
+    ring.position.y = y;
+    ring.rotation.x = Math.PI / 2;
+    group.add(ring);
+  });
+
+  const createMiniSign = (name, rotation) => {
+    const signGroup = new THREE.Group();
+    const board = new THREE.Mesh(
+      new THREE.BoxGeometry(1.25, 0.32, 0.05),
+      signMat
+    );
+    board.castShadow = true;
+    signGroup.add(board);
+
+    const trim = new THREE.Mesh(
+      new THREE.BoxGeometry(1.35, 0.4, 0.04),
+      trimMat
+    );
+    trim.position.z = -0.02;
+    signGroup.add(trim);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#f5eedd';
+    ctx.font = 'bold 24px Georgia';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(name, 128, 32);
+
+    const textTexture = new THREE.CanvasTexture(canvas);
+    const textMat = new THREE.SpriteMaterial({ map: textTexture });
+    const text = new THREE.Sprite(textMat);
+    text.scale.set(1.2, 0.3, 1);
+    text.position.z = 0.04;
+    signGroup.add(text);
+
+    signGroup.rotation.y = rotation;
+    signGroup.position.y = 1.15;
+    return signGroup;
+  };
+
+  const mainSign = createMiniSign(mainName, 0);
+  const crossSign = createMiniSign(crossName, Math.PI / 2);
+  group.add(mainSign);
+  group.add(crossSign);
+
+  const finial = new THREE.Mesh(
+    new THREE.SphereGeometry(0.09, 12, 12),
+    trimMat
+  );
+  finial.position.y = 1.55;
+  group.add(finial);
+
+  const spike = new THREE.Mesh(
+    new THREE.ConeGeometry(0.04, 0.14, 6),
+    trimMat
+  );
+  spike.position.y = 1.7;
+  group.add(spike);
+
+  group.position.set(position.x, 0, position.z);
+
+  return group;
+}
+
+function getIntersectionSignConfig(mainStreet, crossStreet) {
+  return INTERSECTION_SIGNPOSTS.find(
+    sign => sign.main === mainStreet.name && sign.cross === crossStreet.name
+  );
+}
+
 /**
  * Create all streets and signs
  */
@@ -585,11 +694,34 @@ export function createAllStreets() {
         const tile = createIntersectionTile(crossX, mainZ, tileSize, type);
         scene.add(tile);
         intersectionTiles.push(tile);
+
+        const signConfig = getIntersectionSignConfig(mainStreet, crossStreet);
+        if (signConfig) {
+          const cornerMap = {
+            ne: { x: 1, z: 1 },
+            nw: { x: -1, z: 1 },
+            se: { x: 1, z: -1 },
+            sw: { x: -1, z: -1 }
+          };
+          const corner = cornerMap[signConfig.corner] || cornerMap.ne;
+          const signOffset = tileSize / 2 + 0.8;
+          const signPosition = {
+            x: crossX + corner.x * signOffset,
+            z: mainZ + corner.z * signOffset
+          };
+          const signpost = createIntersectionSignpost(
+            mainStreet.name,
+            crossStreet.name,
+            signPosition
+          );
+          scene.add(signpost);
+          intersectionSignGroups.push(signpost);
+        }
       }
     });
   });
 
-  return { streetMeshes, streetSignGroups, intersectionTiles };
+  return { streetMeshes, streetSignGroups, intersectionTiles, intersectionSignGroups };
 }
 
 /**
