@@ -1,10 +1,8 @@
 // King Ben and Royal Guards - The Royal Promenade
 import * as THREE from 'three';
 import { scene } from '../engine/renderer.js';
-import { checkCollision } from '../entities/world.js';
 import { npcs } from './npcs.js';
 import { collisionManager, COLLISION_LAYERS } from '../systems/CollisionManager.js';
-import { playGuardClank } from '../audio/audioManager.js';
 
 // King Ben configuration
 export const KING_BEN = {
@@ -23,17 +21,6 @@ export const KING_BEN = {
     "Tea parties are the backbone of diplomacy. And my diet.",
     "My scepter? It's for pointing at things regally. Very useful.",
     "I've been told I have 'kingly presence'. I think they mean I take up space."
-  ],
-
-  // Special quotes when near Queen Bee
-  queenQuotes: [
-    "Ah, my Queen! The most radiant bee in all the land!",
-    "Queen Bee, your tea parties are legendary! Almost as legendary as your beauty!",
-    "Every kingdom needs a queen. I'm lucky mine comes with excellent pastries.",
-    "Did I mention you look lovely today? I meant to. Consider it mentioned!",
-    "Your Majesty, the kingdom flourishes under your... um... tea-related leadership!",
-    "They say behind every great king is a queen. I prefer beside. Better view.",
-    "My dear, shall we stroll? I mean... REGALLY PROMENADE?"
   ],
 
   // Guard commands
@@ -70,16 +57,6 @@ export const KING_BEN = {
 
   // Starting position on Royal Road (away from fountain at 0,0)
   startingWaypoint: { x: 5, z: 0 },
-
-  // Palace waypoints for visiting Queen Bee - King visits here periodically!
-  palaceWaypoints: [
-    { x: 10, z: 5 },  // Palace entrance area
-    { x: 8, z: 3 },   // Near palace front
-    { x: 12, z: 3 }   // Palace side
-  ],
-
-  // Time between Queen visits (in seconds)
-  queenVisitInterval: 30, // Visit Queen every ~30 seconds
 
   // Guard reactions when King stops or comments
   guardReactions: [
@@ -297,25 +274,14 @@ export function createKingBen() {
   group.userData = {
     ...KING_BEN,
     currentTarget: null,          // Current destination waypoint
-    walkSpeed: 0.8,               // Slightly faster for continuous movement
-    commentTimer: 0,              // Timer for occasional comments
-    commentInterval: 8 + Math.random() * 7, // 8-15 seconds between comments
-    isCommenting: false,          // Whether currently stopped for a comment
-    nearQueenBee: false,
-    lastQueenComment: 0,
+    walkSpeed: 0.9,               // Base speed (varies per waypoint)
     guards: [],
     scepterGroup,
     crownGroup,
+    skipIndicator: true,
     lastQuote: Date.now(),
     chatOffset: Math.random() * 5000,
-    // Queen visit behavior
-    queenVisitTimer: 30,          // Start with short timer to visit soon
-    isVisitingQueen: false,       // Whether currently on Queen visit
-    queenVisitDuration: 0,        // How long to stay at Queen's side
-    queenLingerTimer: 0,          // Extra linger time near Queen Bee
-    romanticMode: false,          // Enhanced romantic behavior when near Queen
-    heartsSpawned: 0,             // Track heart effects
-    patrolWaypointCount: 0        // Count patrol waypoints between visits
+    patrolWaypointCount: 0        // Count patrol waypoints between direction changes
   };
 
   scene.add(group);
@@ -476,7 +442,9 @@ export function createRoyalGuard(index) {
     plume,
     lastQuote: Date.now(),
     chatOffset: Math.random() * 5000,
-    guardType: guardType
+    guardType: guardType,
+    speedMultiplier: 0.9 + Math.random() * 0.4,
+    speedJitter: 1
   };
 
   return group;
@@ -487,6 +455,8 @@ export function createRoyalGuard(index) {
  */
 export function createKingEntourage() {
   const king = createKingBen();
+  npcs.kingBen = king;
+  king.userData.locationId = 'kingBen';
 
   // Create 4 guards
   for (let i = 0; i < 4; i++) {
@@ -583,207 +553,66 @@ export function updateKingAndGuards(time, delta, camera) {
     collisionManager.registerEntity(data.collisionId, kingBen, 0.5, COLLISION_LAYERS.NPC);
   }
 
-  // === QUEEN VISIT TIMER ===
-  data.queenVisitTimer += delta;
-
-  const queenBee = npcs['palace'];
-  const palaceAnchor = queenBee
-    ? queenBee.position
-    : new THREE.Vector3(data.palaceWaypoints[0].x, 0, data.palaceWaypoints[0].z);
-  const playerNearPalace = camera
-    ? camera.position.distanceTo(palaceAnchor) < 14
-    : false;
-
-  // Check if it's time to visit the Queen
-  if (!data.isVisitingQueen && data.queenVisitTimer >= data.queenVisitInterval) {
-    data.isVisitingQueen = true;
-    data.queenVisitTimer = 0;
-    data.queenVisitDuration = 8 + Math.random() * 5; // Stay 8-13 seconds
-    data.queenLingerTimer = 2 + Math.random() * 1.5;
-    data.patrolWaypointCount = 0;
-    // Set target to palace area
-    const palaceWp = data.palaceWaypoints[Math.floor(Math.random() * data.palaceWaypoints.length)];
-    data.currentTarget = palaceWp;
-  }
-
   // === ROAD-CONSTRAINED MOVEMENT ===
   // Pick a new target if we don't have one
   if (!data.currentTarget) {
-    if (data.isVisitingQueen) {
-      // Head toward palace
-      const palaceWp = data.palaceWaypoints[Math.floor(Math.random() * data.palaceWaypoints.length)];
-      data.currentTarget = palaceWp;
-    } else {
-      const shouldFavorPalace = playerNearPalace || data.patrolWaypointCount >= 6;
-      if (shouldFavorPalace && Math.random() < 0.55) {
-        data.isVisitingQueen = true;
-        data.queenVisitTimer = 0;
-        data.queenVisitDuration = 8 + Math.random() * 5;
-        data.queenLingerTimer = 2 + Math.random() * 1.5;
-        data.patrolWaypointCount = 0;
-        const palaceWp = data.palaceWaypoints[Math.floor(Math.random() * data.palaceWaypoints.length)];
-        data.currentTarget = palaceWp;
-      } else {
-        data.currentTarget = pickNextRoadWaypoint(kingBen.position.x, kingBen.position.z, data.roadWaypoints);
-      }
-    }
-  }
-
-  // Handle commenting (brief 2-second stops)
-  data.commentTimer += delta;
-  if (data.isCommenting) {
-    data.commentTimer -= delta; // Count down during comment
-    if (data.commentTimer <= 0) {
-      data.isCommenting = false;
-      data.commentTimer = 0;
-      data.commentInterval = 8 + Math.random() * 7; // Reset interval
-    }
-    // Idle animation while commenting
-    kingBen.position.y = Math.sin(time * 1.5) * 0.02;
+    data.currentTarget = pickNextRoadWaypoint(kingBen.position.x, kingBen.position.z, data.roadWaypoints);
+    data.walkSpeed = 0.7 + Math.random() * 1.2;
+    data.guards.forEach(guard => {
+      guard.userData.speedJitter = 0.9 + Math.random() * 0.25;
+    });
   } else {
-    // Check if it's time for a comment
-    if (data.commentTimer >= data.commentInterval) {
-      data.isCommenting = true;
-      data.commentTimer = 2; // 2 second comment pause
+    // Move toward current target
+    const target = data.currentTarget;
+    const dx = target.x - kingBen.position.x;
+    const dz = target.z - kingBen.position.z;
+    const dist = Math.sqrt(dx * dx + dz * dz);
 
-      // Show a random quote or guard command
-      if (Math.random() < 0.4) {
-        const command = data.guardCommands[Math.floor(Math.random() * data.guardCommands.length)];
-        showKingMessage(kingBen, command, camera);
-        // Guards react to commands!
-        showGuardReaction(data.guards, camera);
-      } else {
-        const quote = data.quotes[Math.floor(Math.random() * data.quotes.length)];
-        showKingMessage(kingBen, quote, camera);
-      }
+    if (dist < 0.5) {
+      // Reached waypoint - immediately pick next one (no stopping)
+      data.patrolWaypointCount += 1;
+      data.currentTarget = pickNextRoadWaypoint(kingBen.position.x, kingBen.position.z, data.roadWaypoints, target);
+      data.walkSpeed = 0.7 + Math.random() * 1.2;
+      data.guards.forEach(guard => {
+        guard.userData.speedJitter = 0.9 + Math.random() * 0.25;
+      });
     } else {
-      if (data.queenLingerTimer > 0) {
-        data.queenLingerTimer = Math.max(0, data.queenLingerTimer - delta);
-        kingBen.position.y = Math.abs(Math.sin(time * 3)) * 0.03;
-      } else {
-        // Move toward current target
-        const target = data.currentTarget;
-        const dx = target.x - kingBen.position.x;
-        const dz = target.z - kingBen.position.z;
-        const dist = Math.sqrt(dx * dx + dz * dz);
+      // Move toward waypoint
+      const moveX = (dx / dist) * data.walkSpeed * delta;
+      const moveZ = (dz / dist) * data.walkSpeed * delta;
 
-        if (dist < 0.5) {
-          if (data.isVisitingQueen) {
-            data.queenLingerTimer = 2 + Math.random() * 1.5;
-            data.currentTarget = null;
-          } else {
-            // Reached waypoint - immediately pick next one (no stopping)
-            data.patrolWaypointCount += 1;
-            const shouldFavorPalace = playerNearPalace || data.patrolWaypointCount >= 6;
-            if (shouldFavorPalace && Math.random() < 0.45) {
-              data.isVisitingQueen = true;
-              data.queenVisitTimer = 0;
-              data.queenVisitDuration = 8 + Math.random() * 5;
-              data.queenLingerTimer = 2 + Math.random() * 1.5;
-              data.patrolWaypointCount = 0;
-              const palaceWp = data.palaceWaypoints[Math.floor(Math.random() * data.palaceWaypoints.length)];
-              data.currentTarget = palaceWp;
-            } else {
-              data.currentTarget = pickNextRoadWaypoint(kingBen.position.x, kingBen.position.z, data.roadWaypoints, target);
-            }
-          }
-        } else {
-          // Move toward waypoint
-          const moveX = (dx / dist) * data.walkSpeed * delta;
-          const moveZ = (dz / dist) * data.walkSpeed * delta;
+      const targetX = kingBen.position.x + moveX;
+      const targetZ = kingBen.position.z + moveZ;
 
-          const targetX = kingBen.position.x + moveX;
-          const targetZ = kingBen.position.z + moveZ;
-
-          // Use collision system with sliding
-          const validated = collisionManager.getValidatedPosition(
-            data.collisionId,
-            targetX,
-            targetZ,
-            0.5,
-            true
-          );
-
-          kingBen.position.x = validated.x;
-          kingBen.position.z = validated.z;
-
-          // Face movement direction
-          kingBen.rotation.y = Math.atan2(dx, dz);
-
-          // Stately walk animation
-          kingBen.position.y = Math.abs(Math.sin(time * 4)) * 0.05;
-          kingBen.rotation.z = Math.sin(time * 4) * 0.03;
-
-          // Scepter sway
-          if (data.scepterGroup) {
-            data.scepterGroup.rotation.z = 0.2 + Math.sin(time * 2) * 0.1;
-          }
-        }
-      }
-    }
-  }
-
-  // === CHECK IF NEAR QUEEN BEE ===
-  if (queenBee) {
-    const distToQueen = kingBen.position.distanceTo(queenBee.position);
-
-    if (distToQueen < 6) {
-      if (!data.nearQueenBee) {
-        data.nearQueenBee = true;
-        data.romanticMode = true;
-        // First time approaching - give compliment!
-        const now = Date.now();
-        if (now - data.lastQueenComment > 8000) { // More frequent compliments
-          data.lastQueenComment = now;
-          const quote = data.queenQuotes[Math.floor(Math.random() * data.queenQuotes.length)];
-          showKingMessage(kingBen, quote, camera, true);
-          // Spawn floating hearts!
-          spawnRomanticHearts(kingBen.position, camera);
-        }
-      }
-
-      // If on a Queen visit, count down visit duration
-      if (data.isVisitingQueen) {
-        data.queenVisitDuration -= delta;
-        if (data.queenVisitDuration <= 0) {
-          data.isVisitingQueen = false;
-          data.currentTarget = null; // Resume normal patrol
-        }
-      }
-
-      // Face the Queen
-      kingBen.rotation.y = Math.atan2(
-        queenBee.position.x - kingBen.position.x,
-        queenBee.position.z - kingBen.position.z
+      // Use collision system with sliding
+      const validated = collisionManager.getValidatedPosition(
+        data.collisionId,
+        targetX,
+        targetZ,
+        0.5,
+        true
       );
 
-      // Romantic bow - slight forward lean
-      kingBen.rotation.x = 0.12 + Math.sin(time * 2) * 0.02;
+      kingBen.position.x = validated.x;
+      kingBen.position.z = validated.z;
 
-      // Occasional romantic comments while near Queen
-      if (Math.random() < 0.002) { // Small chance each frame
-        const now = Date.now();
-        if (now - data.lastQueenComment > 6000) {
-          data.lastQueenComment = now;
-          const quote = data.queenQuotes[Math.floor(Math.random() * data.queenQuotes.length)];
-          showKingMessage(kingBen, quote, camera, true);
-          spawnRomanticHearts(kingBen.position, camera);
-        }
-      }
+      // Face movement direction
+      kingBen.rotation.y = Math.atan2(dx, dz);
 
-    } else {
-      if (data.nearQueenBee) {
-        data.romanticMode = false;
+      // Stately walk animation
+      kingBen.position.y = Math.abs(Math.sin(time * 4)) * 0.05;
+      kingBen.rotation.z = Math.sin(time * 4) * 0.03;
+
+      // Scepter sway
+      if (data.scepterGroup) {
+        data.scepterGroup.rotation.z = 0.2 + Math.sin(time * 2) * 0.1;
       }
-      data.nearQueenBee = false;
-      kingBen.rotation.x = THREE.MathUtils.lerp(kingBen.rotation.x, 0, 0.1);
     }
   }
 
   // === UPDATE GUARDS - FOLLOW IN FORMATION ===
   data.guards.forEach((guard, i) => {
     const baseFormationDist = 2;
-    const guardStanceActive = data.isCommenting || data.nearQueenBee;
     // Diamond formation around king
     const formationAngles = [
       Math.PI / 4,
@@ -791,9 +620,7 @@ export function updateKingAndGuards(time, delta, camera) {
       5 * Math.PI / 4,
       7 * Math.PI / 4
     ];
-    const formationDist = guardStanceActive
-      ? (data.isCommenting ? 1.6 : 1.8)
-      : baseFormationDist;
+    const formationDist = baseFormationDist;
 
     const targetX = kingBen.position.x + Math.sin(kingBen.rotation.y + formationAngles[i]) * formationDist;
     const targetZ = kingBen.position.z + Math.cos(kingBen.rotation.y + formationAngles[i]) * formationDist;
@@ -804,8 +631,9 @@ export function updateKingAndGuards(time, delta, camera) {
     const gDist = Math.sqrt(gdx * gdx + gdz * gdz);
 
     if (gDist > 0.3) {
-      guard.position.x += (gdx / gDist) * data.walkSpeed * 1.2 * delta;
-      guard.position.z += (gdz / gDist) * data.walkSpeed * 1.2 * delta;
+      const guardSpeed = data.walkSpeed * (guard.userData.speedMultiplier || 1) * (guard.userData.speedJitter || 1);
+      guard.position.x += (gdx / gDist) * guardSpeed * delta;
+      guard.position.z += (gdz / gDist) * guardSpeed * delta;
 
       // March animation
       guard.position.y = Math.abs(Math.sin(time * 6 + i)) * 0.08;
@@ -820,15 +648,7 @@ export function updateKingAndGuards(time, delta, camera) {
       guard.userData.spear.rotation.x = Math.sin(time * 3 + i) * 0.05;
     }
 
-    if (guardStanceActive) {
-      guard.rotation.x = 0.08 + Math.sin(time * 5 + i) * 0.05;
-      guard.position.y = Math.max(guard.position.y, 0.02 + Math.abs(Math.sin(time * 4 + i)) * 0.05);
-      if (guard.userData.spear) {
-        guard.userData.spear.rotation.x = 0.25 + Math.sin(time * 6 + i) * 0.08;
-      }
-    } else {
-      guard.rotation.x = THREE.MathUtils.lerp(guard.rotation.x, 0, 0.2);
-    }
+    guard.rotation.x = THREE.MathUtils.lerp(guard.rotation.x, 0, 0.2);
   });
 
   // Crown float/bob
@@ -844,109 +664,4 @@ export function updateKingAndGuards(time, delta, camera) {
       child.rotation.y = time * 2;
     }
   });
-}
-
-/**
- * Show a floating message from the King
- */
-function showKingMessage(npc, message, camera, isQueenQuote = false) {
-  const vec = npc.position.clone().project(camera);
-  if (vec.z > 1) return;
-
-  const x = (vec.x * 0.5 + 0.5) * window.innerWidth;
-  const y = (-vec.y * 0.5 + 0.5) * window.innerHeight;
-
-  const msg = document.createElement('div');
-  msg.className = 'floating-message king-quote';
-  msg.textContent = message;
-  msg.style.cssText = `
-    position: fixed;
-    left: ${x}px;
-    top: ${y - 120}px;
-    transform: translateX(-50%);
-    font-size: ${isQueenQuote ? '1.3rem' : '1.1rem'};
-    font-weight: bold;
-    color: ${isQueenQuote ? '#ffd700' : '#800020'};
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-    max-width: 250px;
-    text-align: center;
-    pointer-events: none;
-    z-index: 1000;
-    animation: floatUp 4s ease-out forwards;
-  `;
-  document.body.appendChild(msg);
-  setTimeout(() => msg.remove(), 4500);
-}
-
-/**
- * Show guard reaction when King gives a command
- */
-function showGuardReaction(guards, camera) {
-  // Pick a random guard to react
-  if (guards.length === 0) return;
-
-  const reactingGuard = guards[Math.floor(Math.random() * guards.length)];
-  const reaction = KING_BEN.guardReactions[Math.floor(Math.random() * KING_BEN.guardReactions.length)];
-  playGuardClank();
-
-  const vec = reactingGuard.position.clone().project(camera);
-  if (vec.z > 1) return;
-
-  const x = (vec.x * 0.5 + 0.5) * window.innerWidth;
-  const y = (-vec.y * 0.5 + 0.5) * window.innerHeight;
-
-  const msg = document.createElement('div');
-  msg.className = 'floating-message guard-reaction';
-  msg.textContent = reaction;
-  msg.style.cssText = `
-    position: fixed;
-    left: ${x}px;
-    top: ${y - 80}px;
-    transform: translateX(-50%);
-    font-size: 0.9rem;
-    font-style: italic;
-    color: #4a4a4a;
-    text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
-    max-width: 150px;
-    text-align: center;
-    pointer-events: none;
-    z-index: 999;
-    animation: floatUp 2.5s ease-out forwards;
-  `;
-  document.body.appendChild(msg);
-  setTimeout(() => msg.remove(), 3000);
-}
-
-/**
- * Spawn floating heart particles for romantic moments
- */
-function spawnRomanticHearts(position, camera) {
-  const vec = position.clone().project(camera);
-  if (vec.z > 1) return;
-
-  const baseX = (vec.x * 0.5 + 0.5) * window.innerWidth;
-  const baseY = (-vec.y * 0.5 + 0.5) * window.innerHeight;
-
-  // Spawn 3-5 hearts
-  const heartCount = 3 + Math.floor(Math.random() * 3);
-  const hearts = ['❤️', '💕', '💖', '💗', '💝'];
-
-  for (let i = 0; i < heartCount; i++) {
-    setTimeout(() => {
-      const heart = document.createElement('div');
-      heart.className = 'romantic-heart';
-      heart.textContent = hearts[Math.floor(Math.random() * hearts.length)];
-      heart.style.cssText = `
-        position: fixed;
-        left: ${baseX + (Math.random() - 0.5) * 60}px;
-        top: ${baseY - 50}px;
-        font-size: ${1.2 + Math.random() * 0.8}rem;
-        pointer-events: none;
-        z-index: 1001;
-        animation: heartFloat 2s ease-out forwards;
-      `;
-      document.body.appendChild(heart);
-      setTimeout(() => heart.remove(), 2500);
-    }, i * 150);
-  }
 }

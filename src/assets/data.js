@@ -292,6 +292,28 @@ export const BUILDING_NPCS = {
   }
 };
 
+export const KING_DIALOG = {
+  id: 'kingBen',
+  name: "King Ben",
+  role: "King of Austinville & Professional Crown Wearer",
+  avatar: "👑",
+  intro: {
+    greeting: "Ah! A loyal subject approaches!",
+    content: `<h3>👑 Royal Introduction</h3>
+      <p style="font-family: 'Dancing Script', cursive; font-size: 1.3rem; color: var(--pink-deep);">"The Crown Marches On"</p>
+      <div class="funny-quote">Greetings! I am King Ben, monarch of Austinville and champion of continuous promenades.</div>
+      <p>My royal schedule is packed: wave, nod, walk, repeat. I take my patrols very seriously... mostly because I keep getting lost.</p>
+      <p style="margin-top: 0.8rem; font-style: italic; color: var(--text-light);">If you see me circling the same street, just assume it's strategy. Or cardio. Probably both.</p>`
+  },
+  remarks: [
+    "No time for sitting! The kingdom needs constant strolling.",
+    "My guards and I are testing a new speed: mildly brisk!",
+    "Have you seen my map? It's somewhere between 'regal' and 'useful.'",
+    "Walking the roads keeps my crown balanced. Science, probably.",
+    "If you hear clanking, that's just my entourage keeping tempo."
+  ]
+};
+
 // Generate building NPC dialogs - uses intro for first visit, remarks for subsequent
 export function generateBuildingDialog(npcId, isFirstVisit = true) {
   const npc = BUILDING_NPCS[npcId];
@@ -315,4 +337,24 @@ export function generateBuildingDialog(npcId, isFirstVisit = true) {
         <p style="text-align: center; color: var(--text-light); font-size: 0.9rem; margin-top: 1rem;">*${npc.name} nods wisely*</p>`
     };
   }
+}
+
+export function generateKingDialog(isFirstVisit = true) {
+  if (isFirstVisit) {
+    return {
+      avatar: KING_DIALOG.avatar,
+      name: KING_DIALOG.name,
+      role: KING_DIALOG.role,
+      content: KING_DIALOG.intro.content
+    };
+  }
+
+  const remark = KING_DIALOG.remarks[Math.floor(Math.random() * KING_DIALOG.remarks.length)];
+  return {
+    avatar: KING_DIALOG.avatar,
+    name: KING_DIALOG.name,
+    role: KING_DIALOG.role,
+    content: `<div class="funny-quote">${remark}</div>
+      <p style="text-align: center; color: var(--text-light); font-size: 0.9rem; margin-top: 1rem;">*${KING_DIALOG.name} keeps marching*</p>`
+  };
 }

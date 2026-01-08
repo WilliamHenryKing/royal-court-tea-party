@@ -9,6 +9,7 @@ export function createGameState() {
     firstSweetShown: false,
     visited: new Set(),
     visitedBuildings: new Set(), // Track building NPC visits for intro vs remarks
+    visitedSpecialNpcs: new Set(),
     collected: 0,
     currentLocation: 'palace',
     nearNPC: null,

@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import {
   openBuildingNPCDialog,
   openDialog,
+  openKingDialog,
   openTrollDialog,
   openWandererDialog,
 } from '../ui/uiManager.js';
@@ -26,6 +27,8 @@ export function checkCollision(x, z) {
 export function handleAction(ctx) {
   if (ctx.gameState.nearBuildingNPC) {
     openBuildingNPCDialog(ctx.gameState.nearBuildingNPC);
+  } else if (ctx.gameState.nearNPC === 'kingBen') {
+    openKingDialog();
   } else if (ctx.gameState.nearNPC) {
     openDialog(ctx.gameState.nearNPC);
   } else if (ctx.gameState.nearWanderer) {

@@ -28,7 +28,7 @@ import {
   addCloseHandler
 } from './interactionHandler.js';
 import { zoomToNPC, zoomOut } from '../systems/cameraZoom.js';
-import { generateBuildingDialog } from '../assets/data.js';
+import { generateBuildingDialog, generateKingDialog } from '../assets/data.js';
 import { settingsManager } from '../systems/settingsManager.js';
 
 // Module-level context reference
@@ -77,7 +77,10 @@ export function updateActionButton(nearestNPC, nearestWanderer, nearestBuildingN
       const icon = visited ? '💬' : '❓';
       actionBtn.innerHTML = `<span>${icon}</span><span>Tap to Talk</span>`;
     } else if (nearestNPC) {
-      const icon = ctx.gameState.visited.has(nearestNPC) ? '💬' : '❓';
+      const visitedSpecial = nearestNPC === 'kingBen'
+        ? ctx.gameState.visitedSpecialNpcs?.has(nearestNPC)
+        : ctx.gameState.visited.has(nearestNPC);
+      const icon = visitedSpecial ? '💬' : '❓';
       actionBtn.innerHTML = `<span>${icon}</span><span>Tap to Chat</span>`;
     } else if (nearestTroll) {
       actionBtn.innerHTML = `<span>🧌</span><span>Talk to Troll</span>`;
@@ -488,6 +491,41 @@ export function openDialog(locationId) {
 
   // Zoom camera to NPC, then show dialog when zoom completes
   zoomToNPC(locationId, showDialogUI);
+}
+
+export function openKingDialog() {
+  // Hide action button immediately
+  document.getElementById('action-btn').classList.remove('visible');
+
+  if (!ctx.gameState.visitedSpecialNpcs) {
+    ctx.gameState.visitedSpecialNpcs = new Set();
+  }
+
+  const isNewVisit = !ctx.gameState.visitedSpecialNpcs.has('kingBen');
+  if (isNewVisit) {
+    ctx.gameState.visitedSpecialNpcs.add('kingBen');
+  }
+
+  const showDialogUI = () => {
+    ctx.gameState.dialogOpen = true;
+
+    playRandomWandererVoice();
+    playNpcGreeting();
+
+    const dialog = generateKingDialog(isNewVisit);
+    if (dialog) {
+      document.getElementById('dialog-avatar').textContent = dialog.avatar;
+      document.getElementById('dialog-name').textContent = dialog.name;
+      document.getElementById('dialog-role').textContent = dialog.role;
+
+      const dialogContent = document.getElementById('dialog-content');
+      dialogContent.innerHTML = dialog.content;
+    }
+
+    document.getElementById('dialog-overlay').classList.add('visible');
+  };
+
+  zoomToNPC('kingBen', showDialogUI);
 }
 
 export function openWandererDialog(npc) {
