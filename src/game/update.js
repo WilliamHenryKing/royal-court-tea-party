@@ -10,6 +10,7 @@ import { updateRiverWater, updateJumpingFish, updateFoxes, updateBirds, updateBr
 import { updateKingAndGuards } from '../entities/king.js';
 import { updateDoomSayer } from '../entities/doomSayer.js';
 import { updateAllActivities } from '../entities/activities.js';
+import { updateShops } from '../entities/shops.js';
 import { updateCameraZoom, isZoomedIn, getZoomState } from '../systems/cameraZoom.js';
 import { checkCollision } from './interactions.js';
 import { getInputVector } from '../systems/inputSystem.js';
@@ -356,6 +357,9 @@ function updateAmbientAnimations(ctx, delta, time) {
 
   // Austinville activities (Boxing Ring, Trampoline, Fishing NPCs, Tea vs Coffee War)
   updateAllActivities(time, delta, camera);
+
+  // Shop animations (donut rotation, sprinkles, steam)
+  updateShops(time, delta);
 
   // Forest animals
   updateFoxes(time, delta);

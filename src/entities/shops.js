@@ -466,7 +466,10 @@ export function createTeaCafe() {
   group.userData = {
     type: 'teaCafe',
     name: pos.name,
-    faction: 'tea'
+    faction: 'tea',
+    giantCup: giantCup,
+    steamParticles: [],
+    steamShapeTimer: 0 // Timer for creating special shapes
   };
 
   scene.add(group);
@@ -779,7 +782,11 @@ export function createDonutShop() {
   group.position.set(pos.x, 0, pos.z);
   group.userData = {
     type: 'donutShop',
-    name: pos.name
+    name: pos.name,
+    donutRoof: donutRoof,
+    glaze: glaze,
+    fallingSprinkles: [],
+    smellParticles: []
   };
 
   scene.add(group);
@@ -995,5 +1002,370 @@ export function createAllShops() {
   createDonutShop();
   createPinkieSchool();
 
+  // Initialize donut shop particles
+  if (donutShop) {
+    createFallingSprinkles();
+    createSmellParticles();
+  }
+
+  // Initialize tea café steam
+  if (teaCafe) {
+    createTeaSteamParticles();
+  }
+
   return { teaCafe, coffeeCafe, donutShop, pinkieSchool };
+}
+
+// ============================================
+// DONUT SHOP ANIMATIONS & EFFECTS
+// ============================================
+
+/**
+ * Create falling sprinkles particle system
+ */
+function createFallingSprinkles() {
+  if (!donutShop) return;
+
+  const sprinkleColors = [0xff0000, 0xffff00, 0x00ff00, 0x0000ff, 0xff00ff, 0xffa500];
+  const particleCount = 20;
+
+  for (let i = 0; i < particleCount; i++) {
+    const sprinkleMat = new THREE.MeshStandardMaterial({
+      color: sprinkleColors[Math.floor(Math.random() * sprinkleColors.length)],
+      emissive: sprinkleColors[Math.floor(Math.random() * sprinkleColors.length)],
+      emissiveIntensity: 0.3
+    });
+
+    const sprinkle = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.03, 0.03, 0.15, 4),
+      sprinkleMat
+    );
+
+    // Random starting position around the donut
+    const angle = Math.random() * Math.PI * 2;
+    const radius = 2 + Math.random() * 2;
+    sprinkle.position.set(
+      Math.cos(angle) * radius,
+      5.5 + Math.random() * 0.5,
+      Math.sin(angle) * radius
+    );
+
+    sprinkle.rotation.set(
+      Math.random() * Math.PI,
+      Math.random() * Math.PI,
+      Math.random() * Math.PI
+    );
+
+    sprinkle.userData = {
+      velocity: -0.5 - Math.random() * 0.5, // Fall speed
+      rotationSpeed: (Math.random() - 0.5) * 0.2,
+      startY: sprinkle.position.y,
+      resetDelay: Math.random() * 3000 // Stagger respawns
+    };
+
+    donutShop.add(sprinkle);
+    donutShop.userData.fallingSprinkles.push(sprinkle);
+  }
+}
+
+/**
+ * Create sweet smell wavy particles
+ */
+function createSmellParticles() {
+  if (!donutShop) return;
+
+  const particleCount = 15;
+  const smellMat = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.4,
+    side: THREE.DoubleSide
+  });
+
+  for (let i = 0; i < particleCount; i++) {
+    // Create wavy line using thin plane
+    const wavyLine = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.3, 0.8),
+      smellMat.clone()
+    );
+
+    // Start near donut shop door
+    wavyLine.position.set(
+      (Math.random() - 0.5) * 3,
+      1 + Math.random() * 0.5,
+      4 + Math.random() * 0.5
+    );
+
+    wavyLine.userData = {
+      velocity: 0.3 + Math.random() * 0.2,
+      waveSpeed: 2 + Math.random() * 2,
+      waveAmplitude: 0.3 + Math.random() * 0.2,
+      phase: Math.random() * Math.PI * 2,
+      startX: wavyLine.position.x,
+      resetHeight: 1
+    };
+
+    donutShop.add(wavyLine);
+    donutShop.userData.smellParticles.push(wavyLine);
+  }
+}
+
+/**
+ * Update donut shop animations
+ */
+export function updateDonutShop(time, delta) {
+  if (!donutShop) return;
+
+  const data = donutShop.userData;
+
+  // Rotate donut roof slowly
+  if (data.donutRoof && data.glaze) {
+    data.donutRoof.rotation.z += delta * 0.1; // Slow rotation
+    data.glaze.rotation.z += delta * 0.1; // Match glaze rotation
+  }
+
+  // Update falling sprinkles
+  data.fallingSprinkles.forEach(sprinkle => {
+    sprinkle.position.y += sprinkle.userData.velocity * delta * 10;
+    sprinkle.rotation.x += sprinkle.userData.rotationSpeed;
+    sprinkle.rotation.y += sprinkle.userData.rotationSpeed * 0.5;
+
+    // Reset when fallen too low
+    if (sprinkle.position.y < 0) {
+      const angle = Math.random() * Math.PI * 2;
+      const radius = 2 + Math.random() * 2;
+      sprinkle.position.set(
+        Math.cos(angle) * radius,
+        5.5 + Math.random() * 0.5,
+        Math.sin(angle) * radius
+      );
+    }
+  });
+
+  // Update smell particles (wavy upward motion)
+  data.smellParticles.forEach(particle => {
+    // Move upward
+    particle.position.y += particle.userData.velocity * delta;
+
+    // Wavy motion
+    particle.userData.phase += particle.userData.waveSpeed * delta;
+    particle.position.x = particle.userData.startX +
+      Math.sin(particle.userData.phase) * particle.userData.waveAmplitude;
+
+    // Fade out as it rises
+    const heightRatio = (particle.position.y - particle.userData.resetHeight) / 3;
+    particle.material.opacity = Math.max(0, 0.4 - heightRatio * 0.4);
+
+    // Reset when too high
+    if (particle.position.y > 4) {
+      particle.position.y = particle.userData.resetHeight;
+      particle.userData.phase = Math.random() * Math.PI * 2;
+      particle.material.opacity = 0.4;
+    }
+
+    // Always face camera
+    particle.lookAt(particle.position.x, particle.position.y, 1000);
+  });
+}
+
+// ============================================
+// TEA CAFÉ ANIMATIONS & EFFECTS
+// ============================================
+
+/**
+ * Create tea steam particles
+ */
+function createTeaSteamParticles() {
+  if (!teaCafe) return;
+
+  const particleCount = 25;
+  const steamMat = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.5,
+    side: THREE.DoubleSide
+  });
+
+  for (let i = 0; i < particleCount; i++) {
+    // Create puff of steam
+    const steamPuff = new THREE.Mesh(
+      new THREE.SphereGeometry(0.15 + Math.random() * 0.1, 8, 8),
+      steamMat.clone()
+    );
+
+    // Start from giant teacup position (0, 5.5, 0 in group space)
+    steamPuff.position.set(
+      (Math.random() - 0.5) * 0.6,
+      5.8 + Math.random() * 0.3,
+      (Math.random() - 0.5) * 0.6
+    );
+
+    steamPuff.userData = {
+      velocity: 0.4 + Math.random() * 0.3,
+      drift: (Math.random() - 0.5) * 0.2,
+      expandRate: 0.3 + Math.random() * 0.2,
+      startSize: steamPuff.scale.x,
+      maxSize: 0.6 + Math.random() * 0.3,
+      resetHeight: 5.8,
+      isShape: false,
+      shapeType: null
+    };
+
+    teaCafe.add(steamPuff);
+    teaCafe.userData.steamParticles.push(steamPuff);
+  }
+}
+
+/**
+ * Create special steam shape (heart or crown)
+ */
+function createSteamShape(shapeType) {
+  if (!teaCafe) return;
+
+  const steamMat = new THREE.MeshBasicMaterial({
+    color: shapeType === 'heart' ? 0xffb6c1 : 0xffd700,
+    transparent: true,
+    opacity: 0.6,
+    side: THREE.DoubleSide
+  });
+
+  let shape;
+  if (shapeType === 'heart') {
+    // Create heart shape using two spheres and a triangle
+    const heartGroup = new THREE.Group();
+
+    // Left lobe
+    const leftLobe = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), steamMat.clone());
+    leftLobe.position.set(-0.15, 0.1, 0);
+    heartGroup.add(leftLobe);
+
+    // Right lobe
+    const rightLobe = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), steamMat.clone());
+    rightLobe.position.set(0.15, 0.1, 0);
+    heartGroup.add(rightLobe);
+
+    // Bottom point
+    const point = new THREE.Mesh(new THREE.ConeGeometry(0.25, 0.4, 4), steamMat.clone());
+    point.position.set(0, -0.15, 0);
+    point.rotation.z = Math.PI;
+    heartGroup.add(point);
+
+    shape = heartGroup;
+  } else {
+    // Crown shape
+    const crownGroup = new THREE.Group();
+
+    // Base
+    const base = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.15, 0.1), steamMat.clone());
+    crownGroup.add(base);
+
+    // Points
+    for (let i = 0; i < 3; i++) {
+      const point = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.25, 4), steamMat.clone());
+      point.position.set(-0.2 + i * 0.2, 0.2, 0);
+      crownGroup.add(point);
+    }
+
+    shape = crownGroup;
+  }
+
+  shape.position.set(0, 5.8, 0);
+  shape.scale.setScalar(0.5);
+
+  shape.userData = {
+    velocity: 0.3,
+    drift: (Math.random() - 0.5) * 0.15,
+    expandRate: 0.15,
+    startSize: 0.5,
+    maxSize: 1.2,
+    resetHeight: 5.8,
+    isShape: true,
+    shapeType: shapeType,
+    rotation: Math.random() * Math.PI * 2
+  };
+
+  teaCafe.add(shape);
+  teaCafe.userData.steamParticles.push(shape);
+}
+
+/**
+ * Update tea café animations
+ */
+export function updateTeaCafe(time, delta) {
+  if (!teaCafe) return;
+
+  const data = teaCafe.userData;
+
+  // Update steam shape timer
+  data.steamShapeTimer += delta;
+  if (data.steamShapeTimer > 8) { // Create shape every 8 seconds
+    data.steamShapeTimer = 0;
+    const shapeType = Math.random() < 0.5 ? 'heart' : 'crown';
+    createSteamShape(shapeType);
+  }
+
+  // Update steam particles
+  data.steamParticles.forEach((particle, index) => {
+    // Move upward
+    particle.position.y += particle.userData.velocity * delta;
+
+    // Drift sideways
+    particle.position.x += particle.userData.drift * delta;
+
+    // Expand as it rises
+    const newSize = Math.min(
+      particle.userData.maxSize,
+      particle.userData.startSize + (particle.position.y - particle.userData.resetHeight) * particle.userData.expandRate
+    );
+    particle.scale.setScalar(newSize);
+
+    // Fade out as it rises
+    const heightDiff = particle.position.y - particle.userData.resetHeight;
+    const opacity = Math.max(0, (particle.userData.isShape ? 0.6 : 0.5) - heightDiff * 0.15);
+
+    // Update opacity for all materials in group or single mesh
+    if (particle.children && particle.children.length > 0) {
+      particle.children.forEach(child => {
+        if (child.material) child.material.opacity = opacity;
+      });
+    } else if (particle.material) {
+      particle.material.opacity = opacity;
+    }
+
+    // Rotate shapes slowly
+    if (particle.userData.isShape) {
+      particle.rotation.z += delta * 0.5;
+    }
+
+    // Reset or remove when too high
+    if (particle.position.y > 9) {
+      if (particle.userData.isShape) {
+        // Remove shape particles
+        teaCafe.remove(particle);
+        data.steamParticles.splice(index, 1);
+      } else {
+        // Reset regular steam puffs
+        particle.position.set(
+          (Math.random() - 0.5) * 0.6,
+          particle.userData.resetHeight + Math.random() * 0.3,
+          (Math.random() - 0.5) * 0.6
+        );
+        particle.scale.setScalar(particle.userData.startSize);
+        if (particle.material) particle.material.opacity = 0.5;
+      }
+    }
+
+    // Face camera (for non-group particles)
+    if (!particle.children || particle.children.length === 0) {
+      particle.lookAt(particle.position.x, particle.position.y, 1000);
+    }
+  });
+}
+
+/**
+ * Update all shop animations
+ */
+export function updateShops(time, delta) {
+  updateDonutShop(time, delta);
+  updateTeaCafe(time, delta);
 }
