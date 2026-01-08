@@ -197,6 +197,343 @@ function createMushroom() {
 }
 
 // ============================================
+// FLOWER BEDS - Decorative gardens along roads
+// ============================================
+
+function createFlowerBed(width = 2, length = 4, flowerDensity = 12) {
+  const group = new THREE.Group();
+
+  // Raised wooden/stone border
+  const borderMat = new THREE.MeshStandardMaterial({ color: 0x8b7355, roughness: 0.8 });
+  const borderHeight = 0.15;
+  const borderThickness = 0.12;
+
+  // Front and back borders
+  const frontBorder = new THREE.Mesh(
+    new THREE.BoxGeometry(length, borderHeight, borderThickness),
+    borderMat
+  );
+  frontBorder.position.set(0, borderHeight / 2, width / 2);
+  frontBorder.castShadow = true;
+  group.add(frontBorder);
+
+  const backBorder = new THREE.Mesh(
+    new THREE.BoxGeometry(length, borderHeight, borderThickness),
+    borderMat
+  );
+  backBorder.position.set(0, borderHeight / 2, -width / 2);
+  backBorder.castShadow = true;
+  group.add(backBorder);
+
+  // Side borders
+  const leftBorder = new THREE.Mesh(
+    new THREE.BoxGeometry(borderThickness, borderHeight, width),
+    borderMat
+  );
+  leftBorder.position.set(-length / 2, borderHeight / 2, 0);
+  leftBorder.castShadow = true;
+  group.add(leftBorder);
+
+  const rightBorder = new THREE.Mesh(
+    new THREE.BoxGeometry(borderThickness, borderHeight, width),
+    borderMat
+  );
+  rightBorder.position.set(length / 2, borderHeight / 2, 0);
+  rightBorder.castShadow = true;
+  group.add(rightBorder);
+
+  // Dark soil/dirt inside
+  const soilMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.95 });
+  const soil = new THREE.Mesh(
+    new THREE.BoxGeometry(length - borderThickness * 2, 0.08, width - borderThickness * 2),
+    soilMat
+  );
+  soil.position.y = 0.04;
+  soil.receiveShadow = true;
+  group.add(soil);
+
+  // Flowers with varied colors
+  const flowerColors = [0xff69b4, 0xffd700, 0xff6347, 0x9370db, 0x00ced1, 0xffffff, 0xffb6c1];
+  for (let i = 0; i < flowerDensity; i++) {
+    const flower = createFlower(flowerColors[Math.floor(Math.random() * flowerColors.length)]);
+    const fx = (Math.random() - 0.5) * (length - 0.5);
+    const fz = (Math.random() - 0.5) * (width - 0.5);
+    flower.position.set(fx, 0.08, fz);
+    flower.scale.setScalar(0.3 + Math.random() * 0.25);
+    group.add(flower);
+  }
+
+  // Small decorative stones scattered
+  const stoneMat = new THREE.MeshStandardMaterial({ color: 0x9aa0a6, roughness: 0.9 });
+  for (let i = 0; i < 4; i++) {
+    const stone = new THREE.Mesh(
+      new THREE.SphereGeometry(0.06 + Math.random() * 0.04, 6, 6),
+      stoneMat
+    );
+    stone.position.set(
+      (Math.random() - 0.5) * (length - 0.4),
+      0.05,
+      (Math.random() - 0.5) * (width - 0.4)
+    );
+    stone.scale.set(1, 0.6, 1);
+    group.add(stone);
+  }
+
+  return group;
+}
+
+function createFlowerBeds() {
+  // Flower bed positions along key roads and intersections
+  const flowerBedPositions = [
+    // Near Palace along Royal Road
+    { x: 15, z: 3, rotation: 0, width: 1.5, length: 3 },
+    { x: 15, z: -3, rotation: 0, width: 1.5, length: 3 },
+    // Near Tea Café
+    { x: 28, z: 8, rotation: Math.PI / 4, width: 1.2, length: 2.5 },
+    { x: 22, z: 8, rotation: -Math.PI / 4, width: 1.2, length: 2.5 },
+    // Central fountain area
+    { x: 6, z: 6, rotation: Math.PI / 6, width: 1.5, length: 2.5 },
+    { x: -6, z: 6, rotation: -Math.PI / 6, width: 1.5, length: 2.5 },
+    { x: 6, z: -6, rotation: -Math.PI / 6, width: 1.5, length: 2.5 },
+    { x: -6, z: -6, rotation: Math.PI / 6, width: 1.5, length: 2.5 },
+    // Along Crumpet Court (could be crumpet-colored flowers!)
+    { x: -12, z: 13, rotation: 0, width: 1.2, length: 3.5 },
+    { x: 12, z: 13, rotation: 0, width: 1.2, length: 3.5 },
+    // Near shop entrances
+    { x: -28, z: 8, rotation: 0, width: 1.5, length: 2.5 }, // Pinkie School
+    { x: 8, z: -21, rotation: Math.PI / 2, width: 1.2, length: 2.5 }, // Near Donut Shop
+    // At street sign posts
+    { x: -33, z: 4, rotation: 0, width: 1, length: 2 },
+    { x: 33, z: 4, rotation: 0, width: 1, length: 2 },
+  ];
+
+  flowerBedPositions.forEach(pos => {
+    const bed = createFlowerBed(pos.width, pos.length, 8 + Math.floor(Math.random() * 6));
+    bed.position.set(pos.x, 0, pos.z);
+    bed.rotation.y = pos.rotation || 0;
+    scene.add(bed);
+  });
+}
+
+// ============================================
+// ENHANCED TREES - Cherry blossoms and variety
+// ============================================
+
+function createCherryBlossomTree() {
+  const group = new THREE.Group();
+
+  // Trunk - darker, more elegant
+  const trunk = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.25, 0.35, 2.8, 8),
+    new THREE.MeshStandardMaterial({ color: 0x4a3728 })
+  );
+  trunk.position.y = 1.4;
+  trunk.castShadow = true;
+  group.add(trunk);
+
+  // Branches extending outward
+  const branchMat = new THREE.MeshStandardMaterial({ color: 0x5c4033 });
+  for (let i = 0; i < 4; i++) {
+    const angle = (i / 4) * Math.PI * 2;
+    const branch = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.05, 0.1, 1.5, 6),
+      branchMat
+    );
+    branch.position.set(Math.cos(angle) * 0.6, 2.5, Math.sin(angle) * 0.6);
+    branch.rotation.z = Math.PI / 4;
+    branch.rotation.y = angle;
+    group.add(branch);
+  }
+
+  // Pink blossom foliage
+  const blossomMat = new THREE.MeshStandardMaterial({ color: 0xffb7c5 });
+  const blossomPositions = [
+    { y: 3.2, r: 1.2 }, { y: 3.8, r: 1.0 }, { y: 4.3, r: 0.7 },
+    { y: 3.0, r: 0.8, x: 0.8, z: 0.3 }, { y: 3.0, r: 0.8, x: -0.8, z: -0.3 }
+  ];
+  blossomPositions.forEach(b => {
+    const blossom = new THREE.Mesh(new THREE.SphereGeometry(b.r, 12, 12), blossomMat);
+    blossom.position.set(b.x || 0, b.y, b.z || 0);
+    blossom.castShadow = true;
+    group.add(blossom);
+  });
+
+  // Store for petal particle effect
+  group.userData.isCherryBlossom = true;
+
+  return group;
+}
+
+function createWillowTree() {
+  const group = new THREE.Group();
+
+  // Trunk
+  const trunk = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.3, 0.45, 3.5, 8),
+    new THREE.MeshStandardMaterial({ color: 0x6b5344 })
+  );
+  trunk.position.y = 1.75;
+  trunk.castShadow = true;
+  group.add(trunk);
+
+  // Drooping foliage using cone geometry
+  const willowMat = new THREE.MeshStandardMaterial({ color: 0x7cba3d });
+  const foliageTop = new THREE.Mesh(new THREE.SphereGeometry(1.5, 12, 12), willowMat);
+  foliageTop.position.y = 4;
+  foliageTop.scale.set(1, 0.8, 1);
+  foliageTop.castShadow = true;
+  group.add(foliageTop);
+
+  // Hanging vines/branches
+  const vineMat = new THREE.MeshStandardMaterial({ color: 0x5a9e2f });
+  for (let i = 0; i < 12; i++) {
+    const angle = (i / 12) * Math.PI * 2;
+    const radius = 1.2 + Math.random() * 0.4;
+    const vine = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.03, 0.02, 2.5 + Math.random(), 4),
+      vineMat
+    );
+    vine.position.set(Math.cos(angle) * radius, 2.5, Math.sin(angle) * radius);
+    vine.rotation.x = Math.PI / 8 + Math.random() * 0.2;
+    vine.rotation.y = angle;
+    group.add(vine);
+  }
+
+  return group;
+}
+
+function createPineTree() {
+  const group = new THREE.Group();
+
+  // Trunk
+  const trunk = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.2, 0.3, 2, 8),
+    new THREE.MeshStandardMaterial({ color: 0x5d4037 })
+  );
+  trunk.position.y = 1;
+  trunk.castShadow = true;
+  group.add(trunk);
+
+  // Layered cone foliage
+  const pineMat = new THREE.MeshStandardMaterial({ color: 0x2d5a27 });
+  const layers = [
+    { y: 2.2, r: 1.2, h: 1.5 },
+    { y: 3.2, r: 0.9, h: 1.3 },
+    { y: 4.0, r: 0.6, h: 1.0 },
+    { y: 4.6, r: 0.3, h: 0.7 }
+  ];
+  layers.forEach(l => {
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(l.r, l.h, 8), pineMat);
+    cone.position.y = l.y;
+    cone.castShadow = true;
+    group.add(cone);
+  });
+
+  return group;
+}
+
+// ============================================
+// BUTTERFLIES - Ambient flying creatures
+// ============================================
+
+export const butterflies = [];
+
+function createButterfly() {
+  const group = new THREE.Group();
+
+  // Body
+  const bodyMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+  const body = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.02, 0.015, 0.15, 6),
+    bodyMat
+  );
+  body.rotation.x = Math.PI / 2;
+  group.add(body);
+
+  // Wings - colorful
+  const wingColors = [0xff69b4, 0xffd700, 0x87ceeb, 0xdda0dd, 0xffb6c1, 0x98fb98];
+  const wingColor = wingColors[Math.floor(Math.random() * wingColors.length)];
+  const wingMat = new THREE.MeshStandardMaterial({
+    color: wingColor,
+    side: THREE.DoubleSide,
+    transparent: true,
+    opacity: 0.85
+  });
+
+  // Wing shape using plane geometry
+  const wingGeo = new THREE.PlaneGeometry(0.12, 0.1);
+
+  const leftWing = new THREE.Mesh(wingGeo, wingMat);
+  leftWing.position.set(-0.06, 0, 0);
+  leftWing.rotation.y = Math.PI / 6;
+  group.add(leftWing);
+
+  const rightWing = new THREE.Mesh(wingGeo, wingMat);
+  rightWing.position.set(0.06, 0, 0);
+  rightWing.rotation.y = -Math.PI / 6;
+  group.add(rightWing);
+
+  // Animation data
+  group.userData = {
+    baseY: 0.8 + Math.random() * 1.5,
+    centerX: 0,
+    centerZ: 0,
+    radius: 1 + Math.random() * 2,
+    speed: 0.5 + Math.random() * 0.5,
+    angle: Math.random() * Math.PI * 2,
+    wingPhase: Math.random() * Math.PI * 2,
+    leftWing,
+    rightWing
+  };
+
+  return group;
+}
+
+function createButterflies() {
+  // Place butterflies near flower beds
+  const butterflySpots = [
+    { x: 15, z: 0 }, { x: -6, z: 6 }, { x: 6, z: -6 },
+    { x: 28, z: 8 }, { x: -12, z: 13 }, { x: 12, z: 13 },
+    { x: -28, z: 8 }, { x: 8, z: -21 }
+  ];
+
+  butterflySpots.forEach(spot => {
+    const count = 2 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < count; i++) {
+      const butterfly = createButterfly();
+      butterfly.userData.centerX = spot.x + (Math.random() - 0.5) * 3;
+      butterfly.userData.centerZ = spot.z + (Math.random() - 0.5) * 3;
+      butterfly.position.set(
+        butterfly.userData.centerX,
+        butterfly.userData.baseY,
+        butterfly.userData.centerZ
+      );
+      scene.add(butterfly);
+      butterflies.push(butterfly);
+    }
+  });
+}
+
+export function updateButterflies(time) {
+  butterflies.forEach(b => {
+    const data = b.userData;
+    // Circular flight pattern
+    data.angle += data.speed * 0.02;
+    b.position.x = data.centerX + Math.cos(data.angle) * data.radius;
+    b.position.z = data.centerZ + Math.sin(data.angle) * data.radius;
+    b.position.y = data.baseY + Math.sin(time * 2 + data.wingPhase) * 0.3;
+
+    // Face direction of movement
+    b.rotation.y = data.angle + Math.PI / 2;
+
+    // Wing flapping
+    const flapAngle = Math.sin(time * 15 + data.wingPhase) * 0.5;
+    data.leftWing.rotation.y = Math.PI / 6 + flapAngle;
+    data.rightWing.rotation.y = -Math.PI / 6 - flapAngle;
+  });
+}
+
+// ============================================
 // ROYAL PROPS - Large decorative items
 // ============================================
 
@@ -644,24 +981,49 @@ function createDecorations() {
     scene.add(flower);
   }
 
+  // === FLOWER BEDS along roads ===
+  createFlowerBeds();
+
+  // === BUTTERFLIES near flower beds ===
+  createButterflies();
+
   // Trees (AUSTINVILLE GRID LAYOUT - placed between blocks and along edges, avoiding buildings)
-  // Core buildings: palace x=10 z=5, teashop x=12 z=-5, speakers x=0 z=15, guests x=-10 z=5, feast x=-10 z=-5
-  // Shops: teaCafe x=25 z=5, coffeeCafe x=25 z=-15, donutShop x=10 z=-24, pinkieSchool x=-25 z=5
-  // Activities: boxingRing x=-25 z=-15, trampoline x=-25 z=-5
+  // Now with variety: regular trees, cherry blossoms, willows, and pines
   const treePositions = [
-    // Along southern edge
-    { x: 0, z: 28 }, { x: 15, z: 26 }, { x: -15, z: 26 }, { x: 30, z: 22 }, { x: -30, z: 22 },
+    // Along southern edge - mix of regular and cherry blossoms
+    { x: 0, z: 28, type: 'cherry' }, { x: 15, z: 26, type: 'regular' }, { x: -15, z: 26, type: 'cherry' },
+    { x: 30, z: 22, type: 'regular' }, { x: -30, z: 22, type: 'pine' },
     // Between Crumpet Court (z=10) and Scone Street (z=20)
-    { x: 35, z: 15 }, { x: -35, z: 15 }, { x: 18, z: 16 }, { x: -18, z: 16 },
+    { x: 35, z: 15, type: 'regular' }, { x: -35, z: 15, type: 'pine' },
+    { x: 18, z: 16, type: 'cherry' }, { x: -18, z: 16, type: 'regular' },
     // Along eastern edge
-    { x: 38, z: 0 }, { x: 35, z: -8 }, { x: 38, z: -22 },
+    { x: 38, z: 0, type: 'regular' }, { x: 35, z: -8, type: 'pine' }, { x: 38, z: -22, type: 'regular' },
     // Along western edge
-    { x: -38, z: 0 }, { x: -38, z: -22 },
-    // Near river (north)
-    { x: -15, z: -28 }, { x: 28, z: -26 }
+    { x: -38, z: 0, type: 'pine' }, { x: -38, z: -22, type: 'regular' },
+    // Near river (north) - willows near water!
+    { x: -15, z: -28, type: 'willow' }, { x: 28, z: -26, type: 'willow' },
+    // Near Tea Café - cherry blossoms for atmosphere
+    { x: 30, z: 8, type: 'cherry' }, { x: 20, z: 10, type: 'cherry' },
+    // Additional variety trees
+    { x: -32, z: 8, type: 'pine' }, { x: 32, z: -15, type: 'regular' },
+    { x: -8, z: 25, type: 'cherry' }, { x: 8, z: 25, type: 'cherry' }
   ];
+
   treePositions.forEach(pos => {
-    const tree = createTree();
+    let tree;
+    switch(pos.type) {
+      case 'cherry':
+        tree = createCherryBlossomTree();
+        break;
+      case 'willow':
+        tree = createWillowTree();
+        break;
+      case 'pine':
+        tree = createPineTree();
+        break;
+      default:
+        tree = createTree();
+    }
     tree.position.set(pos.x, 0, pos.z);
     tree.scale.setScalar(0.7 + Math.random() * 0.5);
     scene.add(tree);

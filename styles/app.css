@@ -142,22 +142,51 @@
     .music-btn:active { transform: scale(0.95); }
 
     #joystick-container { position: fixed; bottom: 8rem; left: 2rem; width: 110px; height: 110px; z-index: 100; }
+    /* Cake-themed joystick base - White frosted cake */
     #joystick-base {
       position: absolute;
       width: 100%;
       height: 100%;
-      background: linear-gradient(145deg, rgba(255,241,248,0.98) 0%, rgba(226, 205, 255, 0.9) 100%);
-      border: 3px solid var(--pink-main);
+      background: linear-gradient(135deg, #FFFFFF 0%, #FFF8F0 50%, #FFFAF5 100%);
+      border: 3px solid #FFB6C1;
       border-radius: 50%;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.12), inset 0 3px 8px rgba(255,255,255,0.9), inset 0 -6px 10px rgba(232, 122, 160, 0.18);
+      box-shadow:
+        0 6px 20px rgba(0,0,0,0.12),
+        0 0 15px rgba(255, 182, 193, 0.4),
+        inset 0 2px 4px rgba(255, 255, 255, 0.8),
+        inset 0 -4px 8px rgba(255, 228, 225, 0.6);
       overflow: visible;
-      transition: box-shadow 0.2s ease;
+      transition: box-shadow 0.2s ease, transform 0.15s ease;
     }
     #joystick-base.active {
-      box-shadow: 0 6px 20px rgba(0,0,0,0.12), inset 0 3px 8px rgba(255,255,255,0.9), inset 0 -6px 10px rgba(232, 122, 160, 0.18), 0 0 20px rgba(245, 161, 192, 0.5);
+      box-shadow:
+        0 6px 20px rgba(0,0,0,0.12),
+        0 0 25px rgba(255, 182, 193, 0.6),
+        inset 0 2px 4px rgba(255, 255, 255, 0.8),
+        inset 0 -4px 8px rgba(255, 228, 225, 0.6);
+      transform: scale(1.02);
     }
-    #joystick-base::before { content: ""; position: absolute; inset: 10px; border-radius: 50%; box-shadow: inset 0 10px 18px rgba(232, 122, 160, 0.18), inset 0 -8px 12px rgba(164, 139, 214, 0.15); pointer-events: none; }
-    #joystick-base::after { content: ""; position: absolute; inset: 6px 10px auto 10px; height: 45%; border-radius: 50%; background: linear-gradient(180deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 80%); opacity: 0.7; pointer-events: none; }
+    /* Frosting texture inner ring */
+    #joystick-base::before {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      border-radius: 50%;
+      border: 2px dashed rgba(255, 182, 193, 0.4);
+      box-shadow: inset 0 4px 12px rgba(255, 228, 225, 0.5);
+      pointer-events: none;
+    }
+    /* Frosting highlight on top */
+    #joystick-base::after {
+      content: "";
+      position: absolute;
+      inset: 6px 12px auto 12px;
+      height: 40%;
+      border-radius: 50%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 80%);
+      opacity: 0.8;
+      pointer-events: none;
+    }
 
     /* Direction indicators */
     .joystick-directions {
@@ -203,22 +232,57 @@
       100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
     }
 
+    /* Cherry-themed joystick thumb */
     #joystick-thumb {
       position: absolute;
       width: 45px;
       height: 45px;
-      background: linear-gradient(135deg, var(--pink-main) 0%, var(--pink-deep) 100%);
+      background: radial-gradient(circle at 35% 35%, #FF6B6B 0%, #E53935 40%, #C62828 70%, #B71C1C 100%);
       border-radius: 50%;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      box-shadow: 0 8px 14px rgba(74, 63, 92, 0.18), 0 4px 12px rgba(245, 161, 192, 0.55);
+      box-shadow:
+        0 4px 8px rgba(0, 0, 0, 0.3),
+        0 2px 4px rgba(183, 28, 28, 0.4),
+        inset 0 -3px 6px rgba(0, 0, 0, 0.2);
       transition: transform 0.05s ease-out, box-shadow 0.2s ease;
     }
     #joystick-thumb.active {
-      box-shadow: 0 8px 14px rgba(74, 63, 92, 0.18), 0 4px 12px rgba(245, 161, 192, 0.55), 0 0 15px rgba(255, 107, 166, 0.6);
+      box-shadow:
+        0 4px 8px rgba(0, 0, 0, 0.3),
+        0 2px 4px rgba(183, 28, 28, 0.4),
+        inset 0 -3px 6px rgba(0, 0, 0, 0.2),
+        0 0 15px rgba(229, 57, 53, 0.6);
+      transform: translate(-50%, -50%) scale(1.05);
     }
-    #joystick-thumb::before { content: ""; position: absolute; inset: 6px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.6) 25%, rgba(255,255,255,0) 60%); opacity: 0.9; pointer-events: none; }
+    /* Cherry shine highlight */
+    #joystick-thumb::before {
+      content: "";
+      position: absolute;
+      top: 6px;
+      left: 8px;
+      width: 12px;
+      height: 10px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0) 70%);
+      pointer-events: none;
+    }
+    /* Cherry stem */
+    #joystick-thumb::after {
+      content: "";
+      position: absolute;
+      top: -10px;
+      left: 50%;
+      width: 4px;
+      height: 14px;
+      background: linear-gradient(180deg, #2E7D32 0%, #388E3C 50%, #43A047 100%);
+      border-radius: 2px;
+      transform: translateX(-50%) rotate(-8deg);
+      transform-origin: bottom center;
+      pointer-events: none;
+      box-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+    }
 
     #action-btn { position: fixed; bottom: 8rem; right: 2rem; background: linear-gradient(135deg, var(--mint) 0%, var(--mint-dark) 100%); border: none; border-radius: 2rem; padding: 1rem 1.5rem; font-family: 'Inter', sans-serif; font-weight: 700; font-size: 1rem; color: var(--white); box-shadow: 0 6px 25px rgba(184, 233, 134, 0.5); cursor: pointer; z-index: 150; display: none; align-items: center; gap: 0.5rem; transition: all 0.3s ease; animation: actionPulse 2s ease-in-out infinite; touch-action: manipulation; pointer-events: auto; }
     #action-btn.visible { display: flex; }
@@ -488,4 +552,32 @@
       60% { transform: translateX(-50%) translateY(-5px) rotate(2deg); }
       80% { opacity: 1; transform: translateX(-50%) translateY(0) rotate(0); }
       100% { opacity: 0; transform: translateX(-50%) translateY(-30px); }
+    }
+
+    /* Float up animation for messages */
+    @keyframes floatUp {
+      0% { opacity: 0; transform: translateX(-50%) translateY(10px); }
+      15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+      80% { opacity: 1; }
+      100% { opacity: 0; transform: translateX(-50%) translateY(-30px); }
+    }
+
+    /* Romantic heart float animation */
+    @keyframes heartFloat {
+      0% { opacity: 0; transform: translateY(0) scale(0.5); }
+      20% { opacity: 1; transform: translateY(-20px) scale(1); }
+      80% { opacity: 1; }
+      100% { opacity: 0; transform: translateY(-80px) scale(0.8); }
+    }
+
+    .romantic-heart {
+      filter: drop-shadow(0 2px 4px rgba(255, 0, 100, 0.4));
+    }
+
+    /* Guard reaction style */
+    .guard-reaction {
+      background: rgba(255, 255, 255, 0.85) !important;
+      padding: 0.3rem 0.6rem !important;
+      border-radius: 0.5rem !important;
+      border: 1px solid #888 !important;
     }

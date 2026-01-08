@@ -68,7 +68,27 @@ export const KING_BEN = {
   ],
 
   // Starting position on Royal Road (away from fountain at 0,0)
-  startingWaypoint: { x: 5, z: 0 }
+  startingWaypoint: { x: 5, z: 0 },
+
+  // Palace waypoints for visiting Queen Bee - King visits here periodically!
+  palaceWaypoints: [
+    { x: 10, z: 5 },  // Palace entrance area
+    { x: 8, z: 3 },   // Near palace front
+    { x: 12, z: 3 }   // Palace side
+  ],
+
+  // Time between Queen visits (in seconds)
+  queenVisitInterval: 45, // Visit Queen every ~45 seconds
+
+  // Guard reactions when King stops or comments
+  guardReactions: [
+    "*snaps to attention*",
+    "*salutes crisply*",
+    "*stands straighter*",
+    "*adjusts helmet nervously*",
+    "*tries to look even more stoic*",
+    "*maintains position... sweating slightly*"
+  ]
 };
 
 // Store references
@@ -286,7 +306,13 @@ export function createKingBen() {
     scepterGroup,
     crownGroup,
     lastQuote: Date.now(),
-    chatOffset: Math.random() * 5000
+    chatOffset: Math.random() * 5000,
+    // Queen visit behavior
+    queenVisitTimer: 30,          // Start with short timer to visit soon
+    isVisitingQueen: false,       // Whether currently on Queen visit
+    queenVisitDuration: 0,        // How long to stay at Queen's side
+    romanticMode: false,          // Enhanced romantic behavior when near Queen
+    heartsSpawned: 0              // Track heart effects
   };
 
   scene.add(group);
@@ -494,10 +520,29 @@ export function updateKingAndGuards(time, delta, camera) {
     collisionManager.registerEntity(data.collisionId, kingBen, 0.5, COLLISION_LAYERS.NPC);
   }
 
+  // === QUEEN VISIT TIMER ===
+  data.queenVisitTimer += delta;
+
+  // Check if it's time to visit the Queen
+  if (!data.isVisitingQueen && data.queenVisitTimer >= data.queenVisitInterval) {
+    data.isVisitingQueen = true;
+    data.queenVisitTimer = 0;
+    data.queenVisitDuration = 8 + Math.random() * 5; // Stay 8-13 seconds
+    // Set target to palace area
+    const palaceWp = data.palaceWaypoints[Math.floor(Math.random() * data.palaceWaypoints.length)];
+    data.currentTarget = palaceWp;
+  }
+
   // === ROAD-CONSTRAINED MOVEMENT ===
   // Pick a new target if we don't have one
   if (!data.currentTarget) {
-    data.currentTarget = pickNextRoadWaypoint(kingBen.position.x, kingBen.position.z, data.roadWaypoints);
+    if (data.isVisitingQueen) {
+      // Head toward palace
+      const palaceWp = data.palaceWaypoints[Math.floor(Math.random() * data.palaceWaypoints.length)];
+      data.currentTarget = palaceWp;
+    } else {
+      data.currentTarget = pickNextRoadWaypoint(kingBen.position.x, kingBen.position.z, data.roadWaypoints);
+    }
   }
 
   // Handle commenting (brief 2-second stops)
@@ -521,6 +566,8 @@ export function updateKingAndGuards(time, delta, camera) {
       if (Math.random() < 0.4) {
         const command = data.guardCommands[Math.floor(Math.random() * data.guardCommands.length)];
         showKingMessage(kingBen, command, camera);
+        // Guards react to commands!
+        showGuardReaction(data.guards, camera);
       } else {
         const quote = data.quotes[Math.floor(Math.random() * data.quotes.length)];
         showKingMessage(kingBen, quote, camera);
@@ -575,15 +622,27 @@ export function updateKingAndGuards(time, delta, camera) {
   if (queenBee) {
     const distToQueen = kingBen.position.distanceTo(queenBee.position);
 
-    if (distToQueen < 5) {
+    if (distToQueen < 6) {
       if (!data.nearQueenBee) {
         data.nearQueenBee = true;
+        data.romanticMode = true;
         // First time approaching - give compliment!
         const now = Date.now();
-        if (now - data.lastQueenComment > 15000) {
+        if (now - data.lastQueenComment > 8000) { // More frequent compliments
           data.lastQueenComment = now;
           const quote = data.queenQuotes[Math.floor(Math.random() * data.queenQuotes.length)];
           showKingMessage(kingBen, quote, camera, true);
+          // Spawn floating hearts!
+          spawnRomanticHearts(kingBen.position, camera);
+        }
+      }
+
+      // If on a Queen visit, count down visit duration
+      if (data.isVisitingQueen) {
+        data.queenVisitDuration -= delta;
+        if (data.queenVisitDuration <= 0) {
+          data.isVisitingQueen = false;
+          data.currentTarget = null; // Resume normal patrol
         }
       }
 
@@ -593,10 +652,24 @@ export function updateKingAndGuards(time, delta, camera) {
         queenBee.position.z - kingBen.position.z
       );
 
-      // Bow slightly
-      kingBen.rotation.x = 0.1;
+      // Romantic bow - slight forward lean
+      kingBen.rotation.x = 0.12 + Math.sin(time * 2) * 0.02;
+
+      // Occasional romantic comments while near Queen
+      if (Math.random() < 0.002) { // Small chance each frame
+        const now = Date.now();
+        if (now - data.lastQueenComment > 6000) {
+          data.lastQueenComment = now;
+          const quote = data.queenQuotes[Math.floor(Math.random() * data.queenQuotes.length)];
+          showKingMessage(kingBen, quote, camera, true);
+          spawnRomanticHearts(kingBen.position, camera);
+        }
+      }
 
     } else {
+      if (data.nearQueenBee) {
+        data.romanticMode = false;
+      }
       data.nearQueenBee = false;
       kingBen.rotation.x = THREE.MathUtils.lerp(kingBen.rotation.x, 0, 0.1);
     }
@@ -684,4 +757,76 @@ function showKingMessage(npc, message, camera, isQueenQuote = false) {
   `;
   document.body.appendChild(msg);
   setTimeout(() => msg.remove(), 4500);
+}
+
+/**
+ * Show guard reaction when King gives a command
+ */
+function showGuardReaction(guards, camera) {
+  // Pick a random guard to react
+  if (guards.length === 0) return;
+
+  const reactingGuard = guards[Math.floor(Math.random() * guards.length)];
+  const reaction = KING_BEN.guardReactions[Math.floor(Math.random() * KING_BEN.guardReactions.length)];
+
+  const vec = reactingGuard.position.clone().project(camera);
+  if (vec.z > 1) return;
+
+  const x = (vec.x * 0.5 + 0.5) * window.innerWidth;
+  const y = (-vec.y * 0.5 + 0.5) * window.innerHeight;
+
+  const msg = document.createElement('div');
+  msg.className = 'floating-message guard-reaction';
+  msg.textContent = reaction;
+  msg.style.cssText = `
+    position: fixed;
+    left: ${x}px;
+    top: ${y - 80}px;
+    transform: translateX(-50%);
+    font-size: 0.9rem;
+    font-style: italic;
+    color: #4a4a4a;
+    text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
+    max-width: 150px;
+    text-align: center;
+    pointer-events: none;
+    z-index: 999;
+    animation: floatUp 2.5s ease-out forwards;
+  `;
+  document.body.appendChild(msg);
+  setTimeout(() => msg.remove(), 3000);
+}
+
+/**
+ * Spawn floating heart particles for romantic moments
+ */
+function spawnRomanticHearts(position, camera) {
+  const vec = position.clone().project(camera);
+  if (vec.z > 1) return;
+
+  const baseX = (vec.x * 0.5 + 0.5) * window.innerWidth;
+  const baseY = (-vec.y * 0.5 + 0.5) * window.innerHeight;
+
+  // Spawn 3-5 hearts
+  const heartCount = 3 + Math.floor(Math.random() * 3);
+  const hearts = ['❤️', '💕', '💖', '💗', '💝'];
+
+  for (let i = 0; i < heartCount; i++) {
+    setTimeout(() => {
+      const heart = document.createElement('div');
+      heart.className = 'romantic-heart';
+      heart.textContent = hearts[Math.floor(Math.random() * hearts.length)];
+      heart.style.cssText = `
+        position: fixed;
+        left: ${baseX + (Math.random() - 0.5) * 60}px;
+        top: ${baseY - 50}px;
+        font-size: ${1.2 + Math.random() * 0.8}rem;
+        pointer-events: none;
+        z-index: 1001;
+        animation: heartFloat 2s ease-out forwards;
+      `;
+      document.body.appendChild(heart);
+      setTimeout(() => heart.remove(), 2500);
+    }, i * 150);
+  }
 }

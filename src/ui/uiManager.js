@@ -355,7 +355,17 @@ function cycleLoadingMessages() {
     "Fluffing the corgis... 🐕",
     "Arranging the flowers... 🌸",
     "Setting the royal table... 🍰",
-    "Tuning the harpsichord... 🎵"
+    "Tuning the harpsichord... 🎵",
+    "Glazing the donuts... 🍩",
+    "Training the butterflies... 🦋",
+    "Waxing the royal floors... ✨",
+    "Ironing the royal flags... 🚩",
+    "Counting the sugar cubes... 🧊",
+    "Practicing royal waves... 👋",
+    "Frosting the cakes... 🎂",
+    "Summoning the bees... 🐝",
+    "Rolling out the red carpet... 🟥",
+    "Teaching fish to jump... 🐟"
   ];
 
   const messageEl = document.querySelector('.loading-text');
