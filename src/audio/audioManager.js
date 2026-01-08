@@ -17,7 +17,6 @@ const VOICE_FILES = {
 const SFX_DEFS = {
   ambience: {
     birds: { type: 'chirp', duration: 4, volume: 0.25, baseFreq: 900, accentFreq: 1400, noise: 0.08 },
-    river: { type: 'noise', duration: 4, volume: 0.3, lowpass: 0.02 },
     wind: { type: 'noise', duration: 4, volume: 0.2, lowpass: 0.01 },
     crowd: { type: 'noise', duration: 4, volume: 0.2, lowpass: 0.03, tremolo: 1.2 },
     cafe: { type: 'clink', duration: 3, volume: 0.22, baseFreq: 1200, noise: 0.08 }
