@@ -6,7 +6,7 @@ import { npcs, wanderers, bernieListeners, corgis, bees, updateCorgis, updateBee
 import { buildingNpcs, updateBuildingNPCs } from '../entities/buildingNpcs.js';
 import { collectibles, clouds, celebrationParticles, updateCelebrationParticles, updateAmbientParticles } from '../entities/collectibles.js';
 import { waterMaterial, updateButterflies } from '../entities/world.js';
-import { updateRiverWater, updateJumpingFish, updateFoxes, updateBirds, updateBridgeTroll, bridgeTroll } from '../entities/river.js';
+import { updateRiverWater, updateJumpingFish, updateFoxes, updateBirds, updateBridgeTroll, updateBridgeLanterns, bridgeTroll } from '../entities/river.js';
 import { updateKingAndGuards } from '../entities/king.js';
 import { updateDoomSayer } from '../entities/doomSayer.js';
 import { updateAllActivities } from '../entities/activities.js';
@@ -353,6 +353,9 @@ function updateAmbientAnimations(ctx, delta, time) {
 
   // Bridge troll animation
   updateBridgeTroll(time);
+
+  // Bridge lanterns flickering
+  updateBridgeLanterns(time);
   // Building NPCs animations
   updateBuildingNPCs(time, delta);
 

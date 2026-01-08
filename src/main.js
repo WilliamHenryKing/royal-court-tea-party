@@ -41,6 +41,8 @@ import {
   createFoxes,
   createBirds,
   createBridgeTroll,
+  createFloatingLeaves,
+  createBridgeLanterns,
   bridgeTroll,
   forestTrees
 } from './entities/river.js';
@@ -167,6 +169,8 @@ function initGameWorld() {
   createLilyPads();
   createRiverPlants();
   createBridgeDecorations();
+  createFloatingLeaves();
+  createBridgeLanterns();
 
   // Create HIKE sign on the other side of bridge
   createHikeSign();

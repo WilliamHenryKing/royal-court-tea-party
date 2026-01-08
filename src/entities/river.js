@@ -28,6 +28,13 @@ export const bridges = [];
 export const fishArray = [];
 const FISH_COUNT = 8;
 
+// Floating leaves on river
+export const floatingLeaves = [];
+const LEAF_COUNT = 12;
+
+// Bridge lanterns
+export const bridgeLanterns = [];
+
 /**
  * Create the river with bed and water surface
  */
@@ -227,6 +234,196 @@ export function createAllBridges() {
 }
 
 /**
+ * Create floating leaves on the river
+ */
+export function createFloatingLeaves() {
+  const leafColors = [0x8B4513, 0xCD853F, 0xD2691E, 0x228B22, 0x90EE90, 0xFFD700];
+
+  for (let i = 0; i < LEAF_COUNT; i++) {
+    const leafGroup = new THREE.Group();
+
+    // Create leaf shape (flat ellipse)
+    const leafGeo = new THREE.CircleGeometry(0.15, 8);
+    const leafMat = new THREE.MeshStandardMaterial({
+      color: leafColors[Math.floor(Math.random() * leafColors.length)],
+      side: THREE.DoubleSide,
+      roughness: 0.8
+    });
+    const leaf = new THREE.Mesh(leafGeo, leafMat);
+    leaf.rotation.x = -Math.PI / 2;
+    leaf.scale.set(1, 1.5, 1); // Elongate to leaf shape
+    leafGroup.add(leaf);
+
+    // Add a small stem
+    const stemMat = new THREE.MeshStandardMaterial({ color: 0x2F4F2F });
+    const stem = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.01, 0.015, 0.1, 4),
+      stemMat
+    );
+    stem.position.set(0, 0.02, -0.1);
+    stem.rotation.x = Math.PI / 4;
+    leafGroup.add(stem);
+
+    // Random position on river
+    const riverX = -40 + Math.random() * 80;
+    const riverZ = -29 + (Math.random() - 0.5) * 4;
+
+    leafGroup.position.set(riverX, 0.08, riverZ);
+    leafGroup.rotation.y = Math.random() * Math.PI * 2;
+
+    leafGroup.userData = {
+      baseX: riverX,
+      speed: 0.3 + Math.random() * 0.4, // Flow speed
+      wobbleOffset: Math.random() * Math.PI * 2,
+      rotateSpeed: 0.2 + Math.random() * 0.3
+    };
+
+    scene.add(leafGroup);
+    floatingLeaves.push(leafGroup);
+  }
+
+  return floatingLeaves;
+}
+
+/**
+ * Update floating leaves animation
+ */
+function updateFloatingLeaves(time) {
+  floatingLeaves.forEach(leaf => {
+    const data = leaf.userData;
+
+    // Move downstream (positive X direction)
+    leaf.position.x += data.speed * 0.016; // Approximate delta
+
+    // Gentle wobble
+    leaf.position.z = -27 + Math.sin(time * 0.5 + data.wobbleOffset) * 2;
+    leaf.position.y = 0.08 + Math.sin(time * 2 + data.wobbleOffset) * 0.02;
+
+    // Slow rotation as it floats
+    leaf.rotation.y += data.rotateSpeed * 0.01;
+
+    // Reset position when past river end
+    if (leaf.position.x > 45) {
+      leaf.position.x = -45;
+      data.wobbleOffset = Math.random() * Math.PI * 2;
+    }
+  });
+}
+
+/**
+ * Create lanterns on bridge posts
+ */
+export function createBridgeLanterns() {
+  // Lantern positions at bridge entrances
+  const lanternPositions = [
+    // Main bridge (x=5)
+    { x: 5, z: -23.5, scale: 1 },
+    { x: 5, z: -32.5, scale: 1 },
+    // West bridge (x=-10)
+    { x: -10, z: -23.5, scale: 0.8 },
+    { x: -10, z: -30.5, scale: 0.8 },
+    // East bridge (x=25)
+    { x: 25, z: -23.5, scale: 0.9 },
+    { x: 25, z: -31.5, scale: 0.9 }
+  ];
+
+  lanternPositions.forEach(pos => {
+    const lantern = createLantern(pos.scale);
+    lantern.position.set(pos.x, 0, pos.z);
+    scene.add(lantern);
+    bridgeLanterns.push(lantern);
+  });
+
+  return bridgeLanterns;
+}
+
+/**
+ * Create a single lantern on a post
+ */
+function createLantern(scale = 1) {
+  const group = new THREE.Group();
+
+  // Post
+  const postMat = new THREE.MeshStandardMaterial({ color: 0x4a3728, roughness: 0.8 });
+  const post = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.08, 0.1, 2, 6),
+    postMat
+  );
+  post.position.y = 1;
+  post.castShadow = true;
+  group.add(post);
+
+  // Decorative rings on post
+  const ringMat = new THREE.MeshStandardMaterial({ color: 0x8b7355 });
+  [0.5, 1.5].forEach(y => {
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(0.1, 0.02, 6, 12),
+      ringMat
+    );
+    ring.position.y = y;
+    ring.rotation.x = Math.PI / 2;
+    group.add(ring);
+  });
+
+  // Lantern housing
+  const housingMat = new THREE.MeshStandardMaterial({
+    color: 0x2a2a2a,
+    metalness: 0.6,
+    roughness: 0.4
+  });
+  const housing = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.15, 0.12, 0.3, 6),
+    housingMat
+  );
+  housing.position.y = 2.15;
+  group.add(housing);
+
+  // Lantern top (roof)
+  const roofMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a });
+  const roof = new THREE.Mesh(
+    new THREE.ConeGeometry(0.18, 0.12, 6),
+    roofMat
+  );
+  roof.position.y = 2.35;
+  group.add(roof);
+
+  // Glowing light inside
+  const lightMat = new THREE.MeshStandardMaterial({
+    color: 0xffaa00,
+    emissive: 0xffaa00,
+    emissiveIntensity: 0.8,
+    transparent: true,
+    opacity: 0.9
+  });
+  const light = new THREE.Mesh(
+    new THREE.SphereGeometry(0.08, 8, 8),
+    lightMat
+  );
+  light.position.y = 2.15;
+  light.userData.isLanternLight = true;
+  group.add(light);
+
+  group.scale.setScalar(scale);
+  return group;
+}
+
+/**
+ * Update bridge lanterns (flickering light effect)
+ */
+export function updateBridgeLanterns(time) {
+  bridgeLanterns.forEach((lantern, index) => {
+    // Find the light mesh inside
+    lantern.traverse(child => {
+      if (child.userData?.isLanternLight && child.material) {
+        // Gentle flicker effect
+        const flicker = 0.6 + Math.sin(time * 8 + index * 2) * 0.2 + Math.sin(time * 12 + index) * 0.1;
+        child.material.emissiveIntensity = flicker;
+      }
+    });
+  });
+}
+
+/**
  * Create a single fish mesh
  */
 function createFishMesh() {
@@ -408,8 +605,44 @@ export function updateJumpingFish(time, delta) {
  * Update river water - now still water (no animation for performance)
  */
 export function updateRiverWater(time) {
-  // Still water - no animation needed for performance
-  // The water surface is static now
+  // Animate water surface with gentle ripples
+  if (riverWater && riverWater.geometry) {
+    const positions = riverWater.geometry.attributes.position;
+    const count = positions.count;
+
+    for (let i = 0; i < count; i++) {
+      const x = positions.getX(i);
+      const z = positions.getZ(i);
+
+      // Create flowing wave pattern
+      const wave1 = Math.sin(x * 0.5 + time * 1.5) * 0.05;
+      const wave2 = Math.sin(z * 0.8 + time * 2) * 0.03;
+      const wave3 = Math.cos(x * 0.3 - time * 1.2) * 0.02;
+
+      positions.setY(i, wave1 + wave2 + wave3);
+    }
+
+    positions.needsUpdate = true;
+    riverWater.geometry.computeVertexNormals();
+  }
+
+  // Update floating leaves
+  updateFloatingLeaves(time);
+
+  // Update splash effects
+  splashPool.forEach(splash => {
+    if (splash.userData.active) {
+      splash.userData.scale += 0.03;
+      splash.userData.opacity -= 0.02;
+      splash.scale.setScalar(splash.userData.scale);
+      splash.material.opacity = splash.userData.opacity;
+
+      if (splash.userData.opacity <= 0) {
+        splash.userData.active = false;
+        splash.visible = false;
+      }
+    }
+  });
 }
 
 /**
