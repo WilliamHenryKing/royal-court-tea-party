@@ -417,10 +417,10 @@ export function createTeaCafe() {
 
   // === OUTDOOR SEATING AREA ===
   const tablePositions = [
-    { x: -2, z: 5 },
-    { x: 2, z: 5 },
-    { x: -2, z: 7 },
-    { x: 2, z: 7 }
+    { x: -2.6, z: 5 },
+    { x: 2.6, z: 5, signature: true },
+    { x: -2.6, z: 7.6 },
+    { x: 2.6, z: 8.2 }
   ];
 
   tablePositions.forEach((tPos) => {
@@ -430,10 +430,10 @@ export function createTeaCafe() {
 
     // Add chairs around table
     const chairOffsets = [
-      { x: 0.8, z: 0, rot: -Math.PI / 2 },
-      { x: -0.8, z: 0, rot: Math.PI / 2 },
-      { x: 0, z: 0.8, rot: Math.PI },
-      { x: 0, z: -0.8, rot: 0 }
+      { x: 0.85, z: 0, rot: -Math.PI / 2 },
+      { x: -0.85, z: 0, rot: Math.PI / 2 },
+      { x: 0, z: 0.85, rot: Math.PI },
+      { x: 0.2, z: -0.95, rot: Math.PI }
     ];
 
     chairOffsets.forEach(offset => {
@@ -442,6 +442,27 @@ export function createTeaCafe() {
       chair.rotation.y = offset.rot;
       group.add(chair);
     });
+
+    if (tPos.signature) {
+      const parasolGroup = new THREE.Group();
+      const parasolPole = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.05, 0.05, 2.2, 8),
+        new THREE.MeshStandardMaterial({ color: 0xffffff })
+      );
+      parasolPole.position.y = 1.1;
+      parasolGroup.add(parasolPole);
+
+      const parasolCanopy = new THREE.Mesh(
+        new THREE.ConeGeometry(1.3, 0.6, 16),
+        new THREE.MeshStandardMaterial({ color: 0xffd1dc })
+      );
+      parasolCanopy.position.y = 2.25;
+      parasolCanopy.rotation.y = Math.PI / 8;
+      parasolGroup.add(parasolCanopy);
+
+      parasolGroup.position.set(tPos.x, 0, tPos.z);
+      group.add(parasolGroup);
+    }
   });
 
   // Decorative fence around seating
