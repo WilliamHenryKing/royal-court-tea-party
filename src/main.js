@@ -111,7 +111,10 @@ function init() {
 
   // Setup audio
   musicAudio.volume = 0.5;
-  musicAudio.addEventListener('ended', playNextTrack);
+  musicAudio.addEventListener('ended', () => {
+    playNextTrack();
+    updateMusicUI();
+  });
   loadTrack(musicState.currentIndex);
 
   // Update UI

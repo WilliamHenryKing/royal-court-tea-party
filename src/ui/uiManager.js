@@ -97,6 +97,7 @@ export function startAdventure() {
   if (!musicState.initialized) {
     musicState.initialized = true;
     playCurrentTrack();
+    updateMusicUI();
   }
 }
 
@@ -294,11 +295,13 @@ export function setupControls() {
       musicState.initialized = true;
       playCurrentTrack();
     }
+    updateMusicUI();
   }, { preventDefault: false });
 
   addClickHandler(document.getElementById('music-next'), () => {
     musicState.initialized = true;
     playNextTrack();
+    updateMusicUI();
   }, { preventDefault: false });
 
   // Intro modal - use consistent handlers
