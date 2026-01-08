@@ -738,6 +738,8 @@ export function updateKingAndGuards(time, delta, camera) {
 
   // === UPDATE GUARDS - FOLLOW IN FORMATION ===
   data.guards.forEach((guard, i) => {
+    const baseFormationDist = 2;
+    const guardStanceActive = data.isCommenting || data.nearQueenBee;
     // Diamond formation around king
     const formationAngles = [
       Math.PI / 4,
@@ -745,7 +747,9 @@ export function updateKingAndGuards(time, delta, camera) {
       5 * Math.PI / 4,
       7 * Math.PI / 4
     ];
-    const formationDist = 2;
+    const formationDist = guardStanceActive
+      ? (data.isCommenting ? 1.6 : 1.8)
+      : baseFormationDist;
 
     const targetX = kingBen.position.x + Math.sin(kingBen.rotation.y + formationAngles[i]) * formationDist;
     const targetZ = kingBen.position.z + Math.cos(kingBen.rotation.y + formationAngles[i]) * formationDist;
@@ -770,6 +774,16 @@ export function updateKingAndGuards(time, delta, camera) {
     // Spear bob
     if (guard.userData.spear) {
       guard.userData.spear.rotation.x = Math.sin(time * 3 + i) * 0.05;
+    }
+
+    if (guardStanceActive) {
+      guard.rotation.x = 0.08 + Math.sin(time * 5 + i) * 0.05;
+      guard.position.y = Math.max(guard.position.y, 0.02 + Math.abs(Math.sin(time * 4 + i)) * 0.05);
+      if (guard.userData.spear) {
+        guard.userData.spear.rotation.x = 0.25 + Math.sin(time * 6 + i) * 0.08;
+      }
+    } else {
+      guard.rotation.x = THREE.MathUtils.lerp(guard.rotation.x, 0, 0.2);
     }
   });
 
