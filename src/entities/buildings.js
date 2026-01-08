@@ -438,17 +438,60 @@ export function createBuilding(color, type) {
     });
 
     // Food decorations on table
-    const cake = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.3, 0.35, 12), new THREE.MeshStandardMaterial({ color: 0xffb6c1 }));
-    cake.position.set(-0.3, 0.93, 2.5);
-    group.add(cake);
+    const cakeBase = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.38, 0.45, 12), new THREE.MeshStandardMaterial({ color: 0xff8fcf }));
+    cakeBase.position.set(-0.35, 0.98, 2.45);
+    group.add(cakeBase);
 
-    const cakeTop = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.2, 0.2, 12), new THREE.MeshStandardMaterial({ color: 0xffffff }));
-    cakeTop.position.set(-0.3, 1.13, 2.5);
-    group.add(cakeTop);
+    const cakeTier = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.28, 0.28, 12), new THREE.MeshStandardMaterial({ color: 0xffc1e8 }));
+    cakeTier.position.set(-0.35, 1.32, 2.45);
+    group.add(cakeTier);
+
+    const cakeFrosting = new THREE.Mesh(new THREE.SphereGeometry(0.18, 10, 8, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+    cakeFrosting.position.set(-0.35, 1.56, 2.45);
+    group.add(cakeFrosting);
+
+    const cakeCherry = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), new THREE.MeshStandardMaterial({ color: 0xff3366 }));
+    cakeCherry.position.set(-0.35, 1.68, 2.45);
+    group.add(cakeCherry);
 
     const pie = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.22, 0.15, 12), new THREE.MeshStandardMaterial({ color: 0xdaa520 }));
-    pie.position.set(0.3, 0.83, 2.5);
+    pie.position.set(0.45, 0.83, 2.7);
     group.add(pie);
+
+    const teapotBody = new THREE.Mesh(new THREE.SphereGeometry(0.18, 10, 10), new THREE.MeshStandardMaterial({ color: 0xf5f5f5 }));
+    teapotBody.position.set(0.1, 0.92, 2.35);
+    group.add(teapotBody);
+
+    const teapotLid = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.05, 8), new THREE.MeshStandardMaterial({ color: 0xdedede }));
+    teapotLid.position.set(0.1, 1.05, 2.35);
+    group.add(teapotLid);
+
+    const teapotSpout = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.06, 0.18, 6), new THREE.MeshStandardMaterial({ color: 0xf5f5f5 }));
+    teapotSpout.position.set(0.28, 0.92, 2.35);
+    teapotSpout.rotation.z = Math.PI / 2;
+    group.add(teapotSpout);
+
+    const teapotHandle = new THREE.Mesh(new THREE.TorusGeometry(0.1, 0.03, 8, 10, Math.PI), new THREE.MeshStandardMaterial({ color: 0xdedede }));
+    teapotHandle.position.set(-0.08, 0.92, 2.35);
+    teapotHandle.rotation.y = Math.PI / 2;
+    group.add(teapotHandle);
+
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.3, 8), new THREE.MeshStandardMaterial({ color: 0xd2a679 }));
+    cone.position.set(0.38, 0.83, 2.25);
+    cone.rotation.x = Math.PI;
+    group.add(cone);
+
+    const scoop = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 10), new THREE.MeshStandardMaterial({ color: 0xffe4b5 }));
+    scoop.position.set(0.38, 1.02, 2.25);
+    group.add(scoop);
+
+    const tartCrust = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 0.08, 10), new THREE.MeshStandardMaterial({ color: 0xd9a441 }));
+    tartCrust.position.set(-0.05, 0.8, 2.7);
+    group.add(tartCrust);
+
+    const tartFilling = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.15, 0.05, 10), new THREE.MeshStandardMaterial({ color: 0xfff176 }));
+    tartFilling.position.set(-0.05, 0.86, 2.7);
+    group.add(tartFilling);
 
     // Utensil decorations on walls
     [-1.95, 1.95].forEach(x => {
