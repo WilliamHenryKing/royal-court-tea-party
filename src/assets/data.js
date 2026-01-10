@@ -7,7 +7,7 @@ export const SPEAKERS = [
 ];
 
 export const GUESTS = [
-  "Bernily King", "Caron Benjamin", "Phebe Benjamin", "Ruth-Grace Davids",
+  "Bernily King", "Caron Benjamin", "Phebe Benjamin", "Jamie-Lee Ockhuis","Ruth-Grace Davids",
   "Victory Strauss", "Aurelia Botha", "Zoe Kabwanga", "Tamlyn Okkers",
   "Carla Okkers", "Nicole Heuvel", "Kaylen Heuvel", "Sharidyn Rogers",
   "Chelsea Latola", "Beaulah Davids"
