@@ -33,61 +33,65 @@
 
     <div class="splash-map" id="splash-map">
       <div class="map-title">The Royal Kingdom</div>
-      <svg viewBox="0 0 300 220" class="kingdom-map">
+      <svg viewBox="0 0 320 280" class="kingdom-map">
         <!-- Background -->
-        <ellipse cx="150" cy="115" rx="140" ry="100" fill="#c8f7c5" stroke="#7cb77c" stroke-width="2"/>
+        <ellipse cx="160" cy="140" rx="150" ry="130" fill="#c8f7c5" stroke="#7cb77c" stroke-width="3"/>
 
-        <!-- River + forest at the top edge -->
-        <path d="M35 42 C70 22, 120 26, 155 36 C185 44, 215 40, 250 24" fill="none" stroke="#7ac7f5" stroke-width="6" stroke-linecap="round"/>
-        <path d="M35 48 C75 30, 120 34, 155 42 C190 50, 218 48, 250 34" fill="none" stroke="#b2e4ff" stroke-width="3" stroke-linecap="round"/>
-        <g transform="translate(65, 58)">
-          <circle cx="0" cy="0" r="8" fill="#3d8b5a"/>
-          <circle cx="12" cy="-2" r="7" fill="#4fa96d"/>
-          <circle cx="26" cy="1" r="8" fill="#3d8b5a"/>
-          <rect x="-2" y="6" width="4" height="8" rx="2" fill="#7a5a3a"/>
-          <rect x="10" y="5" width="4" height="8" rx="2" fill="#7a5a3a"/>
-          <rect x="24" y="6" width="4" height="8" rx="2" fill="#7a5a3a"/>
+        <!-- Central fountain -->
+        <circle cx="160" cy="140" r="12" fill="#87ceeb" stroke="#5fa8d3" stroke-width="2"/>
+        <circle cx="160" cy="140" r="6" fill="#b2e4ff"/>
+
+        <!-- Paths radiating from center -->
+        <!-- North path to Palace -->
+        <line x1="160" y1="140" x2="160" y2="50" stroke="#f5deb3" stroke-width="10" stroke-linecap="round"/>
+        <!-- South path to Speaker's Grove -->
+        <line x1="160" y1="140" x2="160" y2="230" stroke="#f5deb3" stroke-width="10" stroke-linecap="round"/>
+        <!-- East path to Tea Garden -->
+        <line x1="160" y1="140" x2="250" y2="120" stroke="#f5deb3" stroke-width="10" stroke-linecap="round"/>
+        <!-- West paths to Feast Hall & Guest Registry -->
+        <line x1="160" y1="140" x2="70" y2="120" stroke="#f5deb3" stroke-width="10" stroke-linecap="round"/>
+        <line x1="160" y1="140" x2="70" y2="160" stroke="#f5deb3" stroke-width="10" stroke-linecap="round"/>
+
+        <!-- Decorative elements -->
+        <!-- Trees -->
+        <circle cx="220" cy="60" r="8" fill="#90ee90" opacity="0.7"/>
+        <circle cx="100" cy="60" r="8" fill="#90ee90" opacity="0.7"/>
+        <circle cx="210" cy="200" r="8" fill="#90ee90" opacity="0.7"/>
+        <circle cx="110" cy="200" r="8" fill="#90ee90" opacity="0.7"/>
+
+        <!-- Palace - North Center (x=0, z=-14) -->
+        <g transform="translate(160, 50)">
+          <rect x="-28" y="-20" width="56" height="36" rx="6" fill="#f5a1c0" stroke="#e87aa0" stroke-width="2.5"/>
+          <text x="0" y="0" text-anchor="middle" font-size="20">🏰</text>
+          <text x="0" y="24" text-anchor="middle" font-size="8" fill="#4a3f5c" font-weight="bold">Royal Palace</text>
         </g>
 
-        <!-- Grid roads -->
-        <rect x="70" y="70" width="160" height="8" rx="4" fill="#f5deb3"/>
-        <rect x="70" y="125" width="160" height="8" rx="4" fill="#f5deb3"/>
-        <rect x="110" y="70" width="8" height="88" rx="4" fill="#f5deb3"/>
-        <rect x="182" y="70" width="8" height="88" rx="4" fill="#f5deb3"/>
-
-        <!-- Speaker's Grove - Top Center -->
-        <g transform="translate(150, 70)">
-          <rect x="-22" y="-16" width="44" height="28" rx="5" fill="#d4b8ff" stroke="#b89fe6" stroke-width="2"/>
-          <text x="0" y="3" text-anchor="middle" font-size="16">🎤</text>
-          <text x="0" y="22" text-anchor="middle" font-size="7" fill="#4a3f5c" font-weight="bold">Princess Bernie</text>
+        <!-- Speaker's Grove - South Center (x=0, z=15) -->
+        <g transform="translate(160, 230)">
+          <rect x="-28" y="-20" width="56" height="36" rx="6" fill="#d4b8ff" stroke="#b89fe6" stroke-width="2.5"/>
+          <text x="0" y="0" text-anchor="middle" font-size="20">🎤</text>
+          <text x="0" y="24" text-anchor="middle" font-size="8" fill="#4a3f5c" font-weight="bold">Speaker's Grove</text>
         </g>
 
-        <!-- Guest Registry - Top Left -->
-        <g transform="translate(95, 70)">
-          <rect x="-22" y="-16" width="44" height="28" rx="5" fill="#ffd4a8" stroke="#e6b88a" stroke-width="2"/>
-          <text x="0" y="3" text-anchor="middle" font-size="16">📜</text>
-          <text x="0" y="22" text-anchor="middle" font-size="7" fill="#4a3f5c" font-weight="bold">Lord Scribe</text>
+        <!-- Tea Garden - East (x=12, z=-5) -->
+        <g transform="translate(250, 120)">
+          <rect x="-28" y="-20" width="56" height="36" rx="6" fill="#a9c7ff" stroke="#7aa8e6" stroke-width="2.5"/>
+          <text x="0" y="0" text-anchor="middle" font-size="20">🍵</text>
+          <text x="0" y="24" text-anchor="middle" font-size="8" fill="#4a3f5c" font-weight="bold">Tea Garden</text>
         </g>
 
-        <!-- Palace - Top Right -->
-        <g transform="translate(205, 70)">
-          <rect x="-22" y="-16" width="44" height="28" rx="5" fill="#f5a1c0" stroke="#e87aa0" stroke-width="2"/>
-          <text x="0" y="3" text-anchor="middle" font-size="16">🏰</text>
-          <text x="0" y="22" text-anchor="middle" font-size="7" fill="#4a3f5c" font-weight="bold">Queen Bee</text>
+        <!-- Feast Hall - West Center (x=-10, z=-5) -->
+        <g transform="translate(70, 120)">
+          <rect x="-28" y="-20" width="56" height="36" rx="6" fill="#b8e986" stroke="#9ed36a" stroke-width="2.5"/>
+          <text x="0" y="0" text-anchor="middle" font-size="20">🍰</text>
+          <text x="0" y="24" text-anchor="middle" font-size="8" fill="#4a3f5c" font-weight="bold">Feast Hall</text>
         </g>
 
-        <!-- Feast Hall - Bottom Left -->
-        <g transform="translate(95, 145)">
-          <rect x="-22" y="-16" width="44" height="28" rx="5" fill="#b8e986" stroke="#9ed36a" stroke-width="2"/>
-          <text x="0" y="3" text-anchor="middle" font-size="16">🍰</text>
-          <text x="0" y="22" text-anchor="middle" font-size="7" fill="#4a3f5c" font-weight="bold">Chef Caron</text>
-        </g>
-
-        <!-- Tea Garden - Bottom Right -->
-        <g transform="translate(205, 145)">
-          <rect x="-22" y="-16" width="44" height="28" rx="5" fill="#a9c7ff" stroke="#7aa8e6" stroke-width="2"/>
-          <text x="0" y="3" text-anchor="middle" font-size="16">🍵</text>
-          <text x="0" y="22" text-anchor="middle" font-size="7" fill="#4a3f5c" font-weight="bold">Lady Phebe</text>
+        <!-- Guest Registry - West South (x=-10, z=5) -->
+        <g transform="translate(70, 160)">
+          <rect x="-28" y="-20" width="56" height="36" rx="6" fill="#ffd4a8" stroke="#e6b88a" stroke-width="2.5"/>
+          <text x="0" y="0" text-anchor="middle" font-size="20">📜</text>
+          <text x="0" y="24" text-anchor="middle" font-size="8" fill="#4a3f5c" font-weight="bold">Guest Registry</text>
         </g>
       </svg>
       <div class="map-legend">
