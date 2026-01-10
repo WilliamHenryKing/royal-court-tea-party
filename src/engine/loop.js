@@ -1,6 +1,6 @@
 // Game Loop - manages the main animation loop
 import * as THREE from 'three';
-import { renderer, scene, camera, composer } from './renderer.js';
+import { renderer, scene, camera } from './renderer.js';
 
 let updateCallback = null;
 const clock = new THREE.Clock();
@@ -22,12 +22,7 @@ function animate() {
     updateCallback(delta, time);
   }
 
-  // Render the scene with post-processing (bloom effect)
-  if (composer) {
-    composer.render();
-  } else {
-    renderer.render(scene, camera);
-  }
+  renderer.render(scene, camera);
 }
 
 // Start the animation loop
