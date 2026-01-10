@@ -1,9 +1,6 @@
 // Renderer - Three.js renderer, scene, camera, lighting, and post-processing setup
 import * as THREE from 'three';
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
-
-export let scene, camera, renderer, composer;
+export let scene, camera, renderer;
 
 const MOBILE_MAX_PIXEL_RATIO = 1.5;
 const DESKTOP_MAX_PIXEL_RATIO = 2;
@@ -22,7 +19,10 @@ export function initRenderer() {
   camera.position.set(0, 14, 18);
 
   // Renderer
-  renderer = new THREE.WebGLRenderer({ antialias: window.devicePixelRatio < 2 });
+  renderer = new THREE.WebGLRenderer({
+    antialias: window.devicePixelRatio < 2,
+    powerPreference: 'high-performance'
+  });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(getRenderPixelRatio());
   renderer.toneMapping = THREE.NoToneMapping;
@@ -34,16 +34,13 @@ export function initRenderer() {
   // Setup lighting
   setupLighting();
 
-  // Setup post-processing (basic render pass only)
-  setupPostProcessing();
-
   // Handle window resize
   window.addEventListener('resize', onResize);
 
   // Handle mouse wheel zoom (desktop only)
   setupMouseWheelZoom();
 
-  return { scene, camera, renderer, composer };
+  return { scene, camera, renderer };
 }
 
 // Mouse wheel zoom for desktop
@@ -67,17 +64,6 @@ function setupMouseWheelZoom() {
 // Export zoom level for camera system to use
 export function getZoomLevel() {
   return zoomLevel;
-}
-
-// Setup post-processing for basic render pass
-function setupPostProcessing() {
-  composer = new EffectComposer(renderer);
-
-  // Render the scene normally first
-  const renderPass = new RenderPass(scene, camera);
-  composer.addPass(renderPass);
-
-  // No bloom for now; render with the scene's base lighting.
 }
 
 // Setup scene lighting - natural outdoor look
@@ -112,9 +98,6 @@ function onResize() {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(getRenderPixelRatio());
-  if (composer) {
-    composer.setSize(window.innerWidth, window.innerHeight);
-  }
 }
 
 function isMobileDisplay() {

@@ -40,6 +40,7 @@ import { maybePlayAmbientVoice } from '../audio/audioManager.js';
 
 // Camera state
 const cameraTarget = new THREE.Vector3();
+const idealCameraPos = new THREE.Vector3();
 const cameraZoomState = {
   moving: false,
   lastMoveChange: 0,
@@ -53,6 +54,10 @@ const cameraZoomState = {
 
 // Movement state
 const moveDirection = new THREE.Vector3();
+const NEAR_NPC_DISTANCE = 3.5;
+const NEAR_NPC_DISTANCE_SQ = NEAR_NPC_DISTANCE * NEAR_NPC_DISTANCE;
+const COLLECTIBLE_PICKUP_DISTANCE_SQ = 1.2 * 1.2;
+const BUILDING_PULSE_DISTANCE_SQ = 6 * 6;
 const palaceLocation = LOCATIONS.find(loc => loc.id === 'palace');
 const palaceCarpet = palaceLocation ? {
   x: palaceLocation.x,
@@ -206,12 +211,12 @@ function updateCamera(ctx, delta, time, isMoving) {
   const userZoom = getZoomLevel();
   const zoomedOffset = cameraZoomState.currentOffset * userZoom;
 
-  const idealPos = new THREE.Vector3(
+  idealCameraPos.set(
     player.position.x,
     player.position.y + zoomedOffset,
     player.position.z + zoomedOffset
   );
-  camera.position.lerp(idealPos, 0.08);
+  camera.position.lerp(idealCameraPos, 0.08);
   camera.lookAt(cameraTarget);
 }
 
@@ -225,45 +230,48 @@ function updateNPCs(ctx, delta, time) {
   let nearestDist = Infinity;
 
   // Check building NPCs first (they take priority for building lore)
-  Object.entries(buildingNpcs).forEach(([id, npc]) => {
-    const dist = player.position.distanceTo(npc.position);
-    if (dist < 3.5 && dist < nearestDist) {
-      nearestDist = dist;
+  for (const id in buildingNpcs) {
+    const npc = buildingNpcs[id];
+    const distSq = player.position.distanceToSquared(npc.position);
+    if (distSq < NEAR_NPC_DISTANCE_SQ && distSq < nearestDist) {
+      nearestDist = distSq;
       nearestBuildingNPC = id;
       nearestNPC = null;
       nearestWanderer = null;
     }
-  });
+  }
 
   // Check main NPCs
-  Object.entries(npcs).forEach(([id, npc]) => {
-    const dist = player.position.distanceTo(npc.position);
-    if (dist < 3.5 && dist < nearestDist) {
-      nearestDist = dist;
+  for (const id in npcs) {
+    const npc = npcs[id];
+    const distSq = player.position.distanceToSquared(npc.position);
+    if (distSq < NEAR_NPC_DISTANCE_SQ && distSq < nearestDist) {
+      nearestDist = distSq;
       nearestNPC = id;
       nearestBuildingNPC = null;
       nearestWanderer = null;
       nearestTroll = null;
     }
-  });
+  }
 
   // Check wanderers
-  wanderers.forEach(npc => {
-    const dist = player.position.distanceTo(npc.position);
-    if (dist < 3.5 && dist < nearestDist) {
-      nearestDist = dist;
+  for (let i = 0; i < wanderers.length; i += 1) {
+    const npc = wanderers[i];
+    const distSq = player.position.distanceToSquared(npc.position);
+    if (distSq < NEAR_NPC_DISTANCE_SQ && distSq < nearestDist) {
+      nearestDist = distSq;
       nearestNPC = null;
       nearestBuildingNPC = null;
       nearestWanderer = npc;
       nearestTroll = null;
     }
-  });
+  }
 
   // Check bridge troll proximity
   if (bridgeTroll) {
-    const dist = player.position.distanceTo(bridgeTroll.position);
-    if (dist < 3.5 && dist < nearestDist) {
-      nearestDist = dist;
+    const distSq = player.position.distanceToSquared(bridgeTroll.position);
+    if (distSq < NEAR_NPC_DISTANCE_SQ && distSq < nearestDist) {
+      nearestDist = distSq;
       nearestNPC = null;
       nearestWanderer = null;
       nearestTroll = bridgeTroll;
@@ -286,9 +294,10 @@ function updateNPCs(ctx, delta, time) {
 
 // Update collectibles
 function updateCollectibles(ctx, delta, time, now) {
-  collectibles.forEach(col => {
-    if (col.userData.collected) return;
-    if (player.position.distanceTo(col.position) < 1.2) {
+  for (let i = 0; i < collectibles.length; i += 1) {
+    const col = collectibles[i];
+    if (col.userData.collected) continue;
+    if (player.position.distanceToSquared(col.position) < COLLECTIBLE_PICKUP_DISTANCE_SQ) {
       col.userData.collected = true;
       col.visible = false;
 
@@ -312,7 +321,7 @@ function updateCollectibles(ctx, delta, time, now) {
         showSweetIntro();
       }
     }
-  });
+  }
 }
 
 /**
@@ -350,13 +359,20 @@ function showFloatingPoints(position, value, isGolden) {
 function updateBuildingProximity(ctx, time) {
   let nearestBuilding = null;
   let nearestBuildingDist = Infinity;
-  Object.entries(buildings).forEach(([id, building]) => {
-    const dist = player.position.distanceTo(building.position);
-    if (dist < nearestBuildingDist) {
-      nearestBuildingDist = dist;
+  for (const id in buildings) {
+    const building = buildings[id];
+    const distSq = player.position.distanceToSquared(building.position);
+    if (distSq < nearestBuildingDist) {
+      nearestBuildingDist = distSq;
       nearestBuilding = building;
     }
-  });
+
+    if (distSq < BUILDING_PULSE_DISTANCE_SQ) {
+      building.scale.setScalar(1 + Math.sin(time * 5) * 0.02);
+    } else {
+      building.scale.setScalar(THREE.MathUtils.lerp(building.scale.x, 1, 0.1));
+    }
+  }
 
   if (nearestBuilding && nearestBuilding.userData.id !== ctx.gameState.currentLocation) {
     ctx.gameState.currentLocation = nearestBuilding.userData.id;
@@ -366,16 +382,6 @@ function updateBuildingProximity(ctx, time) {
       nearestBuilding.userData.name
     );
   }
-
-  // Building pulse animation
-  Object.values(buildings).forEach(building => {
-    const dist = player.position.distanceTo(building.position);
-    if (dist < 6) {
-      building.scale.setScalar(1 + Math.sin(time * 5) * 0.02);
-    } else {
-      building.scale.setScalar(THREE.MathUtils.lerp(building.scale.x, 1, 0.1));
-    }
-  });
 }
 
 // Update ambient animations (always run)
