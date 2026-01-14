@@ -9,6 +9,7 @@ import {
   openForemanDialog,
 } from '../ui/uiManager.js';
 import { spawnHearts } from '../entities/collectibles.js';
+import { startBoxingMinigame } from './boxingMinigame.js';
 
 // Collision boxes storage
 export const collisionBoxes = [];
@@ -25,6 +26,12 @@ export function checkCollision(x, z) {
 
 // Handle action button press (interact with NPCs)
 export function handleAction(ctx) {
+  // Boxing ring takes priority when nearby
+  if (ctx.gameState.nearBoxingRing) {
+    startBoxingMinigame(ctx.gameState);
+    return;
+  }
+
   if (ctx.gameState.nearBuildingNPC) {
     openBuildingNPCDialog(ctx.gameState.nearBuildingNPC);
   } else if (ctx.gameState.nearNPC === 'kingBen') {
