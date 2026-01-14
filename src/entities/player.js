@@ -24,22 +24,6 @@ const capeTempVec6 = new THREE.Vector3();
 const capeTempQuat = new THREE.Quaternion();
 
 export let player = null;
-export let playerMovementDisabled = false;
-
-// Disable player movement (for minigames, cutscenes, etc.)
-export function disablePlayerMovement() {
-  playerMovementDisabled = true;
-}
-
-// Enable player movement
-export function enablePlayerMovement() {
-  playerMovementDisabled = false;
-}
-
-// Check if player can move
-export function canPlayerMove() {
-  return !playerMovementDisabled;
-}
 
 // Create the player character
 export function createPlayer() {

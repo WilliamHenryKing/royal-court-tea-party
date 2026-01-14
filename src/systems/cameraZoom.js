@@ -4,7 +4,6 @@ import { camera } from '../engine/renderer.js';
 import { player } from '../entities/player.js';
 import { npcs } from '../entities/npcs.js';
 import { buildingNpcs, BUILDING_CAMERA_TARGETS } from '../entities/buildingNpcs.js';
-import { isBoxingMinigameActive } from '../game/boxingMinigame.js';
 
 // Camera zoom configuration
 export const cameraZoomConfig = {
@@ -162,11 +161,6 @@ export function isZoomedIn() {
  * Update camera zoom position - call this in the game loop
  */
 export function updateCameraZoom(delta) {
-  // Don't interfere when boxing minigame controls the camera
-  if (isBoxingMinigameActive()) {
-    return true; // Boxing minigame handles its own camera
-  }
-
   if (!cameraZoomConfig.isTransitioning && cameraZoomConfig.current === 'normal') {
     return false; // Let normal camera handle it
   }
