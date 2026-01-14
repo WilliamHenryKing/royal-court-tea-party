@@ -5,6 +5,19 @@ import { checkCollision, collisionBoxes } from './world.js';
 import { player } from './player.js';
 import { SHOP_POSITIONS } from './shops.js';
 import { FISHING_DOCK_POS } from './river.js';
+import { collisionManager, COLLISION_LAYERS } from '../systems/CollisionManager.js';
+
+// Boxing ring bounds - used by minigame for controlled access
+export const BOXING_RING_BOUNDS = {
+  minX: -29,  // Ring at -25, width 8, so -25 - 4 = -29
+  maxX: -21,  // -25 + 4 = -21
+  minZ: -19,  // Ring at -15, depth 8, so -15 - 4 = -19
+  maxZ: -11,  // -15 + 4 = -11
+  centerX: -25,
+  centerZ: -15,
+  platformY: 0.5,
+  entryPoint: { x: -25, z: -20 }  // South side entry point
+};
 
 // ============================================
 // BOXING RING - "The Royal Rumble"
@@ -204,13 +217,24 @@ export function createBoxingRing() {
   scene.add(group);
   boxingRing = group;
 
-  // Add collision box
-  collisionBoxes.push({
-    minX: BOXING_RING_DATA.position.x - 5,
-    maxX: BOXING_RING_DATA.position.x + 6,
-    minZ: BOXING_RING_DATA.position.z - 5,
-    maxZ: BOXING_RING_DATA.position.z + 5
-  });
+  // Add collision boxes for ring ropes (4 sides) - allows approaching but not entering
+  // These create an invisible barrier around the ring perimeter
+  const ringX = BOXING_RING_DATA.position.x;
+  const ringZ = BOXING_RING_DATA.position.z;
+  const ringHalfSize = 4; // Ring is 8x8
+  const ropeThickness = 0.5;
+
+  // North rope (back)
+  collisionManager.addStaticBox(ringX, ringZ + ringHalfSize, 8, ropeThickness);
+  // South rope (front - entry side, will be toggled by minigame)
+  collisionManager.addStaticBox(ringX, ringZ - ringHalfSize, 8, ropeThickness);
+  // West rope (left)
+  collisionManager.addStaticBox(ringX - ringHalfSize, ringZ, ropeThickness, 8);
+  // East rope (right)
+  collisionManager.addStaticBox(ringX + ringHalfSize, ringZ, ropeThickness, 8);
+
+  // Also add collision for announcer booth
+  collisionManager.addStaticBox(ringX + 5, ringZ, 2, 1.5);
 
   return group;
 }

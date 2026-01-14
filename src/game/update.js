@@ -1,6 +1,7 @@
 // Game Update - main game loop update logic
 import * as THREE from 'three';
-import { player, updateCape } from '../entities/player.js';
+import { player, updateCape, canPlayerMove } from '../entities/player.js';
+import { isNearBoxingRing, updateBoxingMinigame, isBoxingMinigameActive } from './boxingMinigame.js';
 import {
   PALACE_CARPET_FRONT_OFFSET,
   PALACE_CARPET_TOP_OFFSET,
@@ -115,12 +116,22 @@ export function update(ctx, delta, time) {
   const zoomState = getZoomState();
   const isZoomingOrZoomed = zoomState.current === 'interaction' || zoomState.isTransitioning;
 
-  // Only update gameplay when started, dialog not open, and not zooming to NPC
-  if (ctx.gameState.started && !ctx.gameState.dialogOpen && !isZoomingOrZoomed) {
-    updatePlayer(ctx, delta, time, now);
+  // Check if boxing minigame is active (it controls its own update)
+  const boxingActive = isBoxingMinigameActive();
+
+  // Only update gameplay when started, dialog not open, not zooming, and player can move
+  if (ctx.gameState.started && !ctx.gameState.dialogOpen && !isZoomingOrZoomed && !boxingActive) {
+    if (canPlayerMove()) {
+      updatePlayer(ctx, delta, time, now);
+    }
     updateNPCs(ctx, delta, time);
     updateCollectibles(ctx, delta, time, now);
     updateBuildingProximity(ctx, time);
+  }
+
+  // Update boxing minigame (it handles its own state checks)
+  if (boxingActive) {
+    updateBoxingMinigame(time, delta, ctx.gameState);
   }
 
   // Always update ambient animations
@@ -293,13 +304,17 @@ function updateNPCs(ctx, delta, time) {
     }
   }
 
+  // Check boxing ring proximity
+  const nearBoxingRing = isNearBoxingRing(player.position);
+  ctx.gameState.nearBoxingRing = nearBoxingRing;
+
   ctx.gameState.nearNPC = nearestNPC;
   ctx.gameState.nearWanderer = nearestWanderer;
   ctx.gameState.nearTroll = nearestTroll;
   ctx.gameState.nearForeman = nearestForeman;
 
   ctx.gameState.nearBuildingNPC = nearestBuildingNPC;
-  updateActionButton(nearestNPC, nearestWanderer, nearestBuildingNPC, nearestTroll, nearestForeman);
+  updateActionButton(nearestNPC, nearestWanderer, nearestBuildingNPC, nearestTroll, nearestForeman, nearBoxingRing);
 
   // Update corgis with player awareness
   updateCorgis(time, delta, player);

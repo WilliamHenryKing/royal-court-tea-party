@@ -55,6 +55,7 @@ import { createAllShops, teaCafe, coffeeCafe, donutShop, pinkieSchool } from './
 import { createAllActivities } from './entities/activities.js';
 import { createBuildingNPCs, buildingNpcs } from './entities/buildingNpcs.js';
 import { createConstructionZone, constructionForeman } from './entities/constructionZone.js';
+import { initBoxingMinigame } from './game/boxingMinigame.js';
 import { update } from './game/update.js';
 import {
   initUI,
@@ -163,6 +164,9 @@ function init() {
   // Setup function references in context
   ctx.handleAction = () => handleAction(ctx);
   ctx.unlockPlayerCape = () => unlockPlayerCape(ctx.gameState);
+
+  // Initialize boxing minigame system
+  initBoxingMinigame();
 
   // Setup update callback
   setUpdateCallback((delta, time) => {
