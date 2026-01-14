@@ -16,6 +16,7 @@ export function createGameState() {
     nearWanderer: null,
     nearTroll: null,
     nearBuildingNPC: null, // Track proximity to building NPCs
+    nearForeman: null, // Track proximity to construction foreman
     pendingNotification: null,
     completionShown: false,
     capeUnlocked: false,

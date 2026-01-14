@@ -62,12 +62,14 @@ export function updateCollectibleCount(count) {
   }
 }
 
-export function updateActionButton(nearestNPC, nearestWanderer, nearestBuildingNPC = null, nearestTroll = null) {
+export function updateActionButton(nearestNPC, nearestWanderer, nearestBuildingNPC = null, nearestTroll = null, nearestForeman = null) {
   const actionBtn = document.getElementById('action-btn');
   if (!actionBtn) return;
-  if (nearestNPC || nearestWanderer || nearestBuildingNPC || nearestTroll) {
+  if (nearestNPC || nearestWanderer || nearestBuildingNPC || nearestTroll || nearestForeman) {
     actionBtn.classList.add('visible');
-    if (nearestBuildingNPC) {
+    if (nearestForeman) {
+      actionBtn.innerHTML = `<span>🚧</span><span>Talk to Foreman</span>`;
+    } else if (nearestBuildingNPC) {
       // Building NPC - check if visited for icon
       const visited = ctx.gameState.visitedBuildings && ctx.gameState.visitedBuildings.has(nearestBuildingNPC);
       const icon = visited ? '💬' : '❓';
@@ -659,6 +661,40 @@ function handleRiddleAnswer(troll, selectedIndex) {
 
   data.currentRiddle = null;
 }
+
+export function openForemanDialog(foreman) {
+  const data = foreman.userData;
+
+  // Play random voice (reusing wanderer voice)
+  playRandomWandererVoice();
+
+  ctx.gameState.dialogOpen = true;
+
+  document.getElementById('dialog-avatar').textContent = '🚧';
+  document.getElementById('dialog-name').textContent = data.name;
+  document.getElementById('dialog-role').textContent = data.role;
+
+  // Get a random quote
+  const quote = data.quotes[Math.floor(Math.random() * data.quotes.length)];
+
+  const content = `
+    <div class="funny-quote" style="margin-top: 0; font-style: italic; font-size: 1.1rem;">"${quote}"</div>
+    <p style="text-align: center; color: var(--text-light); font-size: 0.9rem; margin-top: 1rem;">
+      *${data.name} checks his clipboard, sighs heavily, and makes another note*
+    </p>
+    <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 0.8rem; margin-top: 1rem; font-family: monospace; font-size: 0.75rem; color: #7ec8e3;">
+      <div style="color: #888;">// Construction Status:</div>
+      <div>const progress = <span style="color: #ff6b6b;">"perpetually almost done"</span>;</div>
+      <div>const eta = <span style="color: #ff6b6b;">undefined</span>;</div>
+      <div>const budget = <span style="color: #ff6b6b;">NaN</span>;</div>
+    </div>
+  `;
+
+  document.getElementById('dialog-content').innerHTML = content;
+  document.getElementById('dialog-overlay').classList.add('visible');
+  document.getElementById('action-btn').classList.remove('visible');
+}
+
 export function openBuildingNPCDialog(npcId) {
   // Hide action button immediately
   document.getElementById('action-btn').classList.remove('visible');
