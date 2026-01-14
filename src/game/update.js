@@ -18,6 +18,7 @@ import { updateKingAndGuards } from '../entities/king.js';
 import { updateDoomSayer } from '../entities/doomSayer.js';
 import { updateAllActivities } from '../entities/activities.js';
 import { updateShops } from '../entities/shops.js';
+import { updateConstructionZone, constructionForeman } from '../entities/constructionZone.js';
 import { updateCameraZoom, isZoomedIn, getZoomState } from '../systems/cameraZoom.js';
 import { checkCollision } from './interactions.js';
 import { getInputVector } from '../systems/inputSystem.js';
@@ -268,6 +269,7 @@ function updateNPCs(ctx, delta, time) {
   }
 
   // Check bridge troll proximity
+  let nearestForeman = null;
   if (bridgeTroll) {
     const distSq = player.position.distanceToSquared(bridgeTroll.position);
     if (distSq < NEAR_NPC_DISTANCE_SQ && distSq < nearestDist) {
@@ -278,12 +280,26 @@ function updateNPCs(ctx, delta, time) {
     }
   }
 
+  // Check construction foreman proximity
+  if (constructionForeman) {
+    const distSq = player.position.distanceToSquared(constructionForeman.position);
+    if (distSq < NEAR_NPC_DISTANCE_SQ && distSq < nearestDist) {
+      nearestDist = distSq;
+      nearestNPC = null;
+      nearestWanderer = null;
+      nearestTroll = null;
+      nearestBuildingNPC = null;
+      nearestForeman = constructionForeman;
+    }
+  }
+
   ctx.gameState.nearNPC = nearestNPC;
   ctx.gameState.nearWanderer = nearestWanderer;
   ctx.gameState.nearTroll = nearestTroll;
+  ctx.gameState.nearForeman = nearestForeman;
 
   ctx.gameState.nearBuildingNPC = nearestBuildingNPC;
-  updateActionButton(nearestNPC, nearestWanderer, nearestBuildingNPC, nearestTroll);
+  updateActionButton(nearestNPC, nearestWanderer, nearestBuildingNPC, nearestTroll, nearestForeman);
 
   // Update corgis with player awareness
   updateCorgis(time, delta, player);
@@ -449,6 +465,9 @@ function updateAmbientAnimations(ctx, delta, time) {
 
   // Butterflies near flower beds
   updateButterflies(time);
+
+  // Construction zone animations (bulldozer, workers, warning lights)
+  updateConstructionZone(time, delta);
 
 }
 

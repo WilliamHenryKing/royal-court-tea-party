@@ -6,6 +6,7 @@ import {
   openKingDialog,
   openTrollDialog,
   openWandererDialog,
+  openForemanDialog,
 } from '../ui/uiManager.js';
 import { spawnHearts } from '../entities/collectibles.js';
 
@@ -34,6 +35,8 @@ export function handleAction(ctx) {
     openWandererDialog(ctx.gameState.nearWanderer);
   } else if (ctx.gameState.nearTroll) {
     openTrollDialog(ctx.gameState.nearTroll);
+  } else if (ctx.gameState.nearForeman) {
+    openForemanDialog(ctx.gameState.nearForeman);
   }
 }
 

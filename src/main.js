@@ -54,6 +54,7 @@ import { createDoomSayer, doomSayer } from './entities/doomSayer.js';
 import { createAllShops, teaCafe, coffeeCafe, donutShop, pinkieSchool } from './entities/shops.js';
 import { createAllActivities } from './entities/activities.js';
 import { createBuildingNPCs, buildingNpcs } from './entities/buildingNpcs.js';
+import { createConstructionZone, constructionForeman } from './entities/constructionZone.js';
 import { update } from './game/update.js';
 import {
   initUI,
@@ -101,7 +102,10 @@ const ctx = {
   unlockPlayerCape: null,
 
   // Bridge troll reference (set after creation)
-  bridgeTroll: null
+  bridgeTroll: null,
+
+  // Construction foreman reference (set after creation)
+  constructionForeman: null
 };
 
 // Initialize the game
@@ -201,6 +205,12 @@ function initGameWorld() {
 
   // Set bridge troll reference in context
   ctx.bridgeTroll = bridgeTroll;
+
+  // Create construction zone in the forest (meta-humor "under construction" area)
+  createConstructionZone();
+
+  // Set construction foreman reference in context
+  ctx.constructionForeman = constructionForeman;
 
   // Create buildings
   createBuildings();
