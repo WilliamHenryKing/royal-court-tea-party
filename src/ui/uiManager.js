@@ -62,15 +62,12 @@ export function updateCollectibleCount(count) {
   }
 }
 
-export function updateActionButton(nearestNPC, nearestWanderer, nearestBuildingNPC = null, nearestTroll = null, nearestForeman = null, nearBoxingRing = false) {
+export function updateActionButton(nearestNPC, nearestWanderer, nearestBuildingNPC = null, nearestTroll = null, nearestForeman = null) {
   const actionBtn = document.getElementById('action-btn');
   if (!actionBtn) return;
-  if (nearestNPC || nearestWanderer || nearestBuildingNPC || nearestTroll || nearestForeman || nearBoxingRing) {
+  if (nearestNPC || nearestWanderer || nearestBuildingNPC || nearestTroll || nearestForeman) {
     actionBtn.classList.add('visible');
-    if (nearBoxingRing) {
-      // Boxing ring entry takes priority when nearby
-      actionBtn.innerHTML = `<span>🥊</span><span>Enter the Ring!</span>`;
-    } else if (nearestForeman) {
+    if (nearestForeman) {
       actionBtn.innerHTML = `<span>🚧</span><span>Talk to Foreman</span>`;
     } else if (nearestBuildingNPC) {
       // Building NPC - check if visited for icon
@@ -246,8 +243,7 @@ export function setupControls() {
           && (ctx.gameState.nearNPC
             || ctx.gameState.nearWanderer
             || ctx.gameState.nearBuildingNPC
-            || ctx.gameState.nearTroll
-            || ctx.gameState.nearBoxingRing)
+            || ctx.gameState.nearTroll)
         ) {
           ctx.handleAction();
         }
