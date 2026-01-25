@@ -3,6 +3,7 @@
 export const SPEAKERS = [
   { name: "Sister Lucille", topic: "Me, Myself and I" },
   { name: "Sister Lizelle", topic: "The Importance of Friendship/Sisterhood" }
+];
 
 export const GUESTS = [
   "Bernily King", "Caron Benjamin", "Phebe Benjamin", "Jamie-Lee Ockhuis","Ruth-Grace Davids",
